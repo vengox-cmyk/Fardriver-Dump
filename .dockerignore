@@ -1,0 +1,9 @@
+.git
+.dart_tool
+build
+coverage
+android/.gradle
+android/local.properties
+.idea
+*.iml
+reference

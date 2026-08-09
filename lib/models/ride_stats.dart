@@ -75,10 +75,10 @@ class RideSession {
       };
 
   List<List<String>> toCsvRows() => [
-        ['Time', 'Speed (mph)'],
+        ['Time', 'Speed (km/h)'],
         ...speedHistory.map((s) => [
               s.timestamp.toIso8601String(),
-              (s.speedKph * 0.621371).toStringAsFixed(1),
+              s.speedKph.toStringAsFixed(1),
             ]),
       ];
 }

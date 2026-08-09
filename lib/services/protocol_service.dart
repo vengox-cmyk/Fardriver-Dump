@@ -1,4 +1,4 @@
-import 'package:biketunes/utils/crc_calculator.dart';
+import 'package:arcdash/utils/crc_calculator.dart';
 
 /// Known memory addresses for FarDriver protocol.
 class FardriverAddr {
@@ -56,7 +56,8 @@ class ProtocolService {
   }
 
   /// Packet to start status streaming (non-following status mode).
-  static List<int> startStatusStreamPacket() => buildSysCmd(SysCmd.nonFollowingStatus);
+  static List<int> startStatusStreamPacket() =>
+      buildSysCmd(SysCmd.nonFollowingStatus);
 
   /// Sets the max line current. [amps] is the desired value in A.
   /// Raw value = amps * 4.
@@ -67,7 +68,8 @@ class ProtocolService {
 
   /// Sets max speed. [maxSpeedRaw] is the raw uint16 RPM value.
   static List<int> setMaxSpeedPacket(int maxSpeedRaw) {
-    return buildWritePacket(FardriverAddr.maxSpeed, maxSpeedRaw.clamp(0, 0xFFFF));
+    return buildWritePacket(
+        FardriverAddr.maxSpeed, maxSpeedRaw.clamp(0, 0xFFFF));
   }
 
   /// Sets throttle response mode: 0=Line, 1=Sport, 2=ECO.
@@ -88,16 +90,29 @@ class ProtocolService {
     required int wheelRatio,
     required int rateRatio,
   }) {
-    final factor =
-        0.00376991136 * (wheelRadius * 1270.0 + wheelWidth * wheelRatio) / rateRatio;
-    if (factor <= 0) return 0;
+    final factor = 0.00376991136 *
+        (wheelRadius * 1270.0 + wheelWidth * wheelRatio) /
+        rateRatio;
+    if (factor <= 0 || factor.isNaN || factor.isInfinite) return 0;
     return (kph / factor).round().clamp(0, 0xFFFF);
   }
 
   /// Verifies an 8-byte write ack packet from the controller.
-  static bool verifyWriteAck(List<int> packet) {
+  static bool verifyWriteAck(
+    List<int> packet, {
+    int? expectedAddress,
+    int? expectedValue,
+  }) {
     if (packet.length < 8) return false;
     if (packet[0] != 0xAA) return false;
-    return CrcCalculator.verifyCRC(packet, 8);
+    if (!CrcCalculator.verifyCRC(packet, 8)) return false;
+    if (expectedAddress != null && packet[2] != (expectedAddress & 0xFF)) {
+      return false;
+    }
+    if (expectedValue != null) {
+      final value = packet[4] | (packet[5] << 8);
+      if (value != (expectedValue & 0xFFFF)) return false;
+    }
+    return true;
   }
 }

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:biketunes/models/controller_state.dart';
+import 'package:arcdash/models/controller_state.dart';
 
 class RideModeCard extends StatelessWidget {
   final RideMode mode;

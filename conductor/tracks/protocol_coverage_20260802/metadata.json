@@ -1,0 +1,8 @@
+{
+  "track_id": "protocol_coverage_20260802",
+  "type": "feature",
+  "status": "new",
+  "created_at": "2026-08-02T07:14:25Z",
+  "updated_at": "2026-08-02T07:14:25Z",
+  "description": "Establish comprehensive unit test coverage for the core FarDriver protocol layer (CRC calculation, packet building, packet parsing, and telemetry decoding), validating accuracy against the reference documentation."
+}

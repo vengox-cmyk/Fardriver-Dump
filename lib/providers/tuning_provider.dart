@@ -1,11 +1,7 @@
 import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:biketunes/models/controller_state.dart';
-import 'package:biketunes/models/tuning_profile.dart';
-import 'package:biketunes/providers/bluetooth_provider.dart';
-import 'package:biketunes/providers/controller_provider.dart';
-import 'package:biketunes/services/protocol_service.dart';
-import 'package:biketunes/services/storage_service.dart';
+import 'package:arcdash/models/tuning_profile.dart';
+import 'package:arcdash/providers/controller_provider.dart';
 
 class TuningState {
   final TuningProfile pendingProfile;
@@ -108,90 +104,19 @@ class TuningNotifier extends StateNotifier<TuningState> {
 
   /// Applies all pending profile parameters to the controller.
   Future<bool> applyProfile() async {
-    final controllerState = _ref.read(controllerProvider);
-
-    // Safety: must be stationary
-    if (controllerState.speedKph > 2.0) {
-      state = state.copyWith(
-        lastError: 'Cannot apply tuning while moving. Stop the bike first.',
-      );
-      return false;
-    }
-
-    state = state.copyWith(isApplying: true, lastError: null);
-
-    final bluetooth = _ref.read(bluetoothServiceProvider);
-    final profile = state.pendingProfile;
-
-    try {
-      // Convert speed kph → raw RPM using wheel geometry
-      final rawSpeed = ProtocolService.kphToMaxSpeedRaw(
-        kph: profile.maxSpeedKph,
-        wheelRadius: controllerState.wheelRadius,
-        wheelWidth: controllerState.wheelWidth,
-        wheelRatio: controllerState.wheelRatio,
-        rateRatio: controllerState.rateRatio,
-      );
-
-      // Write max speed
-      final ok1 = await bluetooth.write(
-          ProtocolService.setMaxSpeedPacket(rawSpeed));
-      await Future.delayed(const Duration(milliseconds: 50));
-
-      // Write max line current
-      final ok2 = await bluetooth.write(
-          ProtocolService.setMaxLineCurrPacket(profile.maxLineCurrA));
-      await Future.delayed(const Duration(milliseconds: 50));
-
-      // Write throttle response
-      final ok3 = await bluetooth.write(
-          ProtocolService.setThrottleResponsePacket(profile.throttleResponse));
-      await Future.delayed(const Duration(milliseconds: 50));
-
-      final success = ok1 && ok2 && ok3;
-      state = state.copyWith(
-        isApplying: false,
-        appliedSuccessfully: success,
-        lastError: success ? null : 'Write failed — check connection',
-      );
-      return success;
-    } catch (e) {
-      state = state.copyWith(
-        isApplying: false,
-        lastError: 'Error applying profile: $e',
-      );
-      return false;
-    }
+    state = state.copyWith(
+      lastError:
+          'Write engine locked until hardware limits and read-back are verified.',
+    );
+    return false;
   }
 
   /// Restores stock parameters from backup.
   Future<bool> restoreStock() async {
-    final storage = _ref.read(storageServiceProvider);
-    final backup = storage.loadStockBackup();
-    if (backup == null) {
-      state = state.copyWith(lastError: 'No stock backup found.');
-      return false;
-    }
-
-    state = state.copyWith(isApplying: true, lastError: null);
-    final bluetooth = _ref.read(bluetoothServiceProvider);
-
-    try {
-      for (final entry in backup.entries) {
-        await bluetooth.write(
-            ProtocolService.buildWritePacket(entry.key, entry.value));
-        await Future.delayed(const Duration(milliseconds: 50));
-      }
-      state = state.copyWith(
-        isApplying: false,
-        appliedSuccessfully: true,
-        pendingProfile: TuningProfile.stock(),
-      );
-      return true;
-    } catch (e) {
-      state = state.copyWith(isApplying: false, lastError: 'Restore failed: $e');
-      return false;
-    }
+    state = state.copyWith(
+      lastError: 'Restore locked until the safe write engine is complete.',
+    );
+    return false;
   }
 
   Future<void> saveCurrentProfile(String name) async {

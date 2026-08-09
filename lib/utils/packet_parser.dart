@@ -1,17 +1,68 @@
 import 'dart:math' as math;
-import 'package:biketunes/utils/crc_calculator.dart';
+import 'package:arcdash/utils/crc_calculator.dart';
 
 /// Memory address lookup table for rotating status packet IDs (0–54).
-/// id < 0x37 maps to flash_read_addr[id] from the FarDriver protocol repo.
+/// Mirrors `flashReadAddr[55]` from the FarDriver protocol repo
+/// (reference/upstream/fardriver-controllers/fardriver_message.hpp).
+/// Each 16-byte status frame carries the rotating index in `packet[1]`;
+/// the upper two bits are protocol flags (the controller sends 0x80–0xB6),
+/// so the index is recovered with `packet[1] & 0x7F`.
 const List<int> flashReadAddr = [
-  0xE2, 0xE8, 0xEE, 0x00, 0x06, 0x0C, 0x12,
-  0xE2, 0xE8, 0xEE, 0x18, 0x1E, 0x24, 0x2A,
-  0xE2, 0xE8, 0xEE, 0x30, 0x5D, 0x63, 0x69,
-  0xE2, 0xE8, 0xEE, 0x7C, 0x82, 0x88, 0x8E,
-  0xE2, 0xE8, 0xEE, 0x94, 0x9A, 0xA0, 0xA6,
-  0xE2, 0xE8, 0xEE, 0xAC, 0xB2, 0xB8, 0xBE,
-  0xE2, 0xE8, 0xEE, 0xC4, 0xCA, 0xD0,
-  0xE2, 0xE8, 0xEE, 0xD6, 0xDC, 0xF4, 0xFA,
+  0xE2,
+  0xE8,
+  0xEE,
+  0x00,
+  0x06,
+  0x0C,
+  0x12,
+  0xE2,
+  0xE8,
+  0xEE,
+  0x18,
+  0x1E,
+  0x24,
+  0x2A,
+  0xE2,
+  0xE8,
+  0xEE,
+  0x30,
+  0x5D,
+  0x63,
+  0x69,
+  0xE2,
+  0xE8,
+  0xEE,
+  0x7C,
+  0x82,
+  0x88,
+  0x8E,
+  0xE2,
+  0xE8,
+  0xEE,
+  0x94,
+  0x9A,
+  0xA0,
+  0xA6,
+  0xE2,
+  0xE8,
+  0xEE,
+  0xAC,
+  0xB2,
+  0xB8,
+  0xBE,
+  0xE2,
+  0xE8,
+  0xEE,
+  0xC4,
+  0xCA,
+  0xD0,
+  0xE2,
+  0xE8,
+  0xEE,
+  0xD6,
+  0xDC,
+  0xF4,
+  0xFA,
 ];
 
 /// Result of parsing a single 16-byte status packet.
@@ -27,8 +78,12 @@ class ParsedPacket {
   });
 }
 
+enum TelemetrySource { controllerStatus }
+
 /// Telemetry values extracted from address-specific structs.
 class TelemetryUpdate {
+  final DateTime capturedAt;
+  final TelemetrySource source;
   // From 0xE2 (AddrE2)
   final int? measureSpeed; // raw RPM ticks
   final bool? forward;
@@ -41,19 +96,19 @@ class TelemetryUpdate {
   final bool? controllerTempProtect;
 
   // From 0xE8 (AddrE8)
-  final double? voltageV;    // deci_volts / 10.0
-  final double? currentA;    // lineCurrent / 4.0
+  final double? voltageV; // deci_volts / 10.0
+  final double? currentA; // lineCurrent / 4.0
 
   // From 0xEE (AddrEE)
   final double? phaseACurrA; // 1.953125 * sqrt(raw)
   final double? phaseCCurrA;
 
   // From 0xF4 (AddrF4)
-  final double? motorTempC;  // raw int16 (degrees C)
+  final double? motorTempC; // raw int16 (degrees C)
   final int? battCapPercent; // SOC 0–100
 
   // From 0xD6 (AddrD6)
-  final double? mosTempC;    // MosTemp (controller temp, degrees C)
+  final double? mosTempC; // MosTemp (controller temp, degrees C)
 
   // From 0xD0 (AddrD0) — wheel geometry for speed calculation
   final int? wheelRadius;
@@ -72,6 +127,8 @@ class TelemetryUpdate {
   final int? fullBattCoeff;
 
   const TelemetryUpdate({
+    required this.capturedAt,
+    this.source = TelemetrySource.controllerStatus,
     this.measureSpeed,
     this.forward,
     this.reverse,
@@ -105,8 +162,8 @@ class PacketParser {
   static List<List<int>> extractPackets(List<int> buffer) {
     final packets = <List<int>>[];
     int i = 0;
-    while (i < buffer.length - 15) {
-      if (buffer[i] == 0xAA) {
+    while (i <= buffer.length - 8) {
+      if (buffer[i] == 0xAA && i <= buffer.length - 16) {
         final candidate = buffer.sublist(i, i + 16);
         if (CrcCalculator.verifyCRC(candidate, 16)) {
           packets.add(candidate);
@@ -115,7 +172,7 @@ class PacketParser {
         }
       }
       // Also check for 8-byte write ack packets starting with 0xAA
-      if (buffer[i] == 0xAA && i < buffer.length - 7) {
+      if (buffer[i] == 0xAA) {
         final candidate8 = buffer.sublist(i, i + 8);
         if (CrcCalculator.verifyCRC(candidate8, 8)) {
           packets.add(candidate8);
@@ -135,7 +192,9 @@ class PacketParser {
     if (!CrcCalculator.verifyCRC(packet, 16)) return null;
 
     final idByte = packet[1];
-    final id = idByte & 0x3F; // lower 6 bits
+    // FarDriver rotates 55 status block IDs (0x80..0xB6 or 0x00..0x36).
+    // The rotating index is stored in the lower bits (id & 0x3F).
+    final id = idByte & 0x3F;
     if (id >= flashReadAddr.length) return null;
 
     final address = flashReadAddr[id];
@@ -157,25 +216,33 @@ class PacketParser {
 
   /// Reads 24-bit big-endian value used for phase currents.
   static double readPhaseCurrent(List<int> data, int offset) {
-    final raw = (data[offset] << 16) | (data[offset + 1] << 8) | data[offset + 2];
+    final raw =
+        (data[offset] << 16) | (data[offset + 1] << 8) | data[offset + 2];
     return 1.953125 * math.sqrt(raw.toDouble());
   }
 
   /// Extracts telemetry updates from a parsed packet by address.
   static TelemetryUpdate? extractTelemetry(ParsedPacket packet) {
     final d = packet.rawData;
+    if (d.length < 12) return null;
+    final capturedAt = DateTime.now();
 
     switch (packet.address) {
       case 0xE2: // AddrE2 — speed, status flags
         final stateByte = d[0];
         final errByte1 = d[2];
         final errByte2 = d[3];
-        final measureSpeed = readUint16LE(d, 6); // bytes 8-9 relative to B0 = bytes 6-7 in rawData
+        final measureSpeed = readUint16LE(
+            d, 6); // bytes 8-9 relative to B0 = bytes 6-7 in rawData
+        // Shift gear by 1: (0 -> N, 1 -> 1, 2 -> 2, 3 -> 3)
+        final rawGear = (stateByte >> 2) & 0x03;
+        final mappedGear = rawGear == 0 ? 0 : rawGear;
         return TelemetryUpdate(
+          capturedAt: capturedAt,
           measureSpeed: measureSpeed,
           forward: (stateByte & 0x01) != 0,
           reverse: (stateByte & 0x02) != 0,
-          gear: (stateByte >> 2) & 0x03,
+          gear: mappedGear,
           brake: (errByte2 & 0x80) != 0,
           motorHallError: (errByte1 & 0x01) != 0,
           throttleError: (errByte1 & 0x02) != 0,
@@ -187,6 +254,7 @@ class PacketParser {
         final deciVolts = readInt16LE(d, 0);
         final lineCurrent = readInt16LE(d, 4);
         return TelemetryUpdate(
+          capturedAt: capturedAt,
           voltageV: deciVolts / 10.0,
           currentA: lineCurrent / 4.0,
         );
@@ -196,6 +264,7 @@ class PacketParser {
         final phaseA = readPhaseCurrent(d, 4);
         final phaseC = readPhaseCurrent(d, 7);
         return TelemetryUpdate(
+          capturedAt: capturedAt,
           phaseACurrA: phaseA,
           phaseCCurrA: phaseC,
         );
@@ -204,6 +273,7 @@ class PacketParser {
         final motorTemp = readInt16LE(d, 0);
         final battCap = d[3].toSigned(8); // int8
         return TelemetryUpdate(
+          capturedAt: capturedAt,
           motorTempC: motorTemp.toDouble(),
           battCapPercent: battCap.clamp(0, 100),
         );
@@ -211,7 +281,10 @@ class PacketParser {
       case 0xD6: // AddrD6 — MosFET temp (controller)
         // MosTemp is at bytes 10-11 (last int16 of the struct)
         final mosTemp = readInt16LE(d, 10);
-        return TelemetryUpdate(mosTempC: mosTemp.toDouble());
+        return TelemetryUpdate(
+          capturedAt: capturedAt,
+          mosTempC: mosTemp.toDouble(),
+        );
 
       case 0xD0: // AddrD0 — wheel geometry
         final wheelRatio = d[5]; // WheelRatio at byte 5 of data
@@ -219,6 +292,7 @@ class PacketParser {
         final rateRatio = readUint16LE(d, 8); // RateRatio
         final wheelWidth = d[6]; // WheelWidth
         return TelemetryUpdate(
+          capturedAt: capturedAt,
           wheelRadius: wheelRadius,
           wheelWidth: wheelWidth,
           wheelRatio: wheelRatio,
@@ -226,17 +300,25 @@ class PacketParser {
         );
 
       case 0x12: // Addr12 — MaxSpeed
-        final maxSpeed = readUint16LE(d, 6); // bytes 8-9 of packet = 6-7 in rawData
-        return TelemetryUpdate(maxSpeed: maxSpeed);
+        final maxSpeed =
+            readUint16LE(d, 6); // bytes 8-9 of packet = 6-7 in rawData
+        return TelemetryUpdate(capturedAt: capturedAt, maxSpeed: maxSpeed);
 
       case 0x18: // Addr18 — MaxLineCurr
         final maxLineCurr = readUint16LE(d, 2); // bytes 4-5 of packet
-        return TelemetryUpdate(maxLineCurrRaw: maxLineCurr);
+        return TelemetryUpdate(
+          capturedAt: capturedAt,
+          maxLineCurrRaw: maxLineCurr,
+        );
 
       case 0x0C: // Addr0C — battery calibration
         final zeroBatt = readInt16LE(d, 2);
         final fullBatt = readInt16LE(d, 4);
-        return TelemetryUpdate(zeroBattCoeff: zeroBatt, fullBattCoeff: fullBatt);
+        return TelemetryUpdate(
+          capturedAt: capturedAt,
+          zeroBattCoeff: zeroBatt,
+          fullBattCoeff: fullBatt,
+        );
 
       default:
         return null;
@@ -245,7 +327,9 @@ class PacketParser {
 
   /// Formats a packet as hex string for debug display.
   static String toHexString(List<int> packet) {
-    return packet.map((b) => b.toRadixString(16).padLeft(2, '0').toUpperCase()).join(' ');
+    return packet
+        .map((b) => b.toRadixString(16).padLeft(2, '0').toUpperCase())
+        .join(' ');
   }
 }
 

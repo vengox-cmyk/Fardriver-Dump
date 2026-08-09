@@ -1,0 +1,213 @@
+//------------------------------------------------
+//--- 010 Editor v15.0 Binary Template
+//
+//      File: HEB for Fardriver controllers
+//   Authors: 
+//   Version: 
+//   Purpose: 
+//  Category: 
+// File Mask: *.heb
+//  ID Bytes: 
+//   History: 
+//------------------------------------------------
+
+typedef uint uint32_t;
+typedef int int32_t;
+typedef ushort uint16_t;
+typedef short int16_t;
+typedef ubyte uint8_t;
+typedef byte int8_t;
+
+#include "fardriver.hpp"
+
+BitfieldDisablePadding();
+
+Addr00 addr00;
+Addr06 addr06;
+Addr0C addr0C;
+Addr12 addr12;
+Addr18 addr18;
+Addr1E addr1E;
+Addr24 addr24;
+Addr2A addr2A;
+Addr30 addr30;
+Addr63 addr63;
+Addr69 addr69;
+Addr7C addr7C;
+Addr82 addr82;
+Addr88 addr88;
+Addr8E addr8E;
+Addr94 addr94;
+Addr9A addr9A;
+AddrA0 addrA0;
+AddrA6 addrA6;
+AddrAC addrAC;
+AddrB2 addrB2;
+AddrB8 addrB8;
+AddrBE addrBE;
+AddrC4 addrC4;
+AddrCA addrCA;
+AddrD0 addrD0;
+
+// 384, 0x180 bytes (0xC0 addresses?) for CAN config
+
+struct CanConfig {
+    uint32_t ID;
+};
+
+CanConfig SOP;
+CanConfig SOC;
+CanConfig Charge;
+CanConfig SideStand;
+CanConfig SpeedLimit;
+CanConfig Gear;
+CanConfig Control;
+CanConfig OBD;
+
+enum EFrameType {
+    Standard = 0,
+    Extended = 1
+};
+
+EFrameType frameTypeRecv : 4;
+EFrameType frameTypeSend : 4;
+uint8_t unk21;
+uint8_t unk22a : 3;
+uint8_t unk22b : 3;
+enum EByteOrder {
+    INTEL = 0,
+    Motorola = 1
+} byteOrder : 2;
+uint8_t amps_23;
+uint8_t unk24;
+
+uint8_t unk25a : 3;
+uint8_t unk25b : 3;
+uint8_t _unk25c : 2;
+
+uint8_t unk26a : 3;
+uint8_t unk26b : 3;
+uint8_t _unk26c : 2;
+
+uint8_t unk27a : 3;
+uint8_t unk27b : 3;
+uint8_t _unk27c : 2;
+
+/*
+uint8_t DataFormat;
+uint8_t RcvFrameType;
+uint8_t SendFrameType;
+uint16_t SOP_ID;
+uint16_t SOC_ID;
+uint16_t ChargeID;
+uint16_t SideStandID;
+uint16_t SpeedLimitID;
+uint16_t GearID;
+uint16_t ControlID;
+uint16_t OBD_ID;
+uint8_t ControlType;
+uint8_t SOPUnit;
+uint8_t SOPMSB;
+uint8_t SOPLSB;
+uint8_t SOCPos;
+uint8_t ChargeBytePos;
+uint8_t ChargeBitPos;
+uint8_t SideStandBytePos;
+uint8_t SideStandBitPos;
+uint8_t LimitSpeedBytePos;
+uint8_t LimitSpeedBitPos;
+uint8_t GearBytePos;
+uint8_t GearBitPos;
+uint8_t ControlBytePos;
+uint8_t unkCAN[7];
+*/
+
+//uint8_t _unk4b[15];
+
+uint32_t SendID0;
+uint32_t SendID1;
+uint32_t SendID2;
+uint32_t SendID3;
+uint32_t SendID4;
+uint32_t SendID5;
+
+uint8_t unk46a : 3;
+uint8_t unk46b : 3;
+uint8_t _unk46c : 2;
+
+uint8_t unk47a : 3;
+uint8_t _unk47b : 5;
+
+uint8_t SendID0_Timer;
+uint8_t SendID1_Timer;
+uint8_t SendID2_Timer;
+uint8_t SendID3_Timer;
+uint8_t SendID4_Timer;
+uint8_t SendID5_Timer;
+
+struct CANConfig {
+    uint8_t Length;
+    uint8_t Pos;
+    uint8_t Gain;
+    uint8_t ID : 4;
+    uint8_t Valid : 4;
+    uint16_t Offset;
+};
+
+// CAN Data
+CANConfig CustomCode;
+CANConfig SN0;
+CANConfig SN1;
+CANConfig SN2;
+CANConfig HardVer;
+CANConfig SoftVer0;
+CANConfig SoftVer1;
+CANConfig Voltage;
+CANConfig LineCurr;
+CANConfig PhaseCurr;
+CANConfig ThrottleDepth;
+CANConfig ThrottleVoltage;
+CANConfig Torque;
+CANConfig CurrentSpeed;
+CANConfig CurrentRotation;
+CANConfig TotalDistanceMSB;
+CANConfig TotalDistanceLSB;
+CANConfig CurrentDistance;
+CANConfig MosTemp;
+CANConfig MotorTemp;
+CANConfig BatterySOC;
+
+// CAN Stat
+CANConfig GearStat;
+CANConfig SpeedStat;
+CANConfig AntiTheftStat;
+CANConfig CruiseStat;
+CANConfig SeatStat;
+CANConfig SideStandStat;
+CANConfig SpeedLimitStat;
+CANConfig FixStat;
+CANConfig ReverseStat;
+CANConfig AssistStat;
+CANConfig PushStat;
+CANConfig ParkStat;
+CANConfig ChargeStat;
+CANConfig READYStat;
+CANConfig ECOStat;
+CANConfig EABSStat;
+CANConfig BOOSTStat;
+
+// CAN Alarm
+CANConfig HallAlarm;
+CANConfig HandBarAlarm;
+CANConfig BrakeAlarm;
+CANConfig MOSFETAlarm;
+CANConfig PhaseShortenAlarm;
+CANConfig PhaseLostAlarm;
+CANConfig MosOverTemp;
+CANConfig MotorOverTemp;
+CANConfig OverCurrAlarm;
+CANConfig OverVoltageAlarm;
+CANConfig LowVoltageAlarm;
+CANConfig BlockedStat;
+CANConfig AntiTheftAlarm;
+CANConfig ControllerAlarm;

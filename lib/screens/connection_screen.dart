@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_blue_plus/flutter_blue_plus.dart' show FlutterBluePlus, BluetoothAdapterState;
+import 'package:flutter_blue_plus/flutter_blue_plus.dart'
+    show FlutterBluePlus, BluetoothAdapterState;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:biketunes/providers/bluetooth_provider.dart';
-import 'package:biketunes/services/bluetooth_service.dart';
-import 'package:biketunes/widgets/connection_status_bar.dart';
+import 'package:arcdash/providers/bluetooth_provider.dart';
+import 'package:arcdash/services/bluetooth_service.dart';
+import 'package:arcdash/widgets/connection_status_bar.dart';
+import 'package:arcdash/l10n/app_strings.dart';
+import 'package:arcdash/services/android_permission_service.dart';
+import 'package:arcdash/services/diagnostic_log_exporter.dart';
 
 class ConnectionScreen extends ConsumerStatefulWidget {
   const ConnectionScreen({super.key});
@@ -24,14 +28,30 @@ class _ConnectionScreenState extends ConsumerState<ConnectionScreen> {
 
   Future<void> _startScan() async {
     setState(() => _isScanning = true);
-    // Wait until the BT adapter is on (handles macOS/iOS initialization delay)
-    final adapterState = await FlutterBluePlus.adapterState
-        .firstWhere((s) => s != BluetoothAdapterState.unknown)
-        .timeout(const Duration(seconds: 5), onTimeout: () => BluetoothAdapterState.unavailable);
+
+    // Explicitly request both Bluetooth and Fine Location permissions on Android
+    try {
+      final permService =
+          const AndroidPermissionService(PermissionHandlerRequester());
+      await permService.requestForSdk(33);
+      await permService.requestForSdk(30);
+    } catch (_) {}
+
+    // Wait until the BT adapter is on (handles macOS/iOS/Android initialization delay)
+    final BluetoothAdapterState adapterState;
+    try {
+      adapterState = await FlutterBluePlus.adapterState
+          .firstWhere((s) => s != BluetoothAdapterState.unknown)
+          .timeout(const Duration(seconds: 5),
+              onTimeout: () => BluetoothAdapterState.unavailable);
+    } on UnsupportedError {
+      if (mounted) setState(() => _isScanning = false);
+      return;
+    }
     if (adapterState != BluetoothAdapterState.on) {
       if (mounted) {
         setState(() => _isScanning = false);
-        _showError('Bluetooth is off. Please enable Bluetooth and try again.');
+        _showError(AppStrings.of(context).text(AppText.bluetoothOff));
       }
       return;
     }
@@ -49,7 +69,7 @@ class _ConnectionScreenState extends ConsumerState<ConnectionScreen> {
       if (success) {
         Navigator.of(context).pushReplacementNamed('/dashboard');
       } else {
-        _showError('Connection failed. Make sure the dongle is powered on.');
+        _showError(AppStrings.of(context).text(AppText.connectionFailed));
       }
     }
   }
@@ -66,8 +86,8 @@ class _ConnectionScreenState extends ConsumerState<ConnectionScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final connectionState =
-        ref.watch(connectionStateProvider).valueOrNull ?? DongleConnectionState.idle;
+    final connectionState = ref.watch(connectionStateProvider).valueOrNull ??
+        DongleConnectionState.idle;
     final scanResults = ref.watch(scanResultsProvider).valueOrNull ?? [];
 
     return Scaffold(
@@ -103,7 +123,7 @@ class _ConnectionScreenState extends ConsumerState<ConnectionScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const Text(
-                        'BIKETUNES',
+                        'ARCDASH',
                         style: TextStyle(
                           color: Colors.white,
                           fontSize: 22,
@@ -112,7 +132,7 @@ class _ConnectionScreenState extends ConsumerState<ConnectionScreen> {
                         ),
                       ),
                       Text(
-                        'Tuner Connect',
+                        AppStrings.of(context).text(AppText.controllerConnect),
                         style: TextStyle(
                           color: Colors.white.withOpacity(0.4),
                           fontSize: 12,
@@ -133,9 +153,9 @@ class _ConnectionScreenState extends ConsumerState<ConnectionScreen> {
               // Scan controls
               Row(
                 children: [
-                  const Text(
-                    'NEARBY DONGLES',
-                    style: TextStyle(
+                  Text(
+                    AppStrings.of(context).text(AppText.nearbyDongles),
+                    style: const TextStyle(
                       color: Color(0xFF4A5568),
                       fontSize: 11,
                       fontWeight: FontWeight.w700,
@@ -155,8 +175,8 @@ class _ConnectionScreenState extends ConsumerState<ConnectionScreen> {
                             ),
                           )
                         : const Icon(Icons.refresh, size: 16),
-                    label:
-                        Text(_isScanning ? 'Scanning...' : 'Scan'),
+                    label: Text(AppStrings.of(context).text(
+                        _isScanning ? AppText.searching : AppText.search)),
                     style: TextButton.styleFrom(
                       foregroundColor: const Color(0xFF00E5FF),
                       textStyle: const TextStyle(
@@ -208,7 +228,7 @@ class _ConnectionScreenState extends ConsumerState<ConnectionScreen> {
                     const SizedBox(width: 10),
                     Expanded(
                       child: Text(
-                        'Device names: YuanQ, FOC, FarDriver. Make sure the dongle is plugged into the controller and the bike is powered on.',
+                        'Der Scan zeigt JETZT ALLE Bluetooth-Geräte in deiner Umgebung an (ohne Filter).',
                         style: TextStyle(
                           color: Colors.white.withOpacity(0.4),
                           fontSize: 12,
@@ -217,6 +237,27 @@ class _ConnectionScreenState extends ConsumerState<ConnectionScreen> {
                       ),
                     ),
                   ],
+                ),
+              ),
+              const SizedBox(height: 12),
+              // Diagnostic Log Share Button
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: () {
+                    final diagnostics = ref.read(diagnosticsLogProvider);
+                    DiagnosticLogExporter.shareOrCopy(context, diagnostics);
+                  },
+                  icon: const Icon(Icons.share, size: 18),
+                  label: const Text('Diagnose-Log teilen'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: const Color(0xFF00E5FF),
+                    side: const BorderSide(color: Color(0xFF00E5FF)),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
                 ),
               ),
             ],
@@ -338,7 +379,8 @@ class _EmptyState extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           Text(
-            isScanning ? 'Searching for dongles...' : 'No dongles found',
+            AppStrings.of(context).text(
+                isScanning ? AppText.searchingDongles : AppText.noDongles),
             style: const TextStyle(
               color: Color(0xFF4A5568),
               fontSize: 15,
@@ -349,7 +391,7 @@ class _EmptyState extends StatelessWidget {
           Text(
             isScanning
                 ? 'Make sure your bike is on and\nthe dongle is connected'
-                : 'Tap Scan to search again',
+                : AppStrings.of(context).text(AppText.searchAgain),
             style: const TextStyle(
               color: Color(0xFF2A3548),
               fontSize: 13,

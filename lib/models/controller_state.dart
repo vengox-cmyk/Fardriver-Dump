@@ -1,4 +1,20 @@
-import 'package:biketunes/utils/unit_converter.dart';
+import 'package:arcdash/utils/unit_converter.dart';
+import 'package:arcdash/models/telemetry_quality.dart';
+
+enum ControllerTelemetry {
+  speed,
+  power,
+  voltage,
+  current,
+  soc,
+  range,
+  profile,
+  gear,
+  motorTemperature,
+  controllerTemperature,
+  errors,
+  trip,
+}
 
 enum RideMode { eco, trail, sport, race }
 
@@ -60,18 +76,22 @@ class ControllerState {
   final int rateRatio;
 
   // Tunable parameters (read from controller)
-  final int maxSpeedRaw;       // raw RPM value
-  final int maxLineCurrRaw;    // raw, divide by 4 for amps
+  final int maxSpeedRaw; // raw RPM value
+  final int maxLineCurrRaw; // raw, divide by 4 for amps
   final int zeroBattCoeff;
   final int fullBattCoeff;
 
   // Computed values
   final double powerKw;
   final double batteryPercent;
+  final double rangeKm;
+  final double rangeUncertaintyKm;
+  final double? tripDistanceKm;
 
   // Session state
   final RideMode rideMode;
   final DateTime lastUpdate;
+  final Map<ControllerTelemetry, TelemetrySample> telemetrySamples;
 
   const ControllerState({
     this.speedKph = 0.0,
@@ -99,7 +119,11 @@ class ControllerState {
     this.fullBattCoeff = 590,
     this.powerKw = 0.0,
     this.batteryPercent = 0.0,
+    this.rangeKm = 0.0,
+    this.rangeUncertaintyKm = 0.0,
+    this.tripDistanceKm,
     this.rideMode = RideMode.trail,
+    this.telemetrySamples = const {},
     required this.lastUpdate,
   });
 
@@ -109,7 +133,10 @@ class ControllerState {
 
   double get maxLineCurrA => maxLineCurrRaw / 4.0;
   bool get hasAnyFault =>
-      motorHallError || throttleError || motorTempProtect || controllerTempProtect;
+      motorHallError ||
+      throttleError ||
+      motorTempProtect ||
+      controllerTempProtect;
 
   ControllerState copyWith({
     double? speedKph,
@@ -137,8 +164,12 @@ class ControllerState {
     int? fullBattCoeff,
     double? powerKw,
     double? batteryPercent,
+    double? rangeKm,
+    double? rangeUncertaintyKm,
+    double? tripDistanceKm,
     RideMode? rideMode,
     DateTime? lastUpdate,
+    Map<ControllerTelemetry, TelemetrySample>? telemetrySamples,
   }) {
     return ControllerState(
       speedKph: speedKph ?? this.speedKph,
@@ -167,10 +198,17 @@ class ControllerState {
       fullBattCoeff: fullBattCoeff ?? this.fullBattCoeff,
       powerKw: powerKw ?? this.powerKw,
       batteryPercent: batteryPercent ?? this.batteryPercent,
+      rangeKm: rangeKm ?? this.rangeKm,
+      rangeUncertaintyKm: rangeUncertaintyKm ?? this.rangeUncertaintyKm,
+      tripDistanceKm: tripDistanceKm ?? this.tripDistanceKm,
       rideMode: rideMode ?? this.rideMode,
       lastUpdate: lastUpdate ?? this.lastUpdate,
+      telemetrySamples: telemetrySamples ?? this.telemetrySamples,
     );
   }
+
+  TelemetrySample? sample(ControllerTelemetry telemetry) =>
+      telemetrySamples[telemetry];
 
   /// Returns a new state with speed recalculated from raw RPM.
   ControllerState withMeasureSpeed(int measureSpeed) {

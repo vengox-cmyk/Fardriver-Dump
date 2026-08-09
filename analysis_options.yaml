@@ -9,6 +9,12 @@
 # packages, and plugins designed to encourage good coding practices.
 include: package:flutter_lints/flutter.yaml
 
+analyzer:
+  # The upstream repository is a read-only provenance reference, not part of
+  # the ArcDash Dart package and intentionally retains its original imports.
+  exclude:
+    - reference/upstream/**
+
 linter:
   # The lint rules applied to this project can be customized in the
   # section below to disable rules from the `package:flutter_lints/flutter.yaml`

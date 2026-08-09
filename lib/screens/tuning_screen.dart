@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:biketunes/models/tuning_profile.dart';
-import 'package:biketunes/providers/controller_provider.dart';
-import 'package:biketunes/providers/tuning_provider.dart';
-import 'package:biketunes/utils/unit_converter.dart';
+import 'package:arcdash/models/tuning_profile.dart';
+import 'package:arcdash/providers/controller_provider.dart';
+import 'package:arcdash/providers/tuning_provider.dart';
+import 'package:arcdash/services/profile_tools.dart';
 
 class TuningScreen extends ConsumerWidget {
   const TuningScreen({super.key});
@@ -16,6 +16,14 @@ class TuningScreen extends ConsumerWidget {
     final profile = tuningState.pendingProfile;
     final notifier = ref.read(tuningProvider.notifier);
     final isMoving = controllerState.speedKph > 2.0;
+    final editorValidation = const ProfileValidator().validateParameters({
+      'maxSpeedKph': profile.maxSpeedKph,
+      'maxLineCurrA': profile.maxLineCurrA,
+      'maxPhaseCurrA': profile.maxPhaseCurrA,
+      'regenStrength': profile.regenStrength,
+      'throttleResponse': profile.throttleResponse,
+    });
+    final editorEnabled = editorValidation.valid;
 
     return Scaffold(
       backgroundColor: const Color(0xFF080B0E),
@@ -48,6 +56,21 @@ class TuningScreen extends ConsumerWidget {
               const SizedBox(height: 20),
 
               // Presets
+              if (!editorEnabled)
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  margin: const EdgeInsets.only(bottom: 20),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFF9800).withOpacity(0.08),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(
+                        color: const Color(0xFFFF9800).withOpacity(0.3)),
+                  ),
+                  child: const Text(
+                    'PROFILE EDITOR LOCKED: hardware limits and verified controller data are required.',
+                    style: TextStyle(color: Color(0xFFFF9800), fontSize: 12),
+                  ),
+                ),
               _SectionHeader(title: 'PRESETS'),
               const SizedBox(height: 10),
               _PresetRow(
@@ -64,12 +87,14 @@ class TuningScreen extends ConsumerWidget {
               _TuningSlider(
                 label: 'Max Speed',
                 icon: Icons.speed,
-                value: UnitConverter.kphToMph(profile.maxSpeedKph),
-                min: UnitConverter.kphToMph(10),
-                max: UnitConverter.kphToMph(100),
-                unit: 'mph',
-                displayValue: UnitConverter.kphToMph(profile.maxSpeedKph).toStringAsFixed(0),
-                onChanged: (mph) => notifier.updateMaxSpeed(UnitConverter.mphToKph(mph)),
+                value: profile.maxSpeedKph,
+                min: 10,
+                max: 100,
+                unit: 'km/h',
+                displayValue: profile.maxSpeedKph.toStringAsFixed(0),
+                onChanged: editorEnabled
+                    ? (kph) => notifier.updateMaxSpeed(kph)
+                    : null,
                 accentColor: const Color(0xFF00E5FF),
               ),
               const SizedBox(height: 14),
@@ -82,8 +107,13 @@ class TuningScreen extends ConsumerWidget {
                 min: 5,
                 max: 100,
                 unit: '%',
-                displayValue: (profile.maxPhaseCurrA / 400.0 * 100).clamp(0, 100).toStringAsFixed(0),
-                onChanged: (pct) => notifier.updateMaxPhaseCurr((pct / 100.0 * 400.0).clamp(20, 400)),
+                displayValue: (profile.maxPhaseCurrA / 400.0 * 100)
+                    .clamp(0, 100)
+                    .toStringAsFixed(0),
+                onChanged: editorEnabled
+                    ? (pct) => notifier.updateMaxPhaseCurr(
+                        (pct / 100.0 * 400.0).clamp(20, 400))
+                    : null,
                 accentColor: const Color(0xFF39FF14),
                 warningThreshold: 80,
               ),
@@ -97,8 +127,12 @@ class TuningScreen extends ConsumerWidget {
                 min: 0.7,
                 max: 14.4,
                 unit: 'kW',
-                displayValue: (profile.maxLineCurrA * 72.0 / 1000.0).toStringAsFixed(1),
-                onChanged: (kw) => notifier.updateMaxLineCurr((kw * 1000.0 / 72.0).clamp(10, 200)),
+                displayValue:
+                    (profile.maxLineCurrA * 72.0 / 1000.0).toStringAsFixed(1),
+                onChanged: editorEnabled
+                    ? (kw) => notifier
+                        .updateMaxLineCurr((kw * 1000.0 / 72.0).clamp(10, 200))
+                    : null,
                 accentColor: const Color(0xFFFF9800),
                 warningThreshold: 11.0,
               ),
@@ -109,7 +143,8 @@ class TuningScreen extends ConsumerWidget {
               const SizedBox(height: 10),
               _ThrottleResponseSelector(
                 value: profile.throttleResponse,
-                onChanged: notifier.updateThrottleResponse,
+                onChanged:
+                    editorEnabled ? notifier.updateThrottleResponse : null,
               ),
               const SizedBox(height: 28),
 
@@ -175,8 +210,7 @@ class TuningScreen extends ConsumerWidget {
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    disabledBackgroundColor:
-                        const Color(0xFF2A3548),
+                    disabledBackgroundColor: const Color(0xFF2A3548),
                   ),
                   child: tuningState.isApplying
                       ? const SizedBox(
@@ -236,9 +270,7 @@ class TuningScreen extends ConsumerWidget {
             Text(
               isFullSend ? 'EXTREME WARNING' : 'APPLY CHANGES?',
               style: TextStyle(
-                color: isFullSend
-                    ? const Color(0xFFFF1744)
-                    : Colors.white,
+                color: isFullSend ? const Color(0xFFFF1744) : Colors.white,
                 fontSize: 15,
                 fontWeight: FontWeight.w800,
                 letterSpacing: 1.5,
@@ -261,13 +293,14 @@ class TuningScreen extends ConsumerWidget {
                 '• Void your warranty\n'
                 '• Create dangerously high speeds\n'
                 '• Be illegal on public roads',
-                style: TextStyle(color: Color(0xFFFF9800), fontSize: 13, height: 1.6),
+                style: TextStyle(
+                    color: Color(0xFFFF9800), fontSize: 13, height: 1.6),
               ),
               const SizedBox(height: 12),
             ],
             Text(
               'Writing to: ${profile.name}\n'
-              'Max Speed: ${UnitConverter.kphToMph(profile.maxSpeedKph).toStringAsFixed(0)} mph\n'
+              'Max Speed: ${profile.maxSpeedKph.toStringAsFixed(0)} km/h\n'
               'Peak Torque: ${(profile.maxPhaseCurrA / 400.0 * 100).toStringAsFixed(0)}%\n'
               'Peak Power: ${(profile.maxLineCurrA * 72.0 / 1000.0).toStringAsFixed(1)} kW',
               style: const TextStyle(
@@ -369,7 +402,8 @@ class _WarningBanner extends StatelessWidget {
       ),
       child: const Row(
         children: [
-          Icon(Icons.warning_amber_outlined, color: Color(0xFFFF9800), size: 18),
+          Icon(Icons.warning_amber_outlined,
+              color: Color(0xFFFF9800), size: 18),
           SizedBox(width: 10),
           Expanded(
             child: Text(
@@ -424,14 +458,12 @@ class _PresetRow extends StatelessWidget {
       children: presets.map((p) {
         final isSelected = p.name == selectedName;
         final isFullSend = p.name == 'Full Send';
-        final color = isFullSend
-            ? const Color(0xFFFF1744)
-            : const Color(0xFF00E5FF);
+        final color =
+            isFullSend ? const Color(0xFFFF1744) : const Color(0xFF00E5FF);
 
         return Expanded(
           child: Padding(
-            padding: EdgeInsets.only(
-                right: p == presets.last ? 0 : 8),
+            padding: EdgeInsets.only(right: p == presets.last ? 0 : 8),
             child: GestureDetector(
               onTap: () {
                 HapticFeedback.selectionClick();
@@ -480,7 +512,7 @@ class _TuningSlider extends StatelessWidget {
   final double max;
   final String unit;
   final String displayValue;
-  final ValueChanged<double> onChanged;
+  final ValueChanged<double>? onChanged;
   final Color accentColor;
   final double? warningThreshold;
 
@@ -574,10 +606,12 @@ class _TuningSlider extends StatelessWidget {
               value: value.clamp(min, max),
               min: min,
               max: max,
-              onChanged: (v) {
-                HapticFeedback.selectionClick();
-                onChanged(v);
-              },
+              onChanged: onChanged == null
+                  ? null
+                  : (v) {
+                      HapticFeedback.selectionClick();
+                      onChanged!(v);
+                    },
             ),
           ),
           if (_isWarning)
@@ -586,7 +620,8 @@ class _TuningSlider extends StatelessWidget {
               child: Row(
                 children: [
                   const SizedBox(width: 4),
-                  const Icon(Icons.warning_amber, color: Color(0xFFFF9800), size: 12),
+                  const Icon(Icons.warning_amber,
+                      color: Color(0xFFFF9800), size: 12),
                   const SizedBox(width: 4),
                   const Text(
                     'High — monitor temps closely',
@@ -607,7 +642,7 @@ class _TuningSlider extends StatelessWidget {
 
 class _ThrottleResponseSelector extends StatelessWidget {
   final int value;
-  final ValueChanged<int> onChanged;
+  final ValueChanged<int>? onChanged;
 
   const _ThrottleResponseSelector({
     required this.value,
@@ -630,10 +665,12 @@ class _ThrottleResponseSelector extends StatelessWidget {
           child: Padding(
             padding: EdgeInsets.only(right: val < 2 ? 8 : 0),
             child: GestureDetector(
-              onTap: () {
-                HapticFeedback.selectionClick();
-                onChanged(val);
-              },
+              onTap: onChanged == null
+                  ? null
+                  : () {
+                      HapticFeedback.selectionClick();
+                      onChanged!(val);
+                    },
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 200),
                 padding: const EdgeInsets.symmetric(vertical: 12),

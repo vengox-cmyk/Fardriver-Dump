@@ -6,7 +6,7 @@ plugins {
 }
 
 android {
-    namespace = "com.biketunes.biketunes"
+    namespace = "com.arcdash.arcdash"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -20,21 +20,31 @@ android {
     }
 
     defaultConfig {
-        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId = "com.biketunes.biketunes"
-        // You can update the following values to match your application needs.
-        // For more information, see: https://flutter.dev/to/review-gradle-config.
+        applicationId = "com.arcdash.arcdash"
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
     }
 
+    signingConfigs {
+        create("development") {
+            // Public development key: stable across Docker and GitHub builds so
+            // development APKs can update each other. Never use for production.
+            storeFile = rootProject.file("dev-keystore.jks")
+            storePassword = "arcdash-dev"
+            keyAlias = "arcdash-development"
+            keyPassword = "arcdash-dev"
+        }
+    }
+
     buildTypes {
+        debug {
+            signingConfig = signingConfigs.getByName("development")
+        }
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig = signingConfigs.getByName("debug")
+            // Release signing is intentionally not configured before T082.
+            signingConfig = signingConfigs.getByName("development")
         }
     }
 }

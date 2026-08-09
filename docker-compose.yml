@@ -1,0 +1,22 @@
+services:
+  flutter:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: arcdash-flutter:latest
+    working_dir: /app
+    environment:
+      # Non-interactive / CI-style execution for watch-mode tools.
+      CI: "true"
+    volumes:
+      # Mount the project source (read-write so generated files land in the repo).
+      - .:/app
+      # Persist Dart package cache across runs.
+      - flutter_pub_cache:/root/.pub-cache
+      # Persist Gradle cache across runs (Android builds).
+      - gradle_cache:/root/.gradle
+    command: ["flutter", "--version"]
+
+volumes:
+  flutter_pub_cache:
+  gradle_cache:

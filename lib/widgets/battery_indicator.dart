@@ -4,14 +4,14 @@ class BatteryIndicator extends StatelessWidget {
   final double percentage; // 0–100
   final double voltageV;
   final double? estimatedRangeKm;
-  final bool useMph;
+  final String? rangeStatus;
 
   const BatteryIndicator({
     super.key,
     required this.percentage,
     required this.voltageV,
     this.estimatedRangeKm,
-    this.useMph = false,
+    this.rangeStatus,
   });
 
   Color get _batteryColor {
@@ -94,11 +94,20 @@ class BatteryIndicator extends StatelessWidget {
             if (estimatedRangeKm != null) ...[
               const SizedBox(width: 12),
               Text(
-                '~${useMph ? (estimatedRangeKm! * 0.621371).toStringAsFixed(0) : estimatedRangeKm!.toStringAsFixed(0)} ${useMph ? 'mi' : 'km'}',
+                '~${estimatedRangeKm!.toStringAsFixed(0)} km',
                 style: const TextStyle(
                   color: Color(0xFF8899AA),
                   fontSize: 13,
                   fontWeight: FontWeight.w500,
+                ),
+              ),
+            ] else if (rangeStatus != null) ...[
+              const SizedBox(width: 12),
+              Text(
+                rangeStatus!,
+                style: const TextStyle(
+                  color: Color(0xFF4A5568),
+                  fontSize: 12,
                 ),
               ),
             ],

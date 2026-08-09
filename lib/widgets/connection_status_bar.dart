@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:biketunes/services/bluetooth_service.dart';
+import 'package:arcdash/services/bluetooth_service.dart';
 
 class ConnectionStatusBar extends StatelessWidget {
   final DongleConnectionState state;

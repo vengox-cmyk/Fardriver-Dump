@@ -1,18 +1,25 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'package:biketunes/screens/connection_screen.dart';
-import 'package:biketunes/screens/dashboard_screen.dart';
-import 'package:biketunes/screens/debug_screen.dart';
-import 'package:biketunes/screens/settings_screen.dart';
-import 'package:biketunes/screens/stats_screen.dart';
-import 'package:biketunes/screens/tuning_screen.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:arcdash/screens/connection_screen.dart';
+import 'package:arcdash/screens/app_shell.dart';
+import 'package:arcdash/screens/debug_screen.dart';
+import 'package:arcdash/providers/controller_provider.dart';
+import 'package:arcdash/providers/stats_provider.dart';
+import 'package:arcdash/l10n/app_strings.dart';
 
-class BikeTunesApp extends StatelessWidget {
-  const BikeTunesApp({super.key});
+class ArcDashApp extends ConsumerWidget {
+  final Locale? locale;
+
+  const ArcDashApp({super.key, this.locale});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    // Keep telemetry and session recording active globally
+    ref.watch(statsProvider);
+    ref.watch(controllerProvider);
     // Force dark status bar icons on light backgrounds (none here, but good practice)
     SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
       statusBarColor: Colors.transparent,
@@ -23,16 +30,19 @@ class BikeTunesApp extends StatelessWidget {
     ));
 
     return MaterialApp(
-      title: 'BikeTunes',
+      title: 'ArcDash',
       debugShowCheckedModeBanner: false,
       theme: _buildTheme(),
+      locale: locale ?? const Locale('de'),
+      supportedLocales: AppStrings.supportedLocales,
+      localizationsDelegates: const [
+        AppStrings.delegate,
+        ...GlobalMaterialLocalizations.delegates,
+      ],
       initialRoute: '/dashboard',
       routes: {
         '/': (_) => const ConnectionScreen(),
-        '/dashboard': (_) => const DashboardScreen(),
-        '/tuning': (_) => const TuningScreen(),
-        '/stats': (_) => const StatsScreen(),
-        '/settings': (_) => const SettingsScreen(),
+        '/dashboard': (_) => const AppShell(),
         '/debug': (_) => const DebugScreen(),
       },
     );
@@ -55,44 +65,44 @@ class BikeTunesApp extends StatelessWidget {
         onPrimary: Color(0xFF080B0E),
         onSurface: Colors.white,
       ),
-      textTheme: GoogleFonts.interTextTheme(base.textTheme).copyWith(
-        displayLarge: GoogleFonts.rajdhani(
+      textTheme: base.textTheme.copyWith(
+        displayLarge: const TextStyle(
           fontSize: 72,
           fontWeight: FontWeight.w700,
           color: Colors.white,
           letterSpacing: -2,
         ),
-        displayMedium: GoogleFonts.rajdhani(
+        displayMedium: const TextStyle(
           fontSize: 48,
           fontWeight: FontWeight.w700,
           color: Colors.white,
         ),
-        headlineLarge: GoogleFonts.rajdhani(
+        headlineLarge: const TextStyle(
           fontSize: 32,
           fontWeight: FontWeight.w700,
           color: Colors.white,
           letterSpacing: 1,
         ),
-        headlineMedium: GoogleFonts.inter(
+        headlineMedium: const TextStyle(
           fontSize: 20,
           fontWeight: FontWeight.w700,
           color: Colors.white,
         ),
-        titleLarge: GoogleFonts.inter(
+        titleLarge: const TextStyle(
           fontSize: 16,
           fontWeight: FontWeight.w600,
           color: Colors.white,
         ),
-        bodyLarge: GoogleFonts.inter(
+        bodyLarge: const TextStyle(
           fontSize: 14,
           fontWeight: FontWeight.w400,
           color: Colors.white,
         ),
-        bodyMedium: GoogleFonts.inter(
+        bodyMedium: const TextStyle(
           fontSize: 13,
           color: Colors.white70,
         ),
-        labelSmall: GoogleFonts.inter(
+        labelSmall: const TextStyle(
           fontSize: 10,
           fontWeight: FontWeight.w700,
           letterSpacing: 1.5,
@@ -103,7 +113,7 @@ class BikeTunesApp extends StatelessWidget {
         backgroundColor: const Color(0xFF0D1117),
         foregroundColor: Colors.white,
         elevation: 0,
-        titleTextStyle: GoogleFonts.inter(
+        titleTextStyle: const TextStyle(
           fontSize: 16,
           fontWeight: FontWeight.w800,
           letterSpacing: 3,
@@ -127,10 +137,11 @@ class BikeTunesApp extends StatelessWidget {
         style: ElevatedButton.styleFrom(
           backgroundColor: accentCyan,
           foregroundColor: const Color(0xFF080B0E),
+          minimumSize: const Size(48, 48),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
-          textStyle: GoogleFonts.inter(
+          textStyle: const TextStyle(
             fontWeight: FontWeight.w800,
             letterSpacing: 1.5,
           ),
@@ -152,7 +163,7 @@ class BikeTunesApp extends StatelessWidget {
       ),
       snackBarTheme: SnackBarThemeData(
         backgroundColor: surfaceColor,
-        contentTextStyle: GoogleFonts.inter(color: Colors.white),
+        contentTextStyle: const TextStyle(color: Colors.white),
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       ),
@@ -162,12 +173,12 @@ class BikeTunesApp extends StatelessWidget {
           borderRadius: BorderRadius.circular(16),
           side: const BorderSide(color: Color(0xFF2A3548)),
         ),
-        titleTextStyle: GoogleFonts.inter(
+        titleTextStyle: const TextStyle(
           fontSize: 16,
           fontWeight: FontWeight.w800,
           color: Colors.white,
         ),
-        contentTextStyle: GoogleFonts.inter(
+        contentTextStyle: const TextStyle(
           fontSize: 13,
           color: Colors.white70,
           height: 1.6,
@@ -175,9 +186,7 @@ class BikeTunesApp extends StatelessWidget {
       ),
       switchTheme: SwitchThemeData(
         thumbColor: WidgetStateProperty.resolveWith(
-          (s) => s.contains(WidgetState.selected)
-              ? accentCyan
-              : Colors.grey,
+          (s) => s.contains(WidgetState.selected) ? accentCyan : Colors.grey,
         ),
         trackColor: WidgetStateProperty.resolveWith(
           (s) => s.contains(WidgetState.selected)
@@ -185,7 +194,7 @@ class BikeTunesApp extends StatelessWidget {
               : const Color(0xFF2A3548),
         ),
       ),
-      pageTransitionsTheme: const PageTransitionsTheme(
+      pageTransitionsTheme: PageTransitionsTheme(
         builders: {
           TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
           TargetPlatform.android: FadeUpwardsPageTransitionsBuilder(),

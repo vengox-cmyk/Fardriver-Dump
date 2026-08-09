@@ -183,8 +183,10 @@ class _SpeedometerPainter extends CustomPainter {
       ..style = PaintingStyle.stroke
       ..strokeWidth = 3;
 
-    final inner = center + Offset(math.cos(angle), math.sin(angle)) * (radius - 24);
-    final outer = center + Offset(math.cos(angle), math.sin(angle)) * (radius + 2);
+    final inner =
+        center + Offset(math.cos(angle), math.sin(angle)) * (radius - 24);
+    final outer =
+        center + Offset(math.cos(angle), math.sin(angle)) * (radius + 2);
     canvas.drawLine(inner, outer, markerPaint);
   }
 
@@ -202,8 +204,10 @@ class _SpeedometerPainter extends CustomPainter {
       final angle = _startAngle + _sweepAngle * fraction;
       final isMajor = i % 5 == 0;
       final len = isMajor ? 12.0 : 6.0;
-      final inner = center + Offset(math.cos(angle), math.sin(angle)) * (radius - 24 - len);
-      final outer = center + Offset(math.cos(angle), math.sin(angle)) * (radius - 24);
+      final inner = center +
+          Offset(math.cos(angle), math.sin(angle)) * (radius - 24 - len);
+      final outer =
+          center + Offset(math.cos(angle), math.sin(angle)) * (radius - 24);
       canvas.drawLine(inner, outer, isMajor ? majorTickPaint : tickPaint);
     }
   }

@@ -1,0 +1,371 @@
+//------------------------------------------------
+//--- 010 Editor v15.0 Binary Template
+//
+//      File: fardriver.bt
+//   Authors: Jack Humbert
+//   Version: 1.0.0
+//   Purpose: Decoding Fardriver serial data
+//  Category: 
+// File Mask: 
+//  ID Bytes: 
+//   History: 
+//------------------------------------------------
+
+typedef uint uint32_t;
+typedef int int32_t;
+typedef ushort uint16_t;
+typedef short int16_t;
+typedef ubyte uint8_t;
+typedef byte int8_t;
+
+#include "fardriver.hpp"
+
+local ubyte FlashReadAddr[55] = {
+0xE2, 0xE8, 0xEE, 0x00, 0x06, 0x0C, 0x12, 
+0xE2, 0xE8, 0xEE, 0x18, 0x1E, 0x24, 0x2A, 
+0xE2, 0xE8, 0xEE, 0x30, 0x5D, 0x63, 0x69, 
+0xE2, 0xE8, 0xEE, 0x7C, 0x82, 0x88, 0x8E, 
+0xE2, 0xE8, 0xEE, 0x94, 0x9A, 0xA0, 0xA6, 
+0xE2, 0xE8, 0xEE, 0xAC, 0xB2, 0xB8, 0xBE, 
+0xE2, 0xE8, 0xEE, 0xC4, 0xCA, 0xD0,
+0xE2, 0xE8, 0xEE, 0xD6, 0xDC, 0xF4, 0xFA
+};
+
+// Name[invpintable[id]]
+
+local ubyte invpintable[16] = {
+    0,  // NC
+    10, // PIN24
+    7,  // PIN15
+    3,  // PIN5
+    8,  // PIN17
+    6,  // PIN14
+    2,  // PIN3
+    4,  // PIN8
+    12, // PB4
+    13, // Invalid
+    1,  // PIN2
+    9,  // PIN18
+    5,  // PIN9
+    11, // PD1
+    13, // Invalid
+    13  // Invalid
+};
+
+// local string PINName[16] = {
+//     "0-NC",
+//     "1-PIN2",
+//     "2-PIN3",
+//     "3-PIN5",
+//     "4-PIN8",
+//     "5-PIN9",
+//     "6-PIN14",
+//     "7-PIN15",
+//     "8-PIN17",
+//     "9-PIN18",
+//     "10-PIN24",
+//     "11-PD1",
+//     "12-PB4",
+//     "13-Invalid",
+//     "14-Invalid",
+//     "15-Invalid"
+// };
+
+local ubyte seltable[16] = { 
+    0, 10, 6, 3, 7, 12, 5, 2, 4, 11, 1, 13, 8, 15, 15, 15
+};
+// 0-NC    0
+// 1-PIN2  10
+// 2-PIN3  6
+// 3-PIN5  3
+// 4-PIN8  7
+// 5-PIN9  12
+// 6-PIN14 5
+// 7-PIN15 2
+// 8-PIN17 4
+// 9-PIN18 11
+// 10-PIN24    1
+// 11-PD1  13
+// 12-PB4  8
+// 13-Invalid  15
+
+local ubyte crcTableLo[256] = {
+    0, 192, 193, 1, 195, 3, 2, 194, 198, 6, 7, 199, 5, 197, 196, 4, 204, 12, 13, 205, 15, 207, 206, 14, 10, 202, 203, 11, 201, 9, 8, 200, 216, 24, 25, 217, 27, 219, 218, 26, 30, 222, 223, 31, 221, 29, 28, 220, 20, 212, 213, 21, 215, 23, 22, 214, 210, 18, 19, 211, 17, 209, 208, 16, 240, 48, 49, 241, 51, 243, 242, 50, 54, 246, 247, 55, 245, 53, 52, 244, 60, 252, 253, 61, 255, 63, 62, 254, 250, 58, 59, 251, 57, 249, 248, 56, 40, 232, 233, 41, 235, 43, 42, 234, 238, 46, 47, 239, 45, 237, 236, 44, 228, 36, 37, 229, 39, 231, 230, 38, 34, 226, 227, 35, 225, 33, 32, 224, 160, 96, 97, 161, 99, 163, 162, 98, 102, 166, 167, 103, 165, 101, 100, 164, 108, 172, 173, 109, 175, 111, 110, 174, 170, 106, 107, 171, 105, 169, 168, 104, 120, 184, 185, 121, 187, 123, 122, 186, 190, 126, 127, 191, 125, 189, 188, 124, 180, 116, 117, 181, 119, 183, 182, 118, 114, 178, 179, 115, 177, 113, 112, 176, 80, 144, 145, 81, 147, 83, 82, 146, 150, 86, 87, 151, 85, 149, 148, 84, 156, 92, 93, 157, 95, 159, 158, 94, 90, 154, 155, 91, 153, 89, 88, 152, 136, 72, 73, 137, 75, 139, 138, 74, 78, 142, 143, 79, 141, 77, 76, 140, 68, 132, 133, 69, 135, 71, 70, 134, 130, 66, 67, 131, 65, 129, 128, 64
+};
+local ubyte crcTableHi[256] = {
+    0, 193, 129, 64, 1, 192, 128, 65, 1, 192, 128, 65, 0, 193, 129, 64, 1, 192, 128, 65, 0, 193, 129, 64, 0, 193, 129, 64, 1, 192, 128, 65, 1, 192, 128, 65, 0, 193, 129, 64, 0, 193, 129, 64, 1, 192, 128, 65, 0, 193, 129, 64, 1, 192, 128, 65, 1, 192, 128, 65, 0, 193, 129, 64, 1, 192, 128, 65, 0, 193, 129, 64, 0, 193, 129, 64, 1, 192, 128, 65, 0, 193, 129, 64, 1, 192, 128, 65, 1, 192, 128, 65, 0, 193, 129, 64, 0, 193, 129, 64, 1, 192, 128, 65, 1, 192, 128, 65, 0, 193, 129, 64, 1, 192, 128, 65, 0, 193, 129, 64, 0, 193, 129, 64, 1, 192, 128, 65, 1, 192, 128, 65, 0, 193, 129, 64, 0, 193, 129, 64, 1, 192, 128, 65, 0, 193, 129, 64, 1, 192, 128, 65, 1, 192, 128, 65, 0, 193, 129, 64, 0, 193, 129, 64, 1, 192, 128, 65, 1, 192, 128, 65, 0, 193, 129, 64, 1, 192, 128, 65, 0, 193, 129, 64, 0, 193, 129, 64, 1, 192, 128, 65, 0, 193, 129, 64, 1, 192, 128, 65, 1, 192, 128, 65, 0, 193, 129, 64, 1, 192, 128, 65, 0, 193, 129, 64, 0, 193, 129, 64, 1, 192, 128, 65, 1, 192, 128, 65, 0, 193, 129, 64, 0, 193, 129, 64, 1, 192, 128, 65, 0, 193, 129, 64, 1, 192, 128, 65, 1, 192, 128, 65, 0, 193, 129, 64
+};
+
+ushort CalculateCRC(ubyte data[], ubyte len) {
+    local ubyte num1 = 0x3C; // 60
+    local ubyte num2 = 0x7F; // 127
+    local ubyte index;
+    local ubyte crc_i;
+    for (index = 0; index < len; ++index) {
+        crc_i = num1 ^ data[index];
+        num1 = num2 ^ crcTableHi[crc_i];
+        num2 = crcTableLo[crc_i];
+    }
+    return num1 | (((ushort)num2 << 8) & 0xFF00);
+}
+
+ushort CalculateOldCRC(ubyte data[]) {
+    local ubyte crc = data[0] + data[1] + data[2] + data[3] + data[4] + data[5];
+    return crc | ((ushort)~crc) << 8;
+}
+
+local uint8_t command[8] = { 0xAA, 0x04, ~0x04, 0x01, 0x55, 0x55, 0, 0};
+local ushort crc = CalculateOldCRC(command);
+command[6] = crc & 0xFF;
+command[7] = crc >> 8;
+
+local uint8_t command_26[8] = { 0xAA, 0x04, ~0x04, 0x01, 0x26, 0x26, 0, 0};
+crc = CalculateOldCRC(command_26);
+command_26[6] = crc & 0xFF;
+command_26[7] = crc >> 8;
+
+
+local uint8_t sys_command_5[8] = { 0xAA, 0xC6, 0xA0, 0xA0, 0x88, 0x05, 0, 0};
+crc = CalculateCRC(sys_command_5, 6);
+sys_command_5[6] = crc & 0xFF;
+sys_command_5[7] = crc >> 8;
+
+local uint8_t sys_command_F[8] = { 0xAA, 0xC6, 0xA0, 0xA0, 0x88, 0x0F, 0, 0};
+crc = CalculateCRC(sys_command_F, 6);
+sys_command_F[6] = crc & 0xFF;
+sys_command_F[7] = crc >> 8;
+
+
+local uint8_t sys_command_8[8] = { 0xAA, 0xC6, 0xA0, 0xA0, 0x88, 0x08, 0, 0};
+crc = CalculateCRC(sys_command_8, 6);
+sys_command_8[6] = crc & 0xFF;
+sys_command_8[7] = crc >> 8;
+
+local uint64 packet_start = FTell();
+
+struct {
+    BitfieldDisablePadding();
+    local uint64 start = FTell();
+    ubyte aa;
+    ubyte id : 6;
+    ubyte flags : 2;
+    //local ubyte flag = data[1] & 0xC0;
+    //local ubyte id = 0;
+    local string type = "";
+    if (flags == 2) {
+        if (id < 0x37) {
+        local ubyte lut = FlashReadAddr[id];
+        
+        if (lut == 0xE2) { // repeated often
+            AddrE2 addr;
+            type = Str("  0xE2");
+        }
+        if (lut == 0xE8) { // repeated often
+            //short Voltage <read=Str("%0.1fV", this / 10.0)>; 
+            //short per_mille <read=Str("%0.1f", this * 3.3 * 1.5 / 4096.0)>;
+            //short LineCurrent <read=Str("%0.1fA", this / 4.0)>; // / 4   
+            //local short InPower = Voltage * LineCurrent;
+            AddrE8 addr;
+            type = Str("  0xE8");
+        }
+        if (lut == 0xEE) { // repeated often
+            //BigEndian();
+            //int PhaseACurr : 24 <read=Str("%0.1fA", 125.0 / 64.0 * Sqrt(this))>;
+            //int PhaseCCurr : 24  <read=Str("%0.1fA", 125.0 / 64.0 * Sqrt(this))>;
+            //LittleEndian();
+            AddrEE addr;
+            type = Str("  0xEE %02X %02X", addr.unkEE[0], addr.unkEE[1]);
+        }
+        
+        // less freq updates
+        
+        if (lut == 0x00) {
+            Addr00 addr;
+            type = "0x00";
+        }
+        if (lut == 0x06) {
+            Addr06 addr;
+            type = "0x06";
+        }
+        if (lut == 0x0C) {
+            //short PhaseOffset <read=Str("%0.1fdeg", this / 10.0)>;
+            Addr0C addr;
+            type = Str("0x0C");    
+        }
+        if (lut == 0x12) {
+            //ushort RatedVoltage <read=Str("%0.1fV", this / 10.0)>;
+            Addr12 addr;
+            type = Str("0x12");
+        }
+        if (lut == 0x18) {
+            //ushort RatedSpeed;
+            //ushort MaxLineCurr <read=Str("%0.1fA", this / 4.0)>;
+            Addr18 addr;
+            type = Str("0x18");
+        }
+        if (lut == 0x1E) {
+            //ushort LowVolProtect <read=Str("%0.1fV", this / 10.0)>;
+            //local float LowVolRestore = LowVolProtect / 10.0 + 2.0;
+            //ubyte ModelYear <read=Str("%d", this + 2000)>;
+            Addr1E addr;
+            type = Str("0x1E");
+        }
+        if (lut == 0x24) {
+            //ushort HighVolProtect <read=Str("%0.1fV", this / 10.0)>; // / 10
+            //ushort CustomMaxLineCurr <read=Str("%0.1fA", this / 4.0)>; // / 4
+            //ushort CustomMaxPhaseCurr <read=Str("%0.1fA", this / 4.0)>; // / 4
+            Addr24 addr;
+            type = Str("0x24");
+        }
+        if (lut == 0x2A) {
+            //ushort MaxPhaseCurr <read=Str("%0.1fA", this / 4.0)>; // / 4
+            Addr2A addr;
+            type = Str("0x2A");
+        }
+        if (lut == 0x30) {
+            //ubyte LowSpeedLineCurr <read=Str("%0.1fA", this * 100.0 / 128.8 + 0.5)>; // LowSpeedLineCurr
+            //ubyte MidSpeedLineCurr <read=Str("%0.1fA", this * 100.0 / 128.8 + 0.5)>; // MidSpeedLineCurr
+            //ubyte LowSpeedPhaseCurr <read=Str("%0.1fA", this * 100.0 / 128.8 + 0.5)>; // LowSpeedPhaseCurr
+            //ubyte MidSppedPhaseCurr <read=Str("%0.1fA", this * 100.0 / 128.8 + 0.5)>; // MidSppedPhaseCurr
+            Addr30 addr;
+            type = Str("0x30");
+        }
+        if (lut == 0x5D) {
+            Addr5D addr;
+            type = Str("0x5D");
+        }
+        if (lut == 0x63) {
+            Addr63 addr;
+            //ushort paracnt_0 <read=Str("%0.1f", this / 10.0)>;
+            //ushort paracnt_1 <read=Str("%0.1f", this)>;
+            //ushort paracnt_2 <read=Str("%0.1f", this / 4.0)>;
+            //ushort paracnt_4 <read=Str("%0.1f", this / 4.0)>;
+            type = Str("0x63");
+        }
+        if (lut == 0x69) {
+            Addr69 addr;
+            //ushort DistanceL <read=Str("%0.1fkm", this / 10.0)>; // mileage? 10ths of km
+            local char ParaIndex3 = addr.SpecialCode < '0' || addr.SpecialCode >= 0x7F ? '_' : addr.SpecialCode;
+            if (addr.ParaIndex < 10) {
+                local char ParaIndex2 = addr.ParaIndex + 48;
+            } else if (addr.ParaIndex < 20) {
+                local char ParaIndex2 = addr.ParaIndex + 48 - 10;
+            } else {
+                local char ParaIndex2 = addr.ParaIndex;
+            }
+            type = Str("0x69 DistanceLSB: %0.1f", addr.DistanceLSB / 10.0);
+        }
+        if (lut == 0x7C) {
+            Addr7C addr;
+            // uint TotalTime <read=Str("%0.2fh", this / 60.0)>; // infoc0
+            //ushort DistanceH <read=Str("%0.1fkm", this << 16 / 10.0)>;    
+            type = Str("0x7C Time %0.2f, DistanceMSB: %0.1f", addr.TotalTime / 60.0, addr.DistanceMSB << 16 / 10.0);
+        }
+        if (lut == 0x82) {
+            //ushort ThrottleVoltage <read=Str("%0.2f", this * 0.01)>; // 0x82
+            //ushort HighVolRestore <read=Str("%0.1fV", this / 10.0)>; // 0x83
+            Addr82 addr;
+            type = Str("0x82 Throttle: %0.3fV", addr.ThrottleVoltage * 0.01);
+        }
+        if (lut == 0x88) {
+            Addr88 addr;
+            type = Str("0x88");
+        }
+        if (lut == 0x8E) {
+            Addr8E addr;
+            type = Str("0x8E");
+        }
+        if (lut == 0x94) {
+            Addr94 addr;
+            type = Str("0x94");
+        }
+        if (lut == 0x9A) {
+            Addr9A addr;
+            type = Str("0x9A");
+        }
+        if (lut == 0xA0) {
+            AddrA0 addr;
+            type = "0xA0 Model number"; 
+        }
+        if (lut == 0xA6) {
+            AddrA6 addr;
+            type = "0xA6 Model number 2";
+        }
+        if (lut == 0xAC) {
+            AddrAC addr;
+            type = Str("UnkAC");
+        }
+        if (lut == 0xB2) {
+            AddrB2 addr;
+            type = Str("0xB2");
+        }
+        if (lut == 0xB8) {
+            AddrB8 addr;
+            type = Str("0xB8");
+        }
+        if (lut == 0xBE) {
+            AddrBE addr;
+            type = Str("0xBE");
+        }
+        if (lut == 0xC4) {
+            AddrC4 addr;
+            type = Str("0xC4");
+        }
+        if (lut == 0xCA) {
+            AddrCA addr;
+            type = Str("0xCA");
+        }
+        if (lut == 0xD0) {
+            //ubyte AVGPower <read=Str("%dWh/km", this * 4)>; // DataVoltage1
+            //ubyte AVGSpeed <read=Str("%dkm/h", this)>; // DataVoltage4
+            AddrD0 addr;
+            type = Str("0xD0");
+        }
+        if (lut == 0xD6) {
+            AddrD6 addr;
+            type = "0xD6";
+        }
+        if (lut == 0xDC) {
+            AddrDC addr;
+            type = Str("UnkDC");
+        }
+        if (lut == 0xF4) {
+            //ubyte ManufYear <read=Str("%d", this + 2000)>; // paracnt_6
+            AddrF4 addr;
+            type = Str("0xF4 Motor temp: %d", addr.motor_temp);
+        }
+        if (lut == 0xFA) {
+            AddrFA addr;
+            type = Str("0xFA");
+        }
+        if (!Strcmp(type, "")) {
+            ubyte unk[13];
+            ushort crc;
+            type = Str("%02X: %02X %02X %02X %02X %02X %02X %02X %02X", lut, unk[0], unk[1], unk[2], unk[3], unk[4], unk[5], unk[6], unk[7]);
+        }
+        } else {
+            if (id == 0x37) {
+                // something gather?
+                // only process 512 frames?
+            // BigEndian();
+                short Throttle <read=Str("%f", (-(this >> 1) * 100) / 256.0)>; // purple: Throttle/51, cyan: Weak
+                short Speed <read=Str("%f", 100 - this * 100 / 5000.0)>; // red: Speed/1000
+                short Curr; // blue, Curr/50A
+                short Vol; // black, Vol/5V
+                short Angle; // yellow, Angle/5
+                ubyte Mod; // green
+                ubyte Unk; // dark blue
+            // LittleEndian();
+                ushort crc;
+                type = Str("B7 Data: %0.0f, %0.0f, %0.1fA, %0.1fV, %d, %0.0f", Throttle / 51.0, Speed / 1000.0, Curr / 50.0, Vol / 5.0, Angle / 5, Mod / 0.2);
+            }
+        }
+    } else {
+        // id could be 0-23, handled differently
+        type = "not normal";    
+    }
+    
+    FSeek(start);
+    ubyte data[16];
+    local ushort hash <format=hex> = CalculateCRC(data, 14);
+} packet[(FileSize() - packet_start)/ 16] <read=Str("%s",type), optimize=false>;

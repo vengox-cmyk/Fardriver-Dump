@@ -1,17 +1,18 @@
-# BikeTunes
+# ArcDash
 
-A production-ready Flutter app for tuning FarDriver motor controllers on electric dirt bikes. Connects via Bluetooth BLE UART and implements the reverse-engineered FarDriver serial protocol.
+A Flutter app for read-only monitoring of FarDriver motor controllers on electric dirt bikes. It connects via Bluetooth BLE UART and implements the reverse-engineered FarDriver serial protocol.
+
+> The current development release is read-only. Parameter writes, profile apply,
+> restore, and Street-Legal switching are disabled until the hardware safety and
+> read-back gates are complete.
 
 ## Features
 
 - **Live Telemetry Dashboard** — speed, voltage, current, power, temperatures, battery %
-- **Controller Tuning** — max speed (mph), peak torque (%), peak power (kW), throttle response
-- **Ride Mode Presets** — Eco / Trail / Sport / Race with one-tap apply
 - **Ride Stats** — session log with distance, time, avg/top speed, Wh used
 - **Raw Debug Screen** — live hex packet dump with CRC verification
-- **Stock Backup & Restore** — auto-backup on first connect, one-tap restore
-- **Safety Warnings** — motion lockout on tuning writes, explicit confirmation dialogs
-- **Cross-platform** — iOS, Android, macOS, Windows, Linux
+- **Local Dashboard Layouts** — separate portrait and landscape cockpit layouts
+- **Android-first** — Android is the supported Version-1 target
 
 ## Supported Hardware
 
@@ -42,8 +43,8 @@ Based on the reverse-engineered protocol from [jackhumbert/fardriver-controllers
 
 ```bash
 # 1. Clone the repo
-git clone https://github.com/caydenchapple/Biketunes.git
-cd Biketunes
+git clone <repository-url>
+cd ArcDash
 
 # 2. Install dependencies
 flutter pub get
@@ -60,9 +61,9 @@ flutter run
 `ios/Runner/Info.plist` already includes the required Bluetooth keys:
 ```xml
 <key>NSBluetoothAlwaysUsageDescription</key>
-<string>BikeTunes needs Bluetooth to connect to your FarDriver controller dongle.</string>
+<string>ArcDash needs Bluetooth to connect to your FarDriver controller dongle.</string>
 <key>NSBluetoothPeripheralUsageDescription</key>
-<string>BikeTunes needs Bluetooth to connect to your FarDriver controller dongle.</string>
+<string>ArcDash needs Bluetooth to connect to your FarDriver controller dongle.</string>
 ```
 
 ### macOS Setup
@@ -111,3 +112,19 @@ DongleService (flutter_blue_plus)
 ## License
 
 MIT
+## Development APK
+
+Jeder Push auf `main` fuehrt Tests und einen Android-Debug-Build in der
+gepinnten Docker-Toolchain aus. Bei Erfolg aktualisiert GitHub Actions das
+Prerelease `latest-development` und ersetzt dort
+`ArcDash-development.apk` sowie die SHA-256-Datei.
+
+Das Development-Release ist mit dem festen, oeffentlichen ArcDash-Development-
+Key `android/dev-keystore.jks` signiert. Lokale Docker-Builds und GitHub-Builds
+koennen sich dadurch gegenseitig als Update installieren. Beim ersten Wechsel
+von einer aelteren, zufaellig signierten APK ist einmalig eine Deinstallation
+notwendig; danach bleibt die Signatur stabil.
+
+Der Development-Key ist absichtlich nicht geheim und darf niemals fuer ein
+stabiles Produktionsrelease verwendet werden. Die produktive Signatur wird erst
+nach dem Release-Sicherheitsgate T082 als geschuetztes GitHub Secret eingerichtet.
