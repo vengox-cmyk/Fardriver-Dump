@@ -39,6 +39,62 @@ class DisclaimerShortLine extends StatelessWidget {
       );
 }
 
+/// The two GPS-calibration safety lines (results screen, live view).
+class CalibrationSafetyLines extends StatelessWidget {
+  const CalibrationSafetyLines({super.key, this.compact = false});
+
+  final bool compact;
+
+  @override
+  Widget build(BuildContext context) => Column(
+        key: const ValueKey('calibration-safety'),
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(Disclaimer.calibrationLine,
+              style: TextStyle(fontWeight: FontWeight.w700)),
+          if (!compact) ...[
+            const SizedBox(height: 4),
+            const Text(Disclaimer.ridingWarning),
+          ],
+        ],
+      );
+}
+
+/// Full disclaimer plus the calibration lines; must be accepted once before
+/// the first calibration ride.
+Future<bool> showCalibrationDisclaimer(BuildContext context) async {
+  final accepted = await showDialog<bool>(
+    context: context,
+    builder: (context) => AlertDialog(
+      key: const ValueKey('calibration-disclaimer-dialog'),
+      title: const Text('GPS speed calibration'),
+      content: const SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            DisclaimerText(),
+            SizedBox(height: 12),
+            CalibrationSafetyLines(),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(false),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(
+          key: const ValueKey('calibration-disclaimer-accept'),
+          onPressed: () => Navigator.of(context).pop(true),
+          child: const Text('I understand'),
+        ),
+      ],
+    ),
+  );
+  return accepted == true;
+}
+
 /// Shows the disclaimer once per major version before [child] can be used.
 class DisclaimerGate extends StatefulWidget {
   const DisclaimerGate({super.key, required this.child});

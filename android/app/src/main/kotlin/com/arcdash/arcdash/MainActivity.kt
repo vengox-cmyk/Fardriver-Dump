@@ -2,6 +2,7 @@ package com.arcdash.arcdash
 
 import android.content.Intent
 import android.os.Build
+import android.view.WindowManager
 import androidx.core.content.ContextCompat
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
@@ -26,6 +27,14 @@ class MainActivity : FlutterActivity() {
                     }
                     "stop" -> {
                         stopService(Intent(this, ArcDashForegroundService::class.java))
+                        result.success(null)
+                    }
+                    "keepScreenOn" -> {
+                        if (call.argument<Boolean>("on") == true) {
+                            window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+                        } else {
+                            window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+                        }
                         result.success(null)
                     }
                     else -> result.notImplemented()

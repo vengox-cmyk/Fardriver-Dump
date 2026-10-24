@@ -113,6 +113,8 @@ enum AppText {
   paramOpenFileHint,
   paramCompare,
   paramCompareHint,
+  speedCalibration,
+  speedCalibrationHint,
   paramNoSnapshot,
   paramShareCsv,
   paramCopied,
@@ -310,6 +312,9 @@ const _germanText = {
       'Nur lesen – wird nie auf den Controller geschrieben',
   AppText.paramCompare: 'Parameter vergleichen',
   AppText.paramCompareHint: 'Snapshot, HEB- oder CSV-Dateien gegenüberstellen',
+  AppText.speedCalibration: 'Tacho mit GPS kalibrieren',
+  AppText.speedCalibrationHint:
+      'Kalibrierfahrt: GPS gegen Drehzahl, Vorschlag für RateRatio / SpdPulseNum',
   AppText.paramNoSnapshot:
       'Noch kein vollständiger Snapshot gespeichert. Controller verbinden und einige Sekunden warten.',
   AppText.paramShareCsv: 'CSV teilen',
@@ -491,6 +496,9 @@ const _englishText = {
   AppText.paramOpenFileHint: 'Read-only – never written to the controller',
   AppText.paramCompare: 'Compare parameters',
   AppText.paramCompareHint: 'Compare snapshot, HEB or CSV files',
+  AppText.speedCalibration: 'Calibrate speed (GPS)',
+  AppText.speedCalibrationHint:
+      'Calibration ride: GPS vs motor RPM, suggests RateRatio / SpdPulseNum',
   AppText.paramNoSnapshot:
       'No complete snapshot saved yet. Connect the controller and wait a few seconds.',
   AppText.paramShareCsv: 'Share CSV',

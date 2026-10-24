@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:arcdash/models/controller_state.dart';
+import 'package:arcdash/models/gps_calibration.dart';
 import 'package:arcdash/models/telemetry_quality.dart' as quality;
 import 'package:arcdash/providers/bluetooth_provider.dart';
 import 'package:arcdash/services/bluetooth_service.dart'
@@ -115,6 +116,13 @@ class ControllerNotifier extends StateNotifier<ControllerState> {
   int _packetCount = 0;
   DateTime _lastPacketTime = DateTime.now();
   double _packetRate = 0.0;
+
+  final StreamController<RpmReading> _rpmReadings =
+      StreamController<RpmReading>.broadcast();
+
+  /// Every 0xE2 MeasureSpeed value as it arrives (GPS speed calibration
+  /// averages these into 1 s bins).
+  Stream<RpmReading> get rpmReadings => _rpmReadings.stream;
 
   List<String> get debugPackets => List.unmodifiable(_debugPackets);
   double get packetRate => _packetRate;
@@ -241,11 +249,14 @@ class ControllerNotifier extends StateNotifier<ControllerState> {
           (dtHours > 0 && dtHours < 0.01 && kph > 0 ? kph * dtHours : 0.0);
       next = next.copyWith(
         speedKph: kph,
+        motorRpm: update.measureSpeed,
         tripDistanceKm: newTrip,
         lastUpdate: update.capturedAt,
       );
       record(ControllerTelemetry.speed, kph);
       record(ControllerTelemetry.trip, newTrip);
+      _rpmReadings.add(RpmReading(
+          rpm: update.measureSpeed!.toDouble(), at: update.capturedAt));
     }
     if (update.forward != null) next = next.copyWith(isForward: update.forward);
     if (update.reverse != null && update.reverse!) {
@@ -411,6 +422,7 @@ class ControllerNotifier extends StateNotifier<ControllerState> {
   void dispose() {
     _dataSub?.cancel();
     _connSub?.cancel();
+    _rpmReadings.close();
     super.dispose();
   }
 }

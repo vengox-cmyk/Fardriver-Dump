@@ -41,7 +41,7 @@ jobs:
         id: versioning
         run: |
           COMMITS=$(git rev-list --count HEAD)
-          VERSION="1.1.${COMMITS}"
+          VERSION="1.2.${COMMITS}"
           echo "VERSION=$VERSION" >> $GITHUB_ENV
           echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
           echo "Calculated version: $VERSION"

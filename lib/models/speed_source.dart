@@ -1,77 +1,37 @@
-enum SpeedSource { gps, controller }
+/// Where a displayed speed comes from. FarSure never blends the two: the
+/// controller (BLE) speed and the phone's GPS speed are always shown as
+/// separate, labelled values.
+enum SpeedSource {
+  gps('GPS speed'),
+  controller('Controller speed');
 
+  final String label;
+
+  const SpeedSource(this.label);
+}
+
+/// One GPS fix from the phone, reduced to what speed calibration needs.
 class GpsSpeedSample {
+  /// Doppler ground speed in km/h.
   final double speedKph;
+
+  /// Horizontal position accuracy (1 sigma) in metres.
   final double accuracyMeters;
+
+  /// Speed accuracy (1 sigma) in m/s, or null when the phone does not report
+  /// it (Android < 8 or some chipsets).
+  final double? speedAccuracyMps;
+
+  /// Course over ground in degrees (0..360), or null when unknown.
+  final double? headingDeg;
+
   final DateTime capturedAt;
 
   const GpsSpeedSample({
     required this.speedKph,
     required this.accuracyMeters,
     required this.capturedAt,
+    this.speedAccuracyMps,
+    this.headingDeg,
   });
-}
-
-class SpeedReading {
-  final double speedKph;
-  final SpeedSource source;
-  final DateTime capturedAt;
-
-  const SpeedReading({
-    required this.speedKph,
-    required this.source,
-    required this.capturedAt,
-  });
-}
-
-class SpeedSourceResolver {
-  static const _maxAccuracyMeters = 25.0;
-  static const _maxGpsAge = Duration(seconds: 3);
-  static const _maxAccelerationKphPerSecond = 15.0;
-
-  const SpeedSourceResolver();
-
-  SpeedReading resolve({
-    required DateTime now,
-    required double controllerSpeedKph,
-    GpsSpeedSample? gps,
-    SpeedReading? previous,
-    bool locationPermissionGranted = true,
-  }) {
-    if (gps != null &&
-        locationPermissionGranted &&
-        gps.accuracyMeters <= _maxAccuracyMeters &&
-        now.difference(gps.capturedAt) >= Duration.zero &&
-        now.difference(gps.capturedAt) <= _maxGpsAge &&
-        gps.speedKph.isFinite &&
-        gps.speedKph >= 0 &&
-        _plausibleAcceleration(gps, now, previous)) {
-      return SpeedReading(
-        speedKph: gps.speedKph < 0.5 ? 0 : gps.speedKph,
-        source: SpeedSource.gps,
-        capturedAt: gps.capturedAt,
-      );
-    }
-    return SpeedReading(
-      speedKph: controllerSpeedKph.isFinite && controllerSpeedKph >= 0
-          ? controllerSpeedKph
-          : 0,
-      source: SpeedSource.controller,
-      capturedAt: now,
-    );
-  }
-
-  bool _plausibleAcceleration(
-    GpsSpeedSample current,
-    DateTime now,
-    SpeedReading? previous,
-  ) {
-    if (previous == null || previous.source != SpeedSource.gps) return true;
-    final seconds =
-        current.capturedAt.difference(previous.capturedAt).inMilliseconds /
-            1000;
-    if (seconds <= 0) return true;
-    return (current.speedKph - previous.speedKph).abs() / seconds <=
-        _maxAccelerationKphPerSecond;
-  }
 }
