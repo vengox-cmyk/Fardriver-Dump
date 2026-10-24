@@ -4,7 +4,10 @@ import 'package:package_info_plus/package_info_plus.dart';
 import 'package:arcdash/providers/bluetooth_provider.dart';
 import 'package:arcdash/providers/controller_provider.dart';
 import 'package:arcdash/l10n/app_strings.dart';
+import 'package:arcdash/screens/parameter_compare_screen.dart';
+import 'package:arcdash/screens/parameter_dump_screen.dart';
 import 'package:arcdash/services/diagnostic_log_exporter.dart';
+import 'package:arcdash/services/parameter_dump_io.dart';
 import 'package:arcdash/services/profile_exporter.dart';
 
 class SettingsScreen extends ConsumerWidget {
@@ -55,6 +58,47 @@ class SettingsScreen extends ConsumerWidget {
                 final diagnostics = ref.read(diagnosticsLogProvider);
                 DiagnosticLogExporter.shareOrCopy(context, diagnostics);
               },
+            ),
+            ListTile(
+              leading: const Icon(Icons.table_chart_outlined),
+              title: Text(strings.text(AppText.paramLive)),
+              subtitle: Text(strings.text(AppText.paramLiveHint)),
+              onTap: () async {
+                final dump = await loadLiveParameterDump(ref);
+                if (!context.mounted) return;
+                if (dump == null) {
+                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                      content: Text(strings.text(AppText.paramNoSnapshot))));
+                  return;
+                }
+                Navigator.of(context).push(MaterialPageRoute<void>(
+                    builder: (_) => ParameterDumpScreen(dump: dump)));
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.folder_open),
+              title: Text(strings.text(AppText.paramOpenFile)),
+              subtitle: Text(strings.text(AppText.paramOpenFileHint)),
+              onTap: () async {
+                try {
+                  final dump = await ParameterDumpIo.pickAndParse();
+                  if (dump == null || !context.mounted) return;
+                  Navigator.of(context).push(MaterialPageRoute<void>(
+                      builder: (_) => ParameterDumpScreen(dump: dump)));
+                } catch (e) {
+                  if (!context.mounted) return;
+                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                      content: Text(
+                          '${strings.text(AppText.paramLoadFailed)}: $e')));
+                }
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.compare_arrows),
+              title: Text(strings.text(AppText.paramCompare)),
+              subtitle: Text(strings.text(AppText.paramCompareHint)),
+              onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(
+                  builder: (_) => const ParameterCompareScreen())),
             ),
             const SizedBox(height: 20),
             _SectionTitle(strings.text(AppText.dataManagement)),

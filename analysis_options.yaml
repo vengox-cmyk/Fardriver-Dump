@@ -14,6 +14,12 @@ analyzer:
   # the ArcDash Dart package and intentionally retains its original imports.
   exclude:
     - reference/upstream/**
+    - build/**
+    - android/**
+    - ios/**
+    - windows/**
+    - macos/**
+    - linux/**
 
 linter:
   # The lint rules applied to this project can be customized in the

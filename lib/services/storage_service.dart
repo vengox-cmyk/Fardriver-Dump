@@ -8,6 +8,7 @@ import 'package:arcdash/models/dashboard_layout.dart';
 import 'package:arcdash/services/dashboard_layout_repository.dart';
 import 'package:arcdash/services/versioned_json_repository.dart';
 import 'package:arcdash/services/range_prediction_repository.dart';
+import 'package:arcdash/services/parameter_snapshot_repository.dart';
 import 'package:csv/csv.dart';
 
 const _prefKeyStockBackup = 'stock_backup_json';
@@ -22,6 +23,11 @@ class StorageService {
   DashboardLayoutRepository? _dashboardRepository;
   DashboardLayoutLoadStatus dashboardLayoutStatus =
       DashboardLayoutLoadStatus.missing;
+  ParameterSnapshotRepository? _parameterSnapshots;
+
+  /// Latest complete live parameter snapshot (read-only capture). Null when
+  /// storage has not been initialized (e.g. in widget tests).
+  ParameterSnapshotRepository? get parameterSnapshots => _parameterSnapshots;
 
   Future<void> init() async {
     _prefs = await SharedPreferences.getInstance();
@@ -32,6 +38,20 @@ class StorageService {
       type: DashboardLayoutRepository.documentType,
       schemaVersion: DashboardLayoutRepository.documentVersion,
     ));
+    _parameterSnapshots = ParameterSnapshotRepository(
+      complete: VersionedJsonRepository(
+        store: AtomicJsonFileStore(
+            File('${directory.path}/parameter-snapshot.json')),
+        type: 'arcdash-parameter-snapshot',
+        schemaVersion: 1,
+      ),
+      pending: VersionedJsonRepository(
+        store: AtomicJsonFileStore(
+            File('${directory.path}/parameter-snapshot-pending.json')),
+        type: 'arcdash-parameter-snapshot',
+        schemaVersion: 1,
+      ),
+    );
     final loaded = await _dashboardRepository!.load();
     _dashboardLayout = loaded.layout;
     dashboardLayoutStatus = loaded.status;

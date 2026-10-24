@@ -12,6 +12,7 @@ import 'package:arcdash/utils/unit_converter.dart';
 import 'package:arcdash/utils/packet_parser.dart';
 import 'package:arcdash/utils/packet_framer.dart';
 import 'package:arcdash/services/diagnostic_log.dart';
+import 'package:arcdash/services/parameter_capture.dart';
 import 'package:arcdash/models/range_prediction_state.dart';
 import 'package:arcdash/services/range_prediction_repository.dart';
 
@@ -102,6 +103,7 @@ class ControllerNotifier extends StateNotifier<ControllerState> {
   final StorageService _storage;
   final DiagnosticLog _diagnostics;
   final RangePredictionNotifier? _rangePrediction;
+  final ParameterCaptureService? _parameterCapture;
 
   StreamSubscription? _dataSub;
   StreamSubscription? _connSub;
@@ -120,8 +122,11 @@ class ControllerNotifier extends StateNotifier<ControllerState> {
   String exportDiagnosticJson() => _diagnostics.exportJson();
 
   ControllerNotifier(this._bluetooth, this._storage,
-      {DiagnosticLog? diagnostics, RangePredictionNotifier? rangePrediction})
+      {DiagnosticLog? diagnostics,
+      RangePredictionNotifier? rangePrediction,
+      ParameterCaptureService? parameterCapture})
       : _rangePrediction = rangePrediction,
+        _parameterCapture = parameterCapture,
         _diagnostics = diagnostics ?? DiagnosticLog(),
         super(ControllerState.initial()) {
     _connSub = _bluetooth.connectionStateStream.listen(_onConnectionState);
@@ -147,6 +152,7 @@ class ControllerNotifier extends StateNotifier<ControllerState> {
       _dataSub?.cancel();
       _dataSub = null;
       _framer.reset();
+      _parameterCapture?.reset();
     }
   }
 
@@ -196,6 +202,9 @@ class ControllerNotifier extends StateNotifier<ControllerState> {
       details: {'address': parsed.address, 'length': raw.length, 'hex': hex},
     );
     if (_debugPackets.length > 50) _debugPackets.removeAt(0);
+
+    // Passive parameter capture (listen only, never writes to the controller)
+    _parameterCapture?.addBlock(parsed.address, parsed.rawData);
 
     // Packet rate calculation
     _packetCount++;
@@ -398,6 +407,19 @@ final controllerProvider =
   final storage = ref.watch(storageServiceProvider);
   final diagnostics = ref.watch(diagnosticsLogProvider);
   final rangePrediction = ref.watch(rangePredictionStateProvider.notifier);
+  final parameterCapture = ref.watch(parameterCaptureProvider);
   return ControllerNotifier(bluetooth, storage,
-      diagnostics: diagnostics, rangePrediction: rangePrediction);
+      diagnostics: diagnostics,
+      rangePrediction: rangePrediction,
+      parameterCapture: parameterCapture);
+});
+
+/// Passive capture of the streamed configuration blocks. Persists the latest
+/// complete snapshot via [StorageService.parameterSnapshots].
+final parameterCaptureProvider = Provider<ParameterCaptureService>((ref) {
+  final storage = ref.watch(storageServiceProvider);
+  return ParameterCaptureService(
+    repository: storage.parameterSnapshots,
+    controllerId: () => ref.read(connectedDeviceIdProvider) ?? '',
+  );
 });
