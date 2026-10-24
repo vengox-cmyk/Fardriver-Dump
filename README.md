@@ -14,6 +14,44 @@ A Flutter app for read-only monitoring of FarDriver motor controllers on electri
 - **Local Dashboard Layouts** — separate portrait and landscape cockpit layouts
 - **Android-first** — Android is the supported Version-1 target
 
+## Parameter Dump & Compare (read-only)
+
+ArcDash can save and compare FarDriver controller configurations without
+writing anything to the controller. The only command sent is the existing
+stream-start request; parameters are read from the controller's normal status
+stream.
+
+- **Export parameters to CSV** — Settings → *View parameter snapshot*. While
+  connected, the app collects all config blocks (0x00–0xD0) into a snapshot,
+  stores it on the phone, and lets you share it as a CSV (one row per
+  parameter with raw value, scaled value, unit, and the raw block hex).
+  Block 0x5D is optional: some controllers never send it, so if it has not
+  arrived within the capture timeout the snapshot is saved anyway and the
+  missing block is shown in the app and in the `# missing_optional_blocks`
+  CSV header row. A snapshot missing any other config block is never exported.
+- **Open .heb/CSV files offline** — Settings → *Open HEB/CSV file*. View a
+  FarDriver `.heb` backup or a previously exported CSV without a controller.
+  Files are only read; importing a `.heb` into the controller is disabled.
+- **Compare two configs** — Settings → *Compare parameters*. Pick any two of
+  the saved live snapshot, a `.heb`, or a CSV (e.g. an old backup vs. the
+  current setup) and see changed, added, and removed values; the diff can be
+  shared as CSV.
+- **PC script `tool/fardriver_dump.py`** — Python 3, no dependencies. It works
+  on *files only* and never talks to a controller, so no PC-to-controller
+  cable or dongle is needed. Copy a file from the phone (for example the
+  shared diagnostic log or a `.heb` backup) to a computer and run:
+
+  ```sh
+  python3 tool/fardriver_dump.py log2csv arcdash-diagnostics.txt -o dump.csv
+  python3 tool/fardriver_dump.py heb2csv backup.heb -o backup.csv
+  python3 tool/fardriver_dump.py diff old.heb dump.csv -o diff.csv
+  ```
+
+> **Decodes are unverified.** Parameter names, scaling, and units come from
+> the community reverse-engineered `fardriver.hpp` and have not been verified
+> on real hardware. Raw values and the raw block hex are always included, so
+> rely on those when in doubt.
+
 ## Supported Hardware
 
 The app communicates with **FarDriver ND-series Bluetooth programming dongles** (BLE UART adapters, device names often contain "YuanQ", "FOC", or "FarDriver"). These use BLE UART service:

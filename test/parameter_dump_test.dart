@@ -52,7 +52,8 @@ ParameterDump _liveDump(Map<int, List<int>> blocks) => ParameterDump(
       source: ParameterDumpSource.live,
       sourceLabel: 'live',
       blocks: blocks,
-      requiredBlocks: FardriverParamCatalog.configBlocks,
+      requiredBlocks: FardriverParamCatalog.mandatoryBlocks,
+      optionalBlocks: FardriverParamCatalog.optionalBlocks,
     );
 
 void main() {
@@ -191,16 +192,30 @@ void main() {
       ]);
     });
 
-    test('incomplete snapshots are refused', () {
-      final blocks = Map.of(_hebDump().blocks);
-      final dump = _liveDump(blocks); // no 0x5D
+    test('snapshots missing a mandatory block are refused', () {
+      final blocks = Map.of(_hebDump().blocks)..remove(0x12);
+      blocks[0x5D] = List<int>.filled(12, 1);
+      final dump = _liveDump(blocks);
       expect(dump.isComplete, isFalse);
       expect(
           () => ParameterCsvCodec.encode(dump),
           throwsA(isA<IncompleteSnapshotException>()
-              .having((e) => e.missingBlocks, 'missing', [0x5D])));
+              .having((e) => e.missingBlocks, 'missing', [0x12])));
       expect(ParameterCsvCodec.encode(dump, allowIncomplete: true),
           contains('# complete,no'));
+    });
+
+    test('a live snapshot without optional 0x5D exports and lists it', () {
+      final dump = _liveDump(Map.of(_hebDump().blocks)); // no 0x5D
+      expect(dump.isComplete, isTrue);
+      expect(dump.missingOptionalBlocks, [0x5D]);
+      final csv = ParameterCsvCodec.encode(dump);
+      expect(csv, contains('# complete,yes\n'));
+      expect(csv, contains('# missing_blocks,\n'));
+      expect(csv, contains('# missing_optional_blocks,0x5D\n'));
+      final back = ParameterCsvCodec.decode(csv);
+      expect(back.isComplete, isTrue);
+      expect(back.missingOptionalBlocks, [0x5D]);
     });
 
     test('rejects CSVs that are not ArcDash dumps', () {
@@ -279,6 +294,75 @@ void main() {
       expect(dump.isComplete, isTrue);
       expect(dump.controllerId, 'AA:BB');
       expect(ParameterCsvCodec.encode(dump), contains('# source,live'));
+    });
+
+    test('saves without 0x5D once the capture timeout has passed', () async {
+      final repo = _repository();
+      final start = DateTime.utc(2026, 10, 23, 12);
+      var now = start;
+      final capture = ParameterCaptureService(
+        repository: repo,
+        controllerId: () => 'AA:BB',
+        clock: () => now,
+        timeout: const Duration(seconds: 5),
+      );
+      final heb = _hebDump();
+      for (final address in FardriverParamCatalog.mandatoryBlocks) {
+        capture.addBlock(address, heb.blocks[address]!);
+      }
+      await capture.pendingSave;
+      expect(capture.latest, isNull, reason: 'still waiting for 0x5D');
+
+      now = start.add(const Duration(seconds: 3));
+      capture.addBlock(0x00, heb.blocks[0x00]!); // stream keeps rotating
+      capture.addBlock(0xE2, List<int>.filled(12, 0));
+      await capture.pendingSave;
+      expect(capture.latest, isNull);
+
+      now = start.add(const Duration(seconds: 6));
+      capture.addBlock(0xE8, List<int>.filled(12, 0)); // telemetry only
+      await capture.pendingSave;
+      final saved = await repo.loadComplete();
+      expect(saved, isNotNull);
+      expect(saved!.rawBlocks.containsKey(0x5D), isFalse);
+      expect(saved.metadata['missingOptionalBlocks'], [0x5D]);
+      final dump = ParameterCaptureService.toDump(saved);
+      expect(dump.isComplete, isTrue);
+      expect(dump.missingOptionalBlocks, [0x5D]);
+      expect(ParameterCsvCodec.encode(dump),
+          contains('# missing_optional_blocks,0x5D\n'));
+
+      // 0x5D arriving later replaces the snapshot with the full one.
+      now = start.add(const Duration(seconds: 7));
+      capture.addBlock(0x5D, List<int>.filled(12, 9));
+      await capture.pendingSave;
+      final full = await repo.loadComplete();
+      expect(full!.rawBlocks[0x5D], List<int>.filled(12, 9));
+      expect(
+          ParameterCaptureService.toDump(full).missingOptionalBlocks, isEmpty);
+    });
+
+    test('never saves while a mandatory block is missing', () async {
+      final repo = _repository();
+      final start = DateTime.utc(2026, 10, 23, 12);
+      var now = start;
+      final capture = ParameterCaptureService(
+        repository: repo,
+        controllerId: () => 'x',
+        clock: () => now,
+        timeout: const Duration(seconds: 5),
+      );
+      for (var t = 0; t < 30; t += 2) {
+        now = start.add(Duration(seconds: t));
+        for (final address in FardriverParamCatalog.configBlocks) {
+          if (address == 0xD0) continue;
+          capture.addBlock(address, List<int>.filled(12, 1));
+        }
+        capture.addBlock(0xE2, List<int>.filled(12, 0));
+      }
+      await capture.pendingSave;
+      expect(capture.latest, isNull);
+      expect(await repo.loadComplete(), isNull);
     });
 
     test('reset discards a partial capture', () async {

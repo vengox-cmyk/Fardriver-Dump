@@ -5,6 +5,7 @@
 # source,heb:synthetic_696.heb
 # complete,yes
 # missing_blocks,
+# missing_optional_blocks,
 block,word_address,byte_offset,bits,name,raw_value,scaled_value,unit,enum_label,raw_block_hex,status,note
 0x00,0x00,0,0-15,VolCoeff,12299,12299,,,0B 30 55 7A 9F C4 E9 0E 33 58 7D A2,unverified,
 0x00,0x01,2,0-15,Voltage2Coeff,31317,31317,,,0B 30 55 7A 9F C4 E9 0E 33 58 7D A2,unverified,

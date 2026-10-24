@@ -43,11 +43,15 @@ class ParameterDump {
   final Map<int, List<int>> blocks;
   final List<int> requiredBlocks;
 
+  /// Blocks exported when present but not required for completeness.
+  final List<int> optionalBlocks;
+
   ParameterDump({
     required this.source,
     required this.sourceLabel,
     required Map<int, List<int>> blocks,
     required this.requiredBlocks,
+    this.optionalBlocks = const [],
     this.controllerId = '',
     this.capturedAt,
     this.appVersion = '',
@@ -72,6 +76,10 @@ class ParameterDump {
 
   List<int> get missingBlocks =>
       requiredBlocks.where((b) => !blocks.containsKey(b)).toList();
+
+  /// Optional blocks (0x5D) that were not received. Never blocks export.
+  List<int> get missingOptionalBlocks =>
+      optionalBlocks.where((b) => !blocks.containsKey(b)).toList();
 
   bool get isComplete => missingBlocks.isEmpty;
 

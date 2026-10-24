@@ -131,6 +131,7 @@ enum AppText {
   paramNew,
   paramDifferences,
   paramOnlyOneSide,
+  paramOptionalMissing,
 }
 
 class AppStrings {
@@ -293,6 +294,7 @@ const _germanText = {
   AppText.paramNew: 'Neu',
   AppText.paramDifferences: 'Unterschiede',
   AppText.paramOnlyOneSide: 'nur in einer Quelle',
+  AppText.paramOptionalMissing: 'Optionaler Block nicht empfangen (vom Controller evtl. nie gesendet)',
 };
 
 const _englishText = {
@@ -431,6 +433,7 @@ const _englishText = {
   AppText.paramNew: 'New',
   AppText.paramDifferences: 'Differences',
   AppText.paramOnlyOneSide: 'only in one source',
+  AppText.paramOptionalMissing: 'Optional block not received (controller may never send it)',
 };
 
 const _germanMetrics = {

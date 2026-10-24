@@ -39,7 +39,10 @@ CONFIG_BLOCKS = [
     0x7C, 0x82, 0x88, 0x8E, 0x94, 0x9A, 0xA0, 0xA6, 0xAC, 0xB2, 0xB8, 0xBE,
     0xC4, 0xCA, 0xD0,
 ]
-HEB_BLOCKS = [b for b in CONFIG_BLOCKS if b != 0x5D]
+# 0x5D may never be streamed by some controllers: optional, never required.
+OPTIONAL_BLOCKS = [0x5D]
+HEB_BLOCKS = [b for b in CONFIG_BLOCKS if b not in OPTIONAL_BLOCKS]
+MANDATORY_BLOCKS = HEB_BLOCKS
 HEB_LENGTH = 696
 BLOCK_LENGTH = 12
 
@@ -382,17 +385,24 @@ CATALOG = [
 
 class Dump:
     def __init__(self, blocks, source, controller_id='', capture_time='',
-                 app_version=VERSION, required=None):
+                 app_version=VERSION, required=None, optional=None):
         self.blocks = dict(blocks)
         self.source = source
         self.controller_id = controller_id
         self.capture_time = capture_time
         self.app_version = app_version
-        self.required = list(required if required is not None else CONFIG_BLOCKS)
+        self.required = list(required if required is not None
+                             else MANDATORY_BLOCKS)
+        self.optional = list(optional if optional is not None
+                             else OPTIONAL_BLOCKS)
 
     @property
     def missing(self):
         return [b for b in self.required if b not in self.blocks]
+
+    @property
+    def missing_optional(self):
+        return [b for b in self.optional if b not in self.blocks]
 
 
 # ---------------------------------------------------------------- decoding
@@ -465,6 +475,8 @@ def dump_to_csv(dump: Dump) -> str:
     w.writerow(['# source', dump.source])
     w.writerow(['# complete', 'no' if missing else 'yes'])
     w.writerow(['# missing_blocks', ' '.join(f'0x{b:02X}' for b in missing)])
+    w.writerow(['# missing_optional_blocks',
+                ' '.join(f'0x{b:02X}' for b in dump.missing_optional)])
     w.writerow(CSV_COLUMNS)
     for entry in CATALOG:
         data = dump.blocks.get(entry[0])
@@ -501,10 +513,11 @@ def csv_to_dump(text: str, name='csv') -> Dump:
     if meta.get('ArcDash FarDriver parameter dump') != CSV_FORMAT:
         raise ValueError('missing arcdash-param-csv-v1 header')
     source = meta.get('source', '') or f'csv:{name}'
-    required = HEB_BLOCKS if source.startswith('heb:') else CONFIG_BLOCKS
+    heb = source.startswith('heb:')
     return Dump(blocks, source, meta.get('controller_id', ''),
                 meta.get('capture_time', ''), meta.get('app_version', ''),
-                required)
+                HEB_BLOCKS if heb else MANDATORY_BLOCKS,
+                [] if heb else OPTIONAL_BLOCKS)
 
 
 # ---------------------------------------------------------------- inputs
@@ -514,7 +527,7 @@ def heb_to_dump(data: bytes, name='file.heb') -> Dump:
         raise ValueError(f'HEB must contain {HEB_LENGTH} bytes, got {len(data)}')
     blocks = {addr: data[i * BLOCK_LENGTH:(i + 1) * BLOCK_LENGTH]
               for i, addr in enumerate(HEB_BLOCKS)}
-    return Dump(blocks, f'heb:{name}', required=HEB_BLOCKS)
+    return Dump(blocks, f'heb:{name}', required=HEB_BLOCKS, optional=[])
 
 
 LOG_RE = re.compile(r'^\[(?P<ts>[^\]]+)\]\s+FRAME\s+(?P<details>.*)$')
@@ -623,6 +636,10 @@ def _warn_missing(dump):
         print('warning: missing blocks ' +
               ' '.join(f'0x{b:02X}' for b in dump.missing) +
               ' (dump is incomplete)', file=sys.stderr)
+    if dump.missing_optional:
+        print('note: optional blocks not in log: ' +
+              ' '.join(f'0x{b:02X}' for b in dump.missing_optional),
+              file=sys.stderr)
 
 
 def main(argv=None):
@@ -693,7 +710,12 @@ def _selftest():
         lines.append(f'[2026-01-01T00:00:{index:02d}.000Z] FRAME      '
                      f'address: {addr} | length: 16 | hex: {block_hex(pkt)}')
     log = log_to_dump('\n'.join(lines), 'x.txt')
-    assert log.missing == [], log.missing
+    assert log.missing == [] and log.missing_optional == [], log.missing
+    no5d = log_to_dump('\n'.join(l for l in lines if 'address: 93 ' not in l),
+                       'y.txt')
+    assert no5d.missing == [] and no5d.missing_optional == [0x5D], no5d.missing
+    assert '# missing_optional_blocks,0x5D' in dump_to_csv(no5d)
+    assert csv_to_dump(dump_to_csv(no5d)).missing_optional == [0x5D]
     rows = diff_rows(dump, log)
     assert all(r[0] == 'only_b' for r in rows) and rows, 'log vs heb'
     try:

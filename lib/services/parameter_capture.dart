@@ -13,7 +13,17 @@ import 'package:arcdash/services/snapshot_builder.dart';
 /// [ParameterSnapshotRepository] so it can be exported later while offline.
 class ParameterCaptureService {
   static const source = 'live';
+
+  /// Blocks a snapshot must contain to be saved/exported (0x00-0xD0).
   static final Set<int> requiredBlocks =
+      Set.unmodifiable(FardriverParamCatalog.mandatoryBlocks);
+
+  /// Blocks captured when streamed; if still missing once [timeout] has
+  /// passed since the capture started, the snapshot is saved without them.
+  static final Set<int> optionalBlocks =
+      Set.unmodifiable(FardriverParamCatalog.optionalBlocks);
+
+  static final Set<int> _configBlocks =
       Set.unmodifiable(FardriverParamCatalog.configBlocks);
 
   final ParameterSnapshotRepository? _repository;
@@ -21,6 +31,7 @@ class ParameterCaptureService {
   final DateTime Function() _clock;
   final String appVersion;
   final ParameterSnapshotBuilder _builder;
+  final Duration timeout;
 
   bool _started = false;
   String? _lastSavedSignature;
@@ -36,6 +47,7 @@ class ParameterCaptureService {
   })  : _repository = repository,
         _controllerId = controllerId,
         _clock = clock ?? DateTime.now,
+        timeout = timeout,
         _builder = ParameterSnapshotBuilder(timeout: timeout);
 
   /// Latest complete snapshot captured in this app session (null until done).
@@ -49,13 +61,16 @@ class ParameterCaptureService {
     return _builder.snapshot(at: _clock()).progress;
   }
 
-  /// Feed one parsed status packet. Non-config addresses are ignored.
+  /// Feed one parsed status packet. Non-config packets only advance the
+  /// optional-block timeout; their data is ignored.
   void addBlock(int address, List<int> data) {
-    if (!requiredBlocks.contains(address) ||
-        data.length != FardriverParamCatalog.blockLength) {
+    final now = _clock();
+    final isConfig = _configBlocks.contains(address) &&
+        data.length == FardriverParamCatalog.blockLength;
+    if (!isConfig) {
+      if (_started) _maybeSave(now);
       return;
     }
-    final now = _clock();
     if (!_started) {
       final id = _controllerId().trim();
       _builder.begin(
@@ -66,8 +81,20 @@ class ParameterCaptureService {
       _started = true;
     }
     _builder.addBlock(address: address, bytes: data, at: now);
+    _maybeSave(now);
+  }
+
+  void _maybeSave(DateTime now) {
     final snapshot = _builder.snapshot(at: now);
-    if (!snapshot.isComplete) return;
+    if (!snapshot.isComplete) return; // a mandatory block is still missing
+    final missingOptional = optionalBlocks
+        .where((b) => !snapshot.blocks.containsKey(b))
+        .toList()
+      ..sort();
+    if (missingOptional.isNotEmpty &&
+        now.difference(snapshot.startedAt) < timeout) {
+      return; // give the optional blocks until the capture timeout
+    }
     final signature = _signature(snapshot.blocks);
     if (signature == _lastSavedSignature) return;
     _lastSavedSignature = signature;
@@ -78,6 +105,7 @@ class ParameterCaptureService {
       metadata: {
         'controllerId': snapshot.controllerId,
         'appVersion': appVersion,
+        'missingOptionalBlocks': missingOptional,
       },
       source: source,
       capturedAt: now,
@@ -141,7 +169,11 @@ class ParameterCaptureService {
         source: ParameterDumpSource.live,
         sourceLabel: snapshot.source,
         blocks: snapshot.rawBlocks,
-        requiredBlocks: snapshot.requiredAddresses.toList()..sort(),
+        requiredBlocks: (snapshot.requiredAddresses
+            .where((b) => !optionalBlocks.contains(b))
+            .toList()
+          ..sort()),
+        optionalBlocks: FardriverParamCatalog.optionalBlocks,
         controllerId: (snapshot.metadata['controllerId'] as String?) ?? '',
         capturedAt: snapshot.capturedAt,
         appVersion: (snapshot.metadata['appVersion'] as String?) ?? '',

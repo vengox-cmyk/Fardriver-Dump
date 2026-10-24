@@ -87,6 +87,12 @@ class _ParameterDumpScreenState extends State<ParameterDumpScreen> {
                     Text(dump.capturedAt!.toLocal().toString()),
                   Text('${_all.length} / ${dump.blocks.length} blocks'
                       '${missing.isEmpty ? '' : ' · missing ${missing.map(hexByte).join(' ')}'}'),
+                  if (dump.missingOptionalBlocks.isNotEmpty)
+                    Text(
+                        '${strings.text(AppText.paramOptionalMissing)}: '
+                        '${dump.missingOptionalBlocks.map(hexByte).join(' ')}',
+                        style: const TextStyle(
+                            fontSize: 12, color: Colors.orangeAccent)),
                   const SizedBox(height: 4),
                   Text(strings.text(AppText.paramUnverifiedHint),
                       style:

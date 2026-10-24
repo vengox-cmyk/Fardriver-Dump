@@ -84,6 +84,18 @@ class FardriverParamCatalog {
     0xC4, 0xCA, 0xD0,
   ];
 
+  /// Blocks that may never be streamed by some controllers. A live snapshot
+  /// without them is still exported (listed as missing optional blocks).
+  static const List<int> optionalBlocks = [0x5D];
+
+  /// Config blocks every complete snapshot must contain (0x00-0xD0 without
+  /// the optional ones). Same set as a `.heb` file.
+  static const List<int> mandatoryBlocks = [
+    0x00, 0x06, 0x0C, 0x12, 0x18, 0x1E, 0x24, 0x2A, 0x30, 0x63, 0x69, 0x7C, //
+    0x82, 0x88, 0x8E, 0x94, 0x9A, 0xA0, 0xA6, 0xAC, 0xB2, 0xB8, 0xBE, 0xC4,
+    0xCA, 0xD0,
+  ];
+
   static const int blockLength = 12;
 
   static List<FardriverParamDef> get all => _generatedParams;

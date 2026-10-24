@@ -132,6 +132,10 @@ class ParameterCsvCodec {
       ['# source', dump.sourceLabel],
       ['# complete', missing.isEmpty ? 'yes' : 'no'],
       ['# missing_blocks', missing.map(hexByte).join(' ')],
+      [
+        '# missing_optional_blocks',
+        dump.missingOptionalBlocks.map(hexByte).join(' ')
+      ],
       columns,
     ];
     for (final p in dump.decode()) {
@@ -201,7 +205,10 @@ class ParameterCsvCodec {
       blocks: blocks,
       requiredBlocks: source.startsWith('heb:')
           ? HebFile.blockAddresses
-          : FardriverParamCatalog.configBlocks,
+          : FardriverParamCatalog.mandatoryBlocks,
+      optionalBlocks: source.startsWith('heb:')
+          ? const []
+          : FardriverParamCatalog.optionalBlocks,
       controllerId: meta['controller_id'] ?? '',
       capturedAt: DateTime.tryParse(meta['capture_time'] ?? ''),
       appVersion: meta['app_version'] ?? '',

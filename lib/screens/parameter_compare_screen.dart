@@ -87,6 +87,12 @@ class _ParameterCompareScreenState
                 ? '—'
                 : '${dump.sourceLabel}'
                     '${dump.capturedAt == null ? '' : ' · ${dump.capturedAt!.toLocal()}'}'),
+            if (dump != null && dump.missingOptionalBlocks.isNotEmpty)
+              Text(
+                  '${strings.text(AppText.paramOptionalMissing)}: '
+                  '${dump.missingOptionalBlocks.map(hexByte).join(' ')}',
+                  style: const TextStyle(
+                      fontSize: 12, color: Colors.orangeAccent)),
             Wrap(spacing: 8, children: [
               TextButton.icon(
                 icon: const Icon(Icons.memory),
