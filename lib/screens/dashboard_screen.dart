@@ -865,9 +865,7 @@ class _MetricView extends StatelessWidget {
           ? '65 ± 8 km'
           : '${state.rangeKm.toStringAsFixed(0)} ± ${state.rangeUncertaintyKm.toStringAsFixed(0)} km',
       DashboardMetric.profile => state.rideMode.displayName,
-      DashboardMetric.gear => state.gear == null
-          ? 'N'
-          : !state.isForward
+      DashboardMetric.gear => !state.isForward
               ? 'R'
               : state.gear == 1
                   ? 'N'
@@ -974,8 +972,8 @@ class _SpeedDial extends StatelessWidget {
                         fontWeight: FontWeight.w900,
                         letterSpacing: -3)),
                 const SizedBox(height: 8),
-                Text('km/h',
-                    style: const TextStyle(
+                const Text('km/h',
+                    style: TextStyle(
                         color: Colors.white54,
                         fontSize: 13,
                         fontWeight: FontWeight.w700,

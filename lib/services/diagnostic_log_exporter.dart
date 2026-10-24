@@ -18,14 +18,14 @@ class DiagnosticLogExporter {
       final file = File('${tempDir.path}/arcdash_diagnostic_log.txt');
       await file.writeAsString(text);
 
-      final result = await Share.shareXFiles(
-        [
+      final result = await SharePlus.instance.share(ShareParams(
+        files: [
           XFile(file.path,
               mimeType: 'text/plain', name: 'arcdash_diagnostic_log.txt')
         ],
         subject: 'ArcDash BLE Diagnose-Log',
         text: 'ArcDash BLE Diagnose-Log',
-      );
+      ));
       if (result.status == ShareResultStatus.success) {
         shared = true;
       }

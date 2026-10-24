@@ -29,7 +29,7 @@ void main() {
 
   test('requires fresh consecutive stillness samples and backup', () {
     final now = DateTime.utc(2026, 1, 1);
-    final evaluator = const SafetyEvaluator();
+    const evaluator = SafetyEvaluator();
     final samples = <SafetySample>[
       _sample(now.subtract(const Duration(milliseconds: 200))),
       _sample(now.subtract(const Duration(milliseconds: 100))),

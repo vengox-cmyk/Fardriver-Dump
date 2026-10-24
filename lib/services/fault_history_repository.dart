@@ -63,9 +63,7 @@ class FaultHistoryRepository {
     if (rawBitMask == 0) {
       // Resolve any currently open fault
       for (final event in history) {
-        if (event.resolvedAt == null) {
-          event.resolvedAt = timestamp;
-        }
+        event.resolvedAt ??= timestamp;
       }
     } else {
       // New active fault event

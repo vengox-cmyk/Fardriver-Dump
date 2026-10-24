@@ -14,6 +14,9 @@ class SessionLifecycleService {
   final Duration _idleTimeout;
   final Duration _disconnectGracePeriod;
 
+  /// Configured idle timeout (kept for API compatibility; not used yet).
+  Duration get idleTimeout => _idleTimeout;
+
   late final StreamSubscription<ControllerSessionSnapshot> _subscription;
   final StreamController<RideSession?> _rideSessionController =
       StreamController<RideSession?>.broadcast(sync: true);

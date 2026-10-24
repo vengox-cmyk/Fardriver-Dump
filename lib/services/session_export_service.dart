@@ -28,7 +28,7 @@ class SessionExportService {
   String generateCsvExport(SessionRecord record,
       {bool useGermanLocale = false}) {
     final sep = useGermanLocale ? ';' : ',';
-    final fmtNum = (double val) => useGermanLocale
+    String fmtNum(double val) => useGermanLocale
         ? val.toStringAsFixed(1).replaceAll('.', ',')
         : val.toStringAsFixed(1);
 

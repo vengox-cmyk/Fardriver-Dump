@@ -30,7 +30,7 @@ class BatteryIndicator extends StatelessWidget {
           textBaseline: TextBaseline.alphabetic,
           children: [
             Text(
-              '${percentage.toStringAsFixed(0)}',
+              percentage.toStringAsFixed(0),
               style: TextStyle(
                 color: _batteryColor,
                 fontSize: 48,
@@ -42,7 +42,7 @@ class BatteryIndicator extends StatelessWidget {
             Text(
               '%',
               style: TextStyle(
-                color: _batteryColor.withOpacity(0.7),
+                color: _batteryColor.withValues(alpha: 0.7),
                 fontSize: 22,
                 fontWeight: FontWeight.w600,
               ),
@@ -70,7 +70,7 @@ class BatteryIndicator extends StatelessWidget {
                     borderRadius: BorderRadius.circular(4),
                     boxShadow: [
                       BoxShadow(
-                        color: _batteryColor.withOpacity(0.5),
+                        color: _batteryColor.withValues(alpha: 0.5),
                         blurRadius: 6,
                       ),
                     ],

@@ -253,14 +253,18 @@ class ControllerNotifier extends StateNotifier<ControllerState> {
     }
     if (update.gear != null) next = next.copyWith(gear: update.gear);
     if (update.brake != null) next = next.copyWith(isBraking: update.brake);
-    if (update.motorHallError != null)
+    if (update.motorHallError != null) {
       next = next.copyWith(motorHallError: update.motorHallError);
-    if (update.throttleError != null)
+    }
+    if (update.throttleError != null) {
       next = next.copyWith(throttleError: update.throttleError);
-    if (update.motorTempProtect != null)
+    }
+    if (update.motorTempProtect != null) {
       next = next.copyWith(motorTempProtect: update.motorTempProtect);
-    if (update.controllerTempProtect != null)
+    }
+    if (update.controllerTempProtect != null) {
       next = next.copyWith(controllerTempProtect: update.controllerTempProtect);
+    }
     if (update.gear != null) record(ControllerTelemetry.gear, update.gear!);
     record(ControllerTelemetry.profile, next.rideMode.index);
     if (update.measureSpeed != null) {
@@ -305,10 +309,12 @@ class ControllerNotifier extends StateNotifier<ControllerState> {
       next = next.copyWith(currentA: update.currentA);
       record(ControllerTelemetry.current, update.currentA!);
     }
-    if (update.phaseACurrA != null)
+    if (update.phaseACurrA != null) {
       next = next.copyWith(phaseACurrA: update.phaseACurrA);
-    if (update.phaseCCurrA != null)
+    }
+    if (update.phaseCCurrA != null) {
       next = next.copyWith(phaseCCurrA: update.phaseCCurrA);
+    }
     if (update.motorTempC != null) {
       next = next.copyWith(motorTempC: update.motorTempC);
       record(ControllerTelemetry.motorTemperature, update.motorTempC!);
@@ -322,23 +328,31 @@ class ControllerNotifier extends StateNotifier<ControllerState> {
       record(ControllerTelemetry.controllerTemperature, update.mosTempC!);
     }
 
-    if (update.wheelRadius != null)
+    if (update.wheelRadius != null) {
       next = next.copyWith(wheelRadius: update.wheelRadius);
-    if (update.wheelWidth != null)
+    }
+    if (update.wheelWidth != null) {
       next = next.copyWith(wheelWidth: update.wheelWidth);
-    if (update.wheelRatio != null)
+    }
+    if (update.wheelRatio != null) {
       next = next.copyWith(wheelRatio: update.wheelRatio);
-    if (update.rateRatio != null && update.rateRatio! > 0)
+    }
+    if (update.rateRatio != null && update.rateRatio! > 0) {
       next = next.copyWith(rateRatio: update.rateRatio);
+    }
 
-    if (update.maxSpeed != null)
+    if (update.maxSpeed != null) {
       next = next.copyWith(maxSpeedRaw: update.maxSpeed);
-    if (update.maxLineCurrRaw != null)
+    }
+    if (update.maxLineCurrRaw != null) {
       next = next.copyWith(maxLineCurrRaw: update.maxLineCurrRaw);
-    if (update.zeroBattCoeff != null)
+    }
+    if (update.zeroBattCoeff != null) {
       next = next.copyWith(zeroBattCoeff: update.zeroBattCoeff);
-    if (update.fullBattCoeff != null)
+    }
+    if (update.fullBattCoeff != null) {
       next = next.copyWith(fullBattCoeff: update.fullBattCoeff);
+    }
 
     // Recompute derived fields
     next = next.withComputedFields();

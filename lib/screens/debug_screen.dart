@@ -52,18 +52,18 @@ class DebugScreen extends ConsumerWidget {
         child: Column(
           children: [
             // Legend
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 10, 16, 6),
+            const Padding(
+              padding: EdgeInsets.fromLTRB(16, 10, 16, 6),
               child: Row(
                 children: [
                   _LegendDot(
-                      color: const Color(0xFF00E5FF),
+                      color: Color(0xFF00E5FF),
                       label: 'E2/E8/EE (live data)'),
-                  const SizedBox(width: 16),
+                  SizedBox(width: 16),
                   _LegendDot(
-                      color: const Color(0xFF39FF14), label: 'F4/D6 (temps)'),
-                  const SizedBox(width: 16),
-                  _LegendDot(color: const Color(0xFFFF9800), label: 'other'),
+                      color: Color(0xFF39FF14), label: 'F4/D6 (temps)'),
+                  SizedBox(width: 16),
+                  _LegendDot(color: Color(0xFFFF9800), label: 'other'),
                 ],
               ),
             ),
@@ -130,10 +130,10 @@ class _PacketRow extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 3),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.04),
+        color: color.withValues(alpha: 0.04),
         borderRadius: BorderRadius.circular(6),
         border: Border(
-          left: BorderSide(color: color.withOpacity(0.5), width: 2),
+          left: BorderSide(color: color.withValues(alpha: 0.5), width: 2),
         ),
       ),
       child: Row(
@@ -141,7 +141,7 @@ class _PacketRow extends StatelessWidget {
           Text(
             '$index',
             style: TextStyle(
-              color: color.withOpacity(0.4),
+              color: color.withValues(alpha: 0.4),
               fontSize: 10,
               fontFamily: 'monospace',
             ),

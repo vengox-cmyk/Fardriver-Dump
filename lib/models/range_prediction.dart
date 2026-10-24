@@ -62,7 +62,9 @@ class ConsumptionWindow {
     if (!distanceKm.isFinite ||
         distanceKm <= 0.01 ||
         !netWh.isFinite ||
-        netWh < 0) return;
+        netWh < 0) {
+      return;
+    }
     _whPerKm.add(netWh / distanceKm);
     if (_whPerKm.length > maxSamples) _whPerKm.removeAt(0);
   }
@@ -83,7 +85,9 @@ class CapacityLearner {
     if (!qualified ||
         !dischargedWh.isFinite ||
         dischargedWh < minWh ||
-        dischargedWh > maxWh) return;
+        dischargedWh > maxWh) {
+      return;
+    }
     capacityWh = capacityWh == null
         ? dischargedWh
         : capacityWh! * 0.8 + dischargedWh * 0.2;

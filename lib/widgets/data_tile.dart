@@ -35,13 +35,13 @@ class DataTile extends StatelessWidget {
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
               colors: [
-                const Color(0xFF1A2030).withOpacity(0.9),
-                const Color(0xFF111518).withOpacity(0.95),
+                const Color(0xFF1A2030).withValues(alpha: 0.9),
+                const Color(0xFF111518).withValues(alpha: 0.95),
               ],
             ),
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
-              color: color.withOpacity(0.2),
+              color: color.withValues(alpha: 0.2),
               width: 1,
             ),
           ),
@@ -57,7 +57,7 @@ class DataTile extends StatelessWidget {
                   Text(
                     label,
                     style: TextStyle(
-                      color: color.withOpacity(0.8),
+                      color: color.withValues(alpha: 0.8),
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
                       letterSpacing: 1.2,
@@ -87,7 +87,7 @@ class DataTile extends StatelessWidget {
                   Text(
                     unit,
                     style: TextStyle(
-                      color: Colors.white.withOpacity(0.5),
+                      color: Colors.white.withValues(alpha: 0.5),
                       fontSize: 13,
                       fontWeight: FontWeight.w500,
                     ),

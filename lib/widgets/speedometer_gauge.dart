@@ -152,7 +152,7 @@ class _SpeedometerPainter extends CustomPainter {
 
     // Glow
     final glowPaint = Paint()
-      ..color = arcColor.withOpacity(0.35)
+      ..color = arcColor.withValues(alpha: 0.35)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 30
       ..strokeCap = StrokeCap.round

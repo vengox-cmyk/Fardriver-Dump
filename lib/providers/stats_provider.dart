@@ -129,7 +129,7 @@ class StatsNotifier extends StateNotifier<StatsState> {
       _ref.read(rangePredictionStateProvider.notifier).learnFromSession(
             distanceKm: currentActiveSession.distanceKm,
             totalWhUsed: currentActiveSession.totalWhUsed,
-            socPercent: controller.battCapPercent?.toDouble(),
+            socPercent: controller.battCapPercent.toDouble(),
           );
     }
 

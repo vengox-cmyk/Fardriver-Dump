@@ -3,7 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   final now = DateTime.utc(2026, 8, 2, 12);
-  final resolver = SpeedSourceResolver();
+  const resolver = SpeedSourceResolver();
 
   test('prefers a fresh accurate GPS value', () {
     final result = resolver.resolve(

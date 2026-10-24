@@ -25,7 +25,7 @@ void main() {
   });
 
   test('transaction needs write, ACK and read-back for success', () async {
-    final diff = const RawParameterDiff(
+    const diff = RawParameterDiff(
       name: 'test',
       address: 0x1A,
       before: 0,

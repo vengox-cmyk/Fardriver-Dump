@@ -60,25 +60,25 @@ class RideModeCard extends StatelessWidget {
             end: Alignment.bottomRight,
             colors: isSelected
                 ? [
-                    _accentColor.withOpacity(0.25),
-                    _accentColor.withOpacity(0.08),
+                    _accentColor.withValues(alpha: 0.25),
+                    _accentColor.withValues(alpha: 0.08),
                   ]
                 : [
-                    const Color(0xFF1A2030).withOpacity(0.6),
-                    const Color(0xFF111518).withOpacity(0.7),
+                    const Color(0xFF1A2030).withValues(alpha: 0.6),
+                    const Color(0xFF111518).withValues(alpha: 0.7),
                   ],
           ),
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
             color: isSelected
-                ? _accentColor.withOpacity(0.7)
+                ? _accentColor.withValues(alpha: 0.7)
                 : const Color(0xFF2A3548),
             width: isSelected ? 1.5 : 1,
           ),
           boxShadow: isSelected
               ? [
                   BoxShadow(
-                    color: _accentColor.withOpacity(0.3),
+                    color: _accentColor.withValues(alpha: 0.3),
                     blurRadius: 12,
                     spreadRadius: 0,
                   ),

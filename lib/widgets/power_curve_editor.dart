@@ -18,11 +18,11 @@ class PowerCurveEditor extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
+        const Row(
           children: [
-            const Icon(Icons.show_chart, color: Color(0xFF00E5FF), size: 16),
-            const SizedBox(width: 8),
-            const Text(
+            Icon(Icons.show_chart, color: Color(0xFF00E5FF), size: 16),
+            SizedBox(width: 8),
+            Text(
               'POWER CURVE',
               style: TextStyle(
                 color: Color(0xFF00E5FF),
@@ -41,12 +41,12 @@ class PowerCurveEditor extends StatelessWidget {
               gridData: FlGridData(
                 show: true,
                 drawVerticalLine: true,
-                getDrawingHorizontalLine: (_) => FlLine(
-                  color: const Color(0xFF1A2030),
+                getDrawingHorizontalLine: (_) => const FlLine(
+                  color: Color(0xFF1A2030),
                   strokeWidth: 1,
                 ),
-                getDrawingVerticalLine: (_) => FlLine(
-                  color: const Color(0xFF1A2030),
+                getDrawingVerticalLine: (_) => const FlLine(
+                  color: Color(0xFF1A2030),
                   strokeWidth: 1,
                 ),
               ),
@@ -123,14 +123,14 @@ class PowerCurveEditor extends StatelessWidget {
                       begin: Alignment.topCenter,
                       end: Alignment.bottomCenter,
                       colors: [
-                        const Color(0xFF00E5FF).withOpacity(0.2),
-                        const Color(0xFF00E5FF).withOpacity(0.0),
+                        const Color(0xFF00E5FF).withValues(alpha: 0.2),
+                        const Color(0xFF00E5FF).withValues(alpha: 0.0),
                       ],
                     ),
                   ),
                 ),
               ],
-              lineTouchData: LineTouchData(enabled: false),
+              lineTouchData: const LineTouchData(enabled: false),
             ),
           ),
         ),
@@ -195,7 +195,7 @@ class _PointSlider extends StatelessWidget {
               inactiveTrackColor: const Color(0xFF1A2030),
               thumbColor: const Color(0xFF00E5FF),
               thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 7),
-              overlayColor: const Color(0xFF00E5FF).withOpacity(0.2),
+              overlayColor: const Color(0xFF00E5FF).withValues(alpha: 0.2),
             ),
             child: Slider(
               value: value,

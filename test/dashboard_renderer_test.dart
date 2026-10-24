@@ -26,7 +26,7 @@ void main() {
 
       expect(
           find.text(
-              AppStrings(const Locale('de')).metric(metric.name).toUpperCase()),
+              const AppStrings(Locale('de')).metric(metric.name).toUpperCase()),
           metric == DashboardMetric.speed ? findsNothing : findsOneWidget);
       expect(tester.takeException(), isNull);
     });
@@ -178,7 +178,7 @@ void main() {
     ));
 
     for (final metric in DashboardMetric.values) {
-      expect(find.text(AppStrings(const Locale('de')).metric(metric.name)),
+      expect(find.text(const AppStrings(Locale('de')).metric(metric.name)),
           findsNothing);
     }
     expect(tester.takeException(), isNull);
