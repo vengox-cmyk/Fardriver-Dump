@@ -4,6 +4,7 @@ import 'package:package_info_plus/package_info_plus.dart';
 import 'package:arcdash/providers/bluetooth_provider.dart';
 import 'package:arcdash/providers/controller_provider.dart';
 import 'package:arcdash/l10n/app_strings.dart';
+import 'package:arcdash/providers/locale_provider.dart';
 import 'package:arcdash/screens/parameter_compare_screen.dart';
 import 'package:arcdash/screens/parameter_dump_screen.dart';
 import 'package:arcdash/services/diagnostic_log_exporter.dart';
@@ -29,6 +30,7 @@ class SettingsScreen extends ConsumerWidget {
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
           children: [
             _SectionTitle(strings.text(AppText.display)),
+            const LanguageSelector(),
             const SizedBox(height: 20),
             _SectionTitle(strings.text(AppText.connection)),
             ListTile(
@@ -53,7 +55,7 @@ class SettingsScreen extends ConsumerWidget {
               ),
             ListTile(
               leading: const Icon(Icons.share),
-              title: const Text('Diagnose-Log teilen'),
+              title: Text(strings.text(AppText.shareDiagnosticLog)),
               onTap: () {
                 final diagnostics = ref.read(diagnosticsLogProvider);
                 DiagnosticLogExporter.shareOrCopy(context, diagnostics);
@@ -169,9 +171,8 @@ class SettingsScreen extends ConsumerWidget {
             ),
             ListTile(
               leading: const Icon(Icons.file_upload_outlined),
-              title: const Text('Gelerntes Profil exportieren'),
-              subtitle: const Text(
-                  'Kopiert das gelernte Profil (Spannung & Verbrauch) als JSON'),
+              title: Text(strings.text(AppText.exportLearnedProfile)),
+              subtitle: Text(strings.text(AppText.exportLearnedProfileHint)),
               onTap: () {
                 final repo = ref.read(rangePredictionRepositoryProvider);
                 final profile = calibration ?? repo.loadState(controllerId: '');
@@ -180,9 +181,8 @@ class SettingsScreen extends ConsumerWidget {
             ),
             ListTile(
               leading: const Icon(Icons.file_download_outlined),
-              title: const Text('Profil importieren'),
-              subtitle: const Text(
-                  'Fügt ein vordefiniertes oder geteiltes Profil ein'),
+              title: Text(strings.text(AppText.importProfile)),
+              subtitle: Text(strings.text(AppText.importProfileHint)),
               onTap: () async {
                 final imported =
                     await ProfileExporter.importProfileDialog(context);
@@ -192,10 +192,9 @@ class SettingsScreen extends ConsumerWidget {
                   ref.invalidate(rangePredictionStateProvider);
                   if (context.mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text(
-                            'Profil erfolgreich importiert & gespeichert!'),
-                        backgroundColor: Color(0xFF123328),
+                      SnackBar(
+                        content: Text(strings.text(AppText.profileImported)),
+                        backgroundColor: const Color(0xFF123328),
                       ),
                     );
                   }
@@ -220,7 +219,8 @@ class SettingsScreen extends ConsumerWidget {
                     : '1.0.0';
                 return ListTile(
                   leading: const Icon(Icons.electric_bike_outlined),
-                  title: Text('ArcDash $version Read-only'),
+                  title: Text(
+                      'ArcDash $version ${strings.text(AppText.readOnlyLabel)}'),
                   subtitle: Text(strings.text(AppText.appDescription)),
                 );
               },

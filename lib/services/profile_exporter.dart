@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:arcdash/l10n/app_strings.dart';
 import 'package:arcdash/models/range_prediction_state.dart';
 
 class ProfileExporter {
@@ -8,8 +9,9 @@ class ProfileExporter {
       BuildContext context, RangePredictionState? profile) async {
     if (profile == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-            content: Text('Kein gelerntes Profil vorhanden zum Exportieren.')),
+        SnackBar(
+            content:
+                Text(AppStrings.of(context).text(AppText.noLearnedProfile))),
       );
       return;
     }
@@ -20,10 +22,9 @@ class ProfileExporter {
 
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-              'Profil in die Zwischenablage kopiert! Du kannst es jetzt direkt teilen.'),
-          backgroundColor: Color(0xFF123328),
+        SnackBar(
+          content: Text(AppStrings.of(context).text(AppText.profileCopied)),
+          backgroundColor: const Color(0xFF123328),
         ),
       );
     }
@@ -35,23 +36,23 @@ class ProfileExporter {
     final result = await showDialog<String>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Profil importieren'),
+        title: Text(AppStrings.of(context).text(AppText.importProfile)),
         content: TextField(
           controller: controller,
           maxLines: 8,
-          decoration: const InputDecoration(
-            hintText: 'Füge hier das JSON des gelernten Profils ein...',
-            border: OutlineInputBorder(),
+          decoration: InputDecoration(
+            hintText: AppStrings.of(context).text(AppText.profilePasteHint),
+            border: const OutlineInputBorder(),
           ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(null),
-            child: const Text('Abbrechen'),
+            child: Text(AppStrings.of(context).text(AppText.cancel)),
           ),
           ElevatedButton(
             onPressed: () => Navigator.of(context).pop(controller.text),
-            child: const Text('Importieren'),
+            child: Text(AppStrings.of(context).text(AppText.importAction)),
           ),
         ],
       ),
@@ -69,7 +70,8 @@ class ProfileExporter {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Fehler beim Importieren: $e'),
+            content: Text(
+                '${AppStrings.of(context).text(AppText.importFailed)}: $e'),
             backgroundColor: const Color(0xFFFF5470),
           ),
         );

@@ -109,7 +109,7 @@ class DongleService implements BleTransport {
               ? name
               : (advName.isNotEmpty
                   ? advName
-                  : 'Unbenanntes BLE Gerät ($remoteId)');
+                  : 'Unnamed BLE device ($remoteId)');
 
           final isNew = !results.containsKey(remoteId);
           results[remoteId] = DiscoveredDongle(

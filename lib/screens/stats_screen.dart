@@ -34,22 +34,21 @@ class StatsScreen extends ConsumerWidget {
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh_outlined, size: 20),
-            tooltip: 'Session zurücksetzen',
+            tooltip: strings.text(AppText.resetSession),
             onPressed: () async {
               final confirmed = await showDialog<bool>(
                 context: context,
                 builder: (context) => AlertDialog(
-                  title: const Text('Session zurücksetzen'),
-                  content: const Text(
-                      'Möchtest du die aktuelle Fahrt-Session jetzt beenden und auf 0 zurücksetzen? Die bisherigen Daten werden in der Historie archiviert.'),
+                  title: Text(strings.text(AppText.resetSession)),
+                  content: Text(strings.text(AppText.resetSessionMessage)),
                   actions: [
                     TextButton(
                       onPressed: () => Navigator.of(context).pop(false),
-                      child: const Text('Abbrechen'),
+                      child: Text(strings.text(AppText.cancel)),
                     ),
                     ElevatedButton(
                       onPressed: () => Navigator.of(context).pop(true),
-                      child: const Text('Zurücksetzen'),
+                      child: Text(strings.text(AppText.reset)),
                     ),
                   ],
                 ),
@@ -62,7 +61,7 @@ class StatsScreen extends ConsumerWidget {
           if (session != null)
             IconButton(
               icon: const Icon(Icons.share_outlined, size: 20),
-              tooltip: 'Fahrt exportieren / teilen',
+              tooltip: strings.text(AppText.exportRide),
               onPressed: () async {
                 final path = await ref
                     .read(statsProvider.notifier)
@@ -412,12 +411,12 @@ class _PastSessionCard extends StatelessWidget {
             IconButton(
               icon: const Icon(Icons.share_outlined,
                   size: 18, color: Color(0xFF54E39E)),
-              tooltip: 'Diese Fahrt exportieren / teilen',
+              tooltip: AppStrings.of(context).text(AppText.exportThisRide),
               onPressed: () => _exportJson(context, json, dateStr),
             ),
             const SizedBox(width: 4),
             Text(
-              '${maxSpd.toStringAsFixed(0)}\nkm/h top',
+              '${maxSpd.toStringAsFixed(0)}\n${AppStrings.of(context).text(AppText.kmhTop)}',
               style: const TextStyle(
                 color: Color(0xFF00E5FF),
                 fontSize: 13,
@@ -438,8 +437,9 @@ class _PastSessionCard extends StatelessWidget {
     Clipboard.setData(ClipboardData(text: formatted));
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content:
-            Text('Fahrt ($dateStr) als JSON in die Zwischenablage kopiert!'),
+        content: Text(AppStrings.of(context)
+            .text(AppText.rideCopied)
+            .replaceAll('{date}', dateStr)),
         backgroundColor: const Color(0xFF123328),
       ),
     );
@@ -465,7 +465,9 @@ class _PastSessionCard extends StatelessWidget {
           side: const BorderSide(color: Color(0xFF1A2030)),
         ),
         title: Text(
-          'Fahrtdetails ($dateStr)',
+          AppStrings.of(context)
+              .text(AppText.rideDetails)
+              .replaceAll('{date}', dateStr),
           style: const TextStyle(
               color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
         ),
@@ -474,24 +476,29 @@ class _PastSessionCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _DetailRow(
-                label: 'Distanz', value: '${distKm.toStringAsFixed(2)} km'),
-            _DetailRow(label: 'Fahrzeit', value: _fmt(durSec)),
+                label: AppStrings.of(context).text(AppText.detailDistance),
+                value: '${distKm.toStringAsFixed(2)} km'),
             _DetailRow(
-                label: 'Max. Geschwindigkeit',
+                label: AppStrings.of(context).text(AppText.detailRideTime),
+                value: _fmt(durSec)),
+            _DetailRow(
+                label: AppStrings.of(context).text(AppText.detailTopSpeed),
                 value: '${maxSpd.toStringAsFixed(1)} km/h'),
             _DetailRow(
-                label: 'Durchschnitt',
+                label: AppStrings.of(context).text(AppText.detailAverage),
                 value: '${avgSpd.toStringAsFixed(1)} km/h'),
             _DetailRow(
-                label: 'Verbrauchte Energie',
+                label: AppStrings.of(context).text(AppText.detailEnergy),
                 value: '${wh.toStringAsFixed(1)} Wh'),
-            _DetailRow(label: 'Effizienz / Verbrauch', value: '$whPerKm Wh/km'),
+            _DetailRow(
+                label: AppStrings.of(context).text(AppText.detailEfficiency),
+                value: '$whPerKm Wh/km'),
           ],
         ),
         actions: [
           TextButton.icon(
             icon: const Icon(Icons.share_outlined, size: 18),
-            label: const Text('Exportieren / Kopieren'),
+            label: Text(AppStrings.of(context).text(AppText.exportCopy)),
             onPressed: () {
               Navigator.of(context).pop();
               _exportJson(context, sessionJson, dateStr);
@@ -499,7 +506,7 @@ class _PastSessionCard extends StatelessWidget {
           ),
           ElevatedButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Schließen'),
+            child: Text(AppStrings.of(context).text(AppText.close)),
           ),
         ],
       ),
@@ -559,8 +566,8 @@ class _EmptySession extends StatelessWidget {
           const SizedBox(height: 8),
           Text(
             AppStrings.of(context).text(AppText.connectToTrack),
-            style:
-                TextStyle(color: Colors.white.withValues(alpha: 0.2), fontSize: 13),
+            style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.2), fontSize: 13),
           ),
         ],
       ),

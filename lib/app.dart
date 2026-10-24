@@ -9,6 +9,7 @@ import 'package:arcdash/screens/debug_screen.dart';
 import 'package:arcdash/providers/controller_provider.dart';
 import 'package:arcdash/providers/stats_provider.dart';
 import 'package:arcdash/l10n/app_strings.dart';
+import 'package:arcdash/providers/locale_provider.dart';
 
 class ArcDashApp extends ConsumerWidget {
   final Locale? locale;
@@ -33,7 +34,7 @@ class ArcDashApp extends ConsumerWidget {
       title: 'ArcDash',
       debugShowCheckedModeBanner: false,
       theme: _buildTheme(),
-      locale: locale ?? const Locale('de'),
+      locale: locale ?? ref.watch(localeProvider),
       supportedLocales: AppStrings.supportedLocales,
       localizationsDelegates: const [
         AppStrings.delegate,

@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:arcdash/l10n/app_strings.dart';
 import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
@@ -23,8 +24,8 @@ class DiagnosticLogExporter {
           XFile(file.path,
               mimeType: 'text/plain', name: 'arcdash_diagnostic_log.txt')
         ],
-        subject: 'ArcDash BLE Diagnose-Log',
-        text: 'ArcDash BLE Diagnose-Log',
+        subject: 'ArcDash BLE diagnostic log',
+        text: 'ArcDash BLE diagnostic log',
       ));
       if (result.status == ShareResultStatus.success) {
         shared = true;
@@ -37,10 +38,11 @@ class DiagnosticLogExporter {
       await Clipboard.setData(ClipboardData(text: text));
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Diagnose-Log in Zwischenablage kopiert!'),
-            duration: Duration(seconds: 3),
-            backgroundColor: Color(0xFF00E5FF),
+          SnackBar(
+            content:
+                Text(AppStrings.of(context).text(AppText.diagnosticLogCopied)),
+            duration: const Duration(seconds: 3),
+            backgroundColor: const Color(0xFF00E5FF),
           ),
         );
       }

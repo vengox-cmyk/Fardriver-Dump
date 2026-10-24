@@ -67,9 +67,9 @@ class DiagnosticLog {
 
   String exportAsText({bool redact = false}) {
     final buffer = StringBuffer();
-    buffer.writeln('=== ArcDash Diagnose-Log ===');
-    buffer.writeln('Exportiert: ${DateTime.now().toUtc().toIso8601String()}');
-    buffer.writeln('Anzahl Events: ${_events.length}');
+    buffer.writeln('=== ArcDash diagnostic log ===');
+    buffer.writeln('Exported: ${DateTime.now().toUtc().toIso8601String()}');
+    buffer.writeln('Event count: ${_events.length}');
     buffer.writeln('========================================\n');
     for (final event in _events) {
       final ts = event.timestamp.toUtc().toIso8601String();

@@ -1080,8 +1080,8 @@ class _PowerMeter extends StatelessWidget {
     final normalized = fresh ? (powerKw.abs() / 20).clamp(0.0, 1.0) : 0.0;
     return Semantics(
       label: fresh
-          ? '${regen ? 'Rekuperation' : 'Leistung'} ${powerKw.abs().toStringAsFixed(1)} Kilowatt'
-          : 'Leistung ${_qualityLabel(context, quality)}',
+          ? '${AppStrings.of(context).text(regen ? AppText.regeneration : AppText.power)} ${powerKw.abs().toStringAsFixed(1)} kW'
+          : '${AppStrings.of(context).text(AppText.power)} ${_qualityLabel(context, quality)}',
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [

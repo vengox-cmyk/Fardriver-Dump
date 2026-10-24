@@ -13,6 +13,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/material.dart';
 import 'package:arcdash/widgets/brand_version_label.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:arcdash/models/app_settings.dart';
+import 'package:arcdash/services/app_settings_repository.dart';
+import 'package:arcdash/services/range_prediction_repository.dart';
 
 void main() {
   testWidgets('ArcDash starts on the dashboard route', (tester) async {
@@ -22,7 +25,7 @@ void main() {
           bluetoothServiceProvider.overrideWithValue(_FakeDongleService()),
           storageServiceProvider.overrideWithValue(StorageService()),
         ],
-        child: const ArcDashApp(),
+        child: const ArcDashApp(locale: Locale('de')),
       ),
     );
 
@@ -37,7 +40,7 @@ void main() {
           bluetoothServiceProvider.overrideWithValue(_FakeDongleService()),
           storageServiceProvider.overrideWithValue(StorageService()),
         ],
-        child: const ArcDashApp(),
+        child: const ArcDashApp(locale: Locale('de')),
       ),
     );
 
@@ -46,6 +49,71 @@ void main() {
 
     expect(find.text('FAHRTEN'), findsOneWidget);
     expect(find.text('Cockpit'), findsOneWidget);
+    expect(find.text('Einstellungen'), findsOneWidget);
+  });
+
+  testWidgets('app defaults to English without a saved language choice',
+      (tester) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          bluetoothServiceProvider.overrideWithValue(_FakeDongleService()),
+          storageServiceProvider.overrideWithValue(StorageService()),
+        ],
+        child: const ArcDashApp(),
+      ),
+    );
+
+    expect(find.text('Rides'), findsOneWidget);
+    expect(find.text('Settings'), findsOneWidget);
+    expect(find.text('Einstellungen'), findsNothing);
+  });
+
+  testWidgets('language setting switches live and persists', (tester) async {
+    final storage = _MemorySettingsStorageService();
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          bluetoothServiceProvider.overrideWithValue(_FakeDongleService()),
+          storageServiceProvider.overrideWithValue(storage),
+        ],
+        child: const ArcDashApp(),
+      ),
+    );
+
+    await tester.tap(find.text('Settings'));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Deutsch'));
+    await tester.tap(find.text('Deutsch'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Einstellungen'), findsOneWidget);
+    expect(find.text('Sprache'), findsOneWidget);
+    final saved = storage.appSettings.loadSettings();
+    expect(saved.languageCode, 'de');
+    expect(saved.languageChosen, isTrue);
+
+    await tester.ensureVisible(find.text('English'));
+    await tester.tap(find.text('English'));
+    await tester.pumpAndSettle();
+    expect(find.text('Settings'), findsOneWidget);
+    expect(storage.appSettings.loadSettings().languageCode, 'en');
+  });
+
+  testWidgets('saved explicit German choice is restored on launch',
+      (tester) async {
+    final storage = _MemorySettingsStorageService();
+    storage.appSettings.saveSettings(
+        const AppSettings(languageCode: 'de', languageChosen: true));
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          bluetoothServiceProvider.overrideWithValue(_FakeDongleService()),
+          storageServiceProvider.overrideWithValue(storage),
+        ],
+        child: const ArcDashApp(),
+      ),
+    );
     expect(find.text('Einstellungen'), findsOneWidget);
   });
 
@@ -86,7 +154,7 @@ void main() {
           bluetoothServiceProvider.overrideWithValue(_FakeDongleService()),
           storageServiceProvider.overrideWithValue(StorageService()),
         ],
-        child: const ArcDashApp(),
+        child: const ArcDashApp(locale: Locale('de')),
       ),
     );
 
@@ -106,7 +174,7 @@ void main() {
           bluetoothServiceProvider.overrideWithValue(_FakeDongleService()),
           storageServiceProvider.overrideWithValue(StorageService()),
         ],
-        child: const ArcDashApp(),
+        child: const ArcDashApp(locale: Locale('de')),
       ),
     );
 
@@ -129,7 +197,7 @@ void main() {
           bluetoothServiceProvider.overrideWithValue(_FakeDongleService()),
           storageServiceProvider.overrideWithValue(StorageService()),
         ],
-        child: const ArcDashApp(),
+        child: const ArcDashApp(locale: Locale('de')),
       ),
     );
 
@@ -152,7 +220,7 @@ void main() {
           bluetoothServiceProvider.overrideWithValue(_FakeDongleService()),
           storageServiceProvider.overrideWithValue(StorageService()),
         ],
-        child: const ArcDashApp(),
+        child: const ArcDashApp(locale: Locale('de')),
       ),
     );
 
@@ -183,7 +251,7 @@ void main() {
             bluetoothServiceProvider.overrideWithValue(_FakeDongleService()),
             storageServiceProvider.overrideWithValue(StorageService()),
           ],
-          child: const ArcDashApp(),
+          child: const ArcDashApp(locale: Locale('de')),
         ),
       );
       await tester.pump();
@@ -210,7 +278,7 @@ void main() {
     final materialApp = tester.widget<MaterialApp>(appFinder);
 
     expect(materialApp.supportedLocales, const [Locale('de'), Locale('en')]);
-    expect(materialApp.locale, const Locale('de'));
+    expect(materialApp.locale, const Locale('en'));
   });
 
   test('CRC validates generated packets and rejects mutations', () {
@@ -304,4 +372,12 @@ class _FakeDongleService extends DongleService {
 
   @override
   void dispose() {}
+}
+
+class _MemorySettingsStorageService extends StorageService {
+  final AppSettingsRepository _settings =
+      AppSettingsRepository(storage: MemoryStorage());
+
+  @override
+  AppSettingsRepository get appSettings => _settings;
 }

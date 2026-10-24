@@ -32,15 +32,26 @@ class SessionExportService {
         ? val.toStringAsFixed(1).replaceAll('.', ',')
         : val.toStringAsFixed(1);
 
-    final headers = [
-      'ID',
-      'Startzeit',
-      'Dauer (Min)',
-      'Distanz (km)',
-      'Durchschnitt (km/h)',
-      'Maximal (km/h)',
-      'Netto Energie (Wh)',
-    ].join(sep);
+    final headers = (useGermanLocale
+            ? const [
+                'ID',
+                'Startzeit',
+                'Dauer (Min)',
+                'Distanz (km)',
+                'Durchschnitt (km/h)',
+                'Maximal (km/h)',
+                'Netto Energie (Wh)',
+              ]
+            : const [
+                'ID',
+                'Start time',
+                'Duration (min)',
+                'Distance (km)',
+                'Average (km/h)',
+                'Max (km/h)',
+                'Net energy (Wh)',
+              ])
+        .join(sep);
 
     final values = [
       record.id,

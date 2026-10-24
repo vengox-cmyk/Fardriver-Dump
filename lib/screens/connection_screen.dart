@@ -228,7 +228,8 @@ class _ConnectionScreenState extends ConsumerState<ConnectionScreen> {
                     const SizedBox(width: 10),
                     Expanded(
                       child: Text(
-                        'Der Scan zeigt JETZT ALLE Bluetooth-Geräte in deiner Umgebung an (ohne Filter).',
+                        AppStrings.of(context)
+                            .text(AppText.scanShowsAllDevices),
                         style: TextStyle(
                           color: Colors.white.withValues(alpha: 0.4),
                           fontSize: 12,
@@ -249,7 +250,8 @@ class _ConnectionScreenState extends ConsumerState<ConnectionScreen> {
                     DiagnosticLogExporter.shareOrCopy(context, diagnostics);
                   },
                   icon: const Icon(Icons.share, size: 18),
-                  label: const Text('Diagnose-Log teilen'),
+                  label: Text(
+                      AppStrings.of(context).text(AppText.shareDiagnosticLog)),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: const Color(0xFF00E5FF),
                     side: const BorderSide(color: Color(0xFF00E5FF)),
@@ -390,7 +392,7 @@ class _EmptyState extends StatelessWidget {
           const SizedBox(height: 8),
           Text(
             isScanning
-                ? 'Make sure your bike is on and\nthe dongle is connected'
+                ? AppStrings.of(context).text(AppText.scanningHint)
                 : AppStrings.of(context).text(AppText.searchAgain),
             style: const TextStyle(
               color: Color(0xFF2A3548),

@@ -10,6 +10,7 @@ import 'package:arcdash/services/versioned_json_repository.dart';
 import 'package:arcdash/services/range_prediction_repository.dart';
 import 'package:arcdash/services/parameter_snapshot_repository.dart';
 import 'package:csv/csv.dart';
+import 'package:arcdash/services/app_settings_repository.dart';
 
 const _prefKeyStockBackup = 'stock_backup_json';
 const _prefKeyProfiles = 'tuning_profiles';
@@ -67,6 +68,11 @@ class StorageService {
   /// Gracefully degrades to a no-op store when not initialized (e.g. in tests).
   KeyValueStorage get rangePredictionStorage =>
       SharedPreferencesKeyValueStorage(_initialized ? _prefs : null);
+
+  /// App settings (language etc.) in SharedPreferences. No-op store when not
+  /// initialized (e.g. in widget tests), so defaults apply.
+  AppSettingsRepository get appSettings => AppSettingsRepository(
+      storage: SharedPreferencesKeyValueStorage(_initialized ? _prefs : null));
 
   DashboardLayout loadDashboardLayout() {
     return _dashboardLayout;

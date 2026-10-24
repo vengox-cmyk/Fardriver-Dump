@@ -47,7 +47,7 @@ void main() {
             bluetoothServiceProvider.overrideWithValue(_FakeDongleService()),
             storageServiceProvider.overrideWithValue(StorageService()),
           ],
-          child: const ArcDashApp(),
+          child: const ArcDashApp(locale: Locale('de')),
         ),
       );
 
@@ -66,7 +66,7 @@ void main() {
             bluetoothServiceProvider.overrideWithValue(_FakeDongleService()),
             storageServiceProvider.overrideWithValue(StorageService()),
           ],
-          child: const ArcDashApp(),
+          child: const ArcDashApp(locale: Locale('de')),
         ),
       );
 
@@ -82,7 +82,7 @@ void main() {
             bluetoothServiceProvider.overrideWithValue(_FakeDongleService()),
             storageServiceProvider.overrideWithValue(StorageService()),
           ],
-          child: const ArcDashApp(),
+          child: const ArcDashApp(locale: Locale('de')),
         ),
       );
 
@@ -100,7 +100,7 @@ void main() {
             bluetoothServiceProvider.overrideWithValue(_FakeDongleService()),
             storageServiceProvider.overrideWithValue(StorageService()),
           ],
-          child: const ArcDashApp(),
+          child: const ArcDashApp(locale: Locale('de')),
         ),
       );
 

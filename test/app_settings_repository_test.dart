@@ -15,9 +15,35 @@ void main() {
 
     test('loads default settings when no data is stored', () {
       final settings = settingsRepo.loadSettings();
-      expect(settings.languageCode, 'de');
+      expect(settings.languageCode, 'en');
+      expect(settings.languageChosen, isFalse);
       expect(settings.autoReconnect, isTrue);
       expect(settings.hapticFeedbackEnabled, isTrue);
+    });
+
+    test('old default German without explicit choice migrates to English', () {
+      final legacy = AppSettings.fromJson(const {
+        'languageCode': 'de',
+        'autoReconnect': false,
+        'hapticFeedbackEnabled': true,
+      });
+      expect(legacy.languageCode, 'en');
+      expect(legacy.languageChosen, isFalse);
+      expect(legacy.autoReconnect, isFalse);
+    });
+
+    test('explicitly chosen language is kept across save and load', () {
+      settingsRepo.saveSettings(
+          const AppSettings(languageCode: 'de', languageChosen: true));
+      final loaded = settingsRepo.loadSettings();
+      expect(loaded.languageCode, 'de');
+      expect(loaded.languageChosen, isTrue);
+    });
+
+    test('unsupported stored language falls back to English', () {
+      final settings = AppSettings.fromJson(
+          const {'languageCode': 'fr', 'languageChosen': true});
+      expect(settings.languageCode, 'en');
     });
 
     test('saves and persists settings updates', () {

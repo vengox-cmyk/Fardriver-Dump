@@ -146,7 +146,7 @@ Future<void> _pumpEditor(WidgetTester tester, _RecordingStorage storage,
       bluetoothServiceProvider.overrideWithValue(_FakeDongleService()),
       storageServiceProvider.overrideWithValue(storage),
     ],
-    child: const ArcDashApp(),
+    child: const ArcDashApp(locale: Locale('de')),
   ));
   await tester.tap(find.byTooltip('Dashboard bearbeiten'));
   await tester.pump();
