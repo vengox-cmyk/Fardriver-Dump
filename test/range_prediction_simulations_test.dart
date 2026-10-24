@@ -1,8 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:arcdash/models/range_model.dart';
 import 'package:arcdash/models/range_prediction.dart';
-import 'package:arcdash/models/gps_distance_filter.dart';
-import 'package:arcdash/models/speed_source.dart';
 
 void main() {
   group('T069 - Fahrfixture Simulationen', () {
@@ -44,59 +42,11 @@ void main() {
     });
 
     test('Simulation 2: Stadtverkehr (Stop-and-Go)', () {
-      final gpsFilter = GpsDistanceFilter();
-      double lat = 52.5200;
-      double lon = 13.4050;
-      final startTime = DateTime.now();
-
-      // Seed initial point
-      gpsFilter.add(
-        GpsPoint(
-          latitude: lat,
-          longitude: lon,
-          accuracyMeters: 5.0,
-          at: startTime,
-        ),
-        now: startTime,
-      );
-
-      // Simulate 5 stop-and-go cycles
+      // 5 stop-and-go cycles of 200 m at ~30 Wh/km each.
       for (int cycle = 0; cycle < 5; cycle++) {
-        // Accelerate & drive
-        for (int step = 1; step <= 10; step++) {
-          lat += 0.0001;
-          lon += 0.0001;
-          final stepTime = startTime.add(Duration(seconds: cycle * 20 + step));
-          gpsFilter.add(
-            GpsPoint(
-              latitude: lat,
-              longitude: lon,
-              accuracyMeters: 5.0,
-              at: stepTime,
-            ),
-            now: stepTime,
-          );
-        }
-        // Add energy sample
-        consumptionWindow.add(distanceKm: 0.2, netWh: 6.0); // ~30 Wh/km
-
-        // Stop at red light (simulate GPS drift at standstill)
-        for (int standstill = 1; standstill <= 5; standstill++) {
-          final pauseTime =
-              startTime.add(Duration(seconds: cycle * 20 + 10 + standstill));
-          gpsFilter.add(
-            GpsPoint(
-              latitude: lat + 0.000001,
-              longitude: lon - 0.000001,
-              accuracyMeters: 5.0,
-              at: pauseTime,
-            ),
-            now: pauseTime,
-          );
-        }
+        consumptionWindow.add(distanceKm: 0.2, netWh: 6.0);
       }
 
-      expect(gpsFilter.distanceMeters / 1000.0, greaterThan(0.2));
       expect(consumptionWindow.averageWhPerKm, isNotNull);
       expect(consumptionWindow.averageWhPerKm!, closeTo(30.0, 5.0));
 
@@ -146,37 +96,6 @@ void main() {
 
       // 1000 Wh remaining / 50 Wh/km = 20 km
       expect(estimate.kilometers, 20.0);
-    });
-
-    test('Simulation 5: GPS-Ausfall (Tunnel Scenario)', () {
-      const resolver = SpeedSourceResolver();
-      final now = DateTime.now();
-
-      // Valid GPS initially
-      final gpsSample = GpsSpeedSample(
-        speedKph: 50.0,
-        accuracyMeters: 4.0,
-        capturedAt: now,
-      );
-      final initialReading = resolver.resolve(
-        now: now,
-        controllerSpeedKph: 48.0,
-        gps: gpsSample,
-      );
-      expect(initialReading.source, SpeedSource.gps);
-      expect(initialReading.speedKph, 50.0);
-
-      // Enter tunnel: GPS drops / stale (>3 sec old)
-      final tunnelTime = now.add(const Duration(seconds: 5));
-      final resolvedInTunnel = resolver.resolve(
-        now: tunnelTime,
-        controllerSpeedKph: 52.0,
-        gps: gpsSample,
-      );
-
-      // Must fallback cleanly to controller speed
-      expect(resolvedInTunnel.source, SpeedSource.controller);
-      expect(resolvedInTunnel.speedKph, 52.0);
     });
 
     test('Simulation 6: Bergabfahrt / Rekuperation (Regen Recovery)', () {

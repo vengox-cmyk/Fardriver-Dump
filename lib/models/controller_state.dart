@@ -52,6 +52,9 @@ extension RideModeName on RideMode {
 class ControllerState {
   // Live telemetry
   final double speedKph;
+
+  /// Raw motor rpm from 0xE2 MeasureSpeed (speedKph is derived from it).
+  final int motorRpm;
   final double voltageV;
   final double currentA;
   final double phaseACurrA;
@@ -95,6 +98,7 @@ class ControllerState {
 
   const ControllerState({
     this.speedKph = 0.0,
+    this.motorRpm = 0,
     this.voltageV = 0.0,
     this.currentA = 0.0,
     this.phaseACurrA = 0.0,
@@ -140,6 +144,7 @@ class ControllerState {
 
   ControllerState copyWith({
     double? speedKph,
+    int? motorRpm,
     double? voltageV,
     double? currentA,
     double? phaseACurrA,
@@ -173,6 +178,7 @@ class ControllerState {
   }) {
     return ControllerState(
       speedKph: speedKph ?? this.speedKph,
+      motorRpm: motorRpm ?? this.motorRpm,
       voltageV: voltageV ?? this.voltageV,
       currentA: currentA ?? this.currentA,
       phaseACurrA: phaseACurrA ?? this.phaseACurrA,
@@ -219,7 +225,8 @@ class ControllerState {
       wheelRatio: wheelRatio,
       rateRatio: rateRatio,
     );
-    return copyWith(speedKph: kph, lastUpdate: DateTime.now());
+    return copyWith(
+        speedKph: kph, motorRpm: measureSpeed, lastUpdate: DateTime.now());
   }
 
   /// Returns a new state with power and battery % recomputed.

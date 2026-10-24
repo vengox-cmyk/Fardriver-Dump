@@ -8,6 +8,7 @@ import 'package:arcdash/providers/locale_provider.dart';
 import 'package:arcdash/screens/about_screen.dart';
 import 'package:arcdash/screens/parameter_compare_screen.dart';
 import 'package:arcdash/screens/parameter_dump_screen.dart';
+import 'package:arcdash/screens/speed_calibration_screen.dart';
 import 'package:arcdash/services/diagnostic_log_exporter.dart';
 import 'package:arcdash/services/parameter_dump_io.dart';
 import 'package:arcdash/services/profile_exporter.dart';
@@ -102,6 +103,14 @@ class SettingsScreen extends ConsumerWidget {
               subtitle: Text(strings.text(AppText.paramCompareHint)),
               onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(
                   builder: (_) => const ParameterCompareScreen())),
+            ),
+            ListTile(
+              key: const ValueKey('speed-calibration-tile'),
+              leading: const Icon(Icons.speed),
+              title: Text(strings.text(AppText.speedCalibration)),
+              subtitle: Text(strings.text(AppText.speedCalibrationHint)),
+              onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(
+                  builder: (_) => const SpeedCalibrationScreen())),
             ),
             const SizedBox(height: 20),
             _SectionTitle(strings.text(AppText.dataManagement)),

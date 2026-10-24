@@ -28,6 +28,34 @@ class Disclaimer {
   static const shortLine =
       'Informational only, verify before use. Not affiliated with FarDriver.';
 
+  /// Extra lines for the GPS speed calibration (v1.2).
+  static const calibrationLine =
+      'Verify the suggested value. Speed display only; obey speed laws.';
+  static const ridingWarning =
+      "Don't look at or handle the phone while riding. Mount it, only glance "
+      'at it, and enter DKD numbers after you have stopped somewhere safe.';
+
+  /// SharedPreferences key: the calibration notice was accepted once.
+  static const calibrationPrefKey = 'calibration_disclaimer_accepted';
+
+  static Future<bool> calibrationNeedsAcceptance() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      return prefs.getBool(calibrationPrefKey) != true;
+    } on Object {
+      return true;
+    }
+  }
+
+  static Future<void> acceptCalibration() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool(calibrationPrefKey, true);
+    } on Object {
+      // Not persisted; shown again before the next calibration.
+    }
+  }
+
   static const credit = 'Based on ArcDash / Biketunes by caydenchapple';
 
   /// SharedPreferences key holding the major version whose notice was accepted.
