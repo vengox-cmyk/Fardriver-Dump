@@ -7,6 +7,7 @@ import 'package:arcdash/services/parameter_capture.dart';
 import 'package:arcdash/services/parameter_csv.dart';
 import 'package:arcdash/services/parameter_dump.dart';
 import 'package:arcdash/services/parameter_dump_io.dart';
+import 'package:arcdash/widgets/disclaimer_gate.dart';
 
 /// Loads the latest saved live snapshot, falling back to the in-memory one.
 Future<ParameterDump?> loadLiveParameterDump(WidgetRef ref) async {
@@ -17,9 +18,13 @@ Future<ParameterDump?> loadLiveParameterDump(WidgetRef ref) async {
   return latest == null ? null : ParameterCaptureService.toDump(latest);
 }
 
-/// Compare two dumps (live snapshot, .heb or ArcDash CSV). Read-only.
+/// Compare two dumps (live snapshot, .heb or FarSure/ArcDash CSV). Read-only.
 class ParameterCompareScreen extends ConsumerStatefulWidget {
-  const ParameterCompareScreen({super.key});
+  const ParameterCompareScreen({super.key, this.initialA, this.initialB});
+
+  /// Pre-loaded sources (tests, or opening a compare from another screen).
+  final ParameterDump? initialA;
+  final ParameterDump? initialB;
 
   @override
   ConsumerState<ParameterCompareScreen> createState() =>
@@ -28,8 +33,8 @@ class ParameterCompareScreen extends ConsumerStatefulWidget {
 
 class _ParameterCompareScreenState
     extends ConsumerState<ParameterCompareScreen> {
-  ParameterDump? _a;
-  ParameterDump? _b;
+  late ParameterDump? _a = widget.initialA;
+  late ParameterDump? _b = widget.initialB;
   bool _showAll = false;
 
   Future<void> _load(bool isA, bool live) async {
@@ -68,8 +73,8 @@ class _ParameterCompareScreenState
     await ParameterDumpIo.shareOrCopy(
       context,
       text: csv,
-      fileName: 'arcdash_param_diff_$stamp.csv',
-      subject: 'ArcDash FarDriver parameter comparison',
+      fileName: 'farsure_param_diff_$stamp.csv',
+      subject: 'FarSure FarDriver parameter comparison',
       copiedMessage: strings.text(AppText.paramCopied),
     );
   }
@@ -120,6 +125,9 @@ class _ParameterCompareScreenState
         : const <ParameterDiffEntry>[];
     final changed =
         entries.where((e) => e.change == ParameterChange.changed).length;
+    final unidentifiedChanged = entries
+        .where((e) => e.change != ParameterChange.same && e.def.unidentified)
+        .length;
     final oneSide = entries
         .where((e) =>
             e.change == ParameterChange.onlyA ||
@@ -139,13 +147,15 @@ class _ParameterCompareScreenState
       body: SafeArea(
         child: Column(
           children: [
+            const DisclaimerShortLine(),
             _slot(strings.text(AppText.paramSourceA), a, true),
             _slot(strings.text(AppText.paramSourceB), b, false),
             if (a != null && b != null) ...[
               SwitchListTile(
                 dense: true,
                 title: Text('${strings.text(AppText.paramDifferences)}: '
-                    '$changed${oneSide > 0 ? ' (+$oneSide ${strings.text(AppText.paramOnlyOneSide)})' : ''}'),
+                    '$changed${oneSide > 0 ? ' (+$oneSide ${strings.text(AppText.paramOnlyOneSide)})' : ''}'
+                    '${unidentifiedChanged > 0 ? ' · $unidentifiedChanged unidentified' : ''}'),
                 subtitle: Text(strings.text(AppText.paramShowAll)),
                 value: _showAll,
                 onChanged: (v) => setState(() => _showAll = v),
@@ -165,19 +175,34 @@ class _ParameterCompareScreenState
                               : p.label.isEmpty
                                   ? '${p.value}$unit'
                                   : '${p.label} (${p.value})';
+                          final unidentified = e.def.unidentified;
                           return ListTile(
                             dense: true,
                             leading: Icon(
-                              switch (e.change) {
-                                ParameterChange.changed => Icons.compare_arrows,
-                                ParameterChange.same => Icons.check,
-                                _ => Icons.remove_circle_outline,
-                              },
+                              unidentified && e.change != ParameterChange.same
+                                  ? Icons.help_outline
+                                  : switch (e.change) {
+                                      ParameterChange.changed =>
+                                        Icons.compare_arrows,
+                                      ParameterChange.same => Icons.check,
+                                      _ => Icons.remove_circle_outline,
+                                    },
                               color: e.change == ParameterChange.changed
-                                  ? Colors.amber
+                                  ? (unidentified
+                                      ? Colors.purpleAccent
+                                      : Colors.amber)
                                   : Colors.white54,
                             ),
-                            title: Text(e.def.name),
+                            title: Text.rich(TextSpan(children: [
+                              TextSpan(text: e.def.displayName),
+                              if (unidentified)
+                                const TextSpan(
+                                    text: '  UNIDENTIFIED',
+                                    style: TextStyle(
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.w800,
+                                        color: Colors.purpleAccent)),
+                            ])),
                             subtitle: Text(
                                 '${hexByte(e.def.block)} · w${hexByte(e.def.wordAddress)} · ${e.changeLabel}'),
                             trailing: ConstrainedBox(

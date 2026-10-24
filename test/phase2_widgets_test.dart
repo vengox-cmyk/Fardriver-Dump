@@ -1,3 +1,5 @@
+import 'package:arcdash/services/disclaimer.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:arcdash/app.dart';
 import 'package:arcdash/providers/bluetooth_provider.dart';
 import 'package:arcdash/providers/controller_provider.dart';
@@ -32,6 +34,9 @@ class _FakeDongleService extends DongleService {
 }
 
 void main() {
+  // The use-at-your-own-risk notice is covered in disclaimer_test.dart.
+  setUp(() => SharedPreferences.setMockInitialValues({Disclaimer.prefKey: 1}));
+
   group('Phase 2 - Immersive Landscape Mode & Fullscreen UI', () {
     testWidgets(
         'Landscape orientation enters immersive mode by hiding navigation rail/bar and system UI',

@@ -4,6 +4,7 @@ import 'package:arcdash/l10n/app_strings.dart';
 import 'package:arcdash/services/parameter_csv.dart';
 import 'package:arcdash/services/parameter_dump.dart';
 import 'package:arcdash/services/parameter_dump_io.dart';
+import 'package:arcdash/widgets/disclaimer_gate.dart';
 
 /// Read-only list of every decoded parameter in a dump, with CSV export.
 class ParameterDumpScreen extends StatefulWidget {
@@ -18,6 +19,9 @@ class ParameterDumpScreen extends StatefulWidget {
 class _ParameterDumpScreenState extends State<ParameterDumpScreen> {
   late final List<DecodedParameter> _all = widget.dump.decode();
   String _query = '';
+  bool _showUnidentified = false;
+  late final int _unidentifiedCount =
+      _all.where((p) => p.def.unidentified).length;
 
   Future<void> _share() async {
     final strings = AppStrings.of(context);
@@ -42,8 +46,8 @@ class _ParameterDumpScreenState extends State<ParameterDumpScreen> {
       context,
       text: csv,
       fileName: ParameterDumpIo.safeFileName(
-          'arcdash_params_${dump.source.name}_$stamp.csv'),
-      subject: 'ArcDash FarDriver parameters',
+          'farsure_params_${dump.source.name}_$stamp.csv'),
+      subject: 'FarSure FarDriver parameters',
       copiedMessage: strings.text(AppText.paramCopied),
     );
   }
@@ -53,14 +57,15 @@ class _ParameterDumpScreenState extends State<ParameterDumpScreen> {
     final strings = AppStrings.of(context);
     final dump = widget.dump;
     final q = _query.toLowerCase();
-    final rows = q.isEmpty
-        ? _all
-        : _all
-            .where((p) =>
-                p.def.name.toLowerCase().contains(q) ||
-                hexByte(p.def.block).toLowerCase().contains(q) ||
-                hexByte(p.def.wordAddress).toLowerCase().contains(q))
-            .toList();
+    final rows = _all
+        .where((p) => _showUnidentified || !p.def.unidentified)
+        .where((p) =>
+            q.isEmpty ||
+            p.def.displayName.toLowerCase().contains(q) ||
+            p.def.name.toLowerCase().contains(q) ||
+            hexByte(p.def.block).toLowerCase().contains(q) ||
+            hexByte(p.def.wordAddress).toLowerCase().contains(q))
+        .toList();
     final missing = dump.missingBlocks;
     return Scaffold(
       appBar: AppBar(
@@ -97,6 +102,16 @@ class _ParameterDumpScreenState extends State<ParameterDumpScreen> {
                   Text(strings.text(AppText.paramUnverifiedHint),
                       style:
                           const TextStyle(fontSize: 11, color: Colors.amber)),
+                  const DisclaimerShortLine(),
+                  SwitchListTile(
+                    key: const ValueKey('param-show-unidentified'),
+                    dense: true,
+                    contentPadding: EdgeInsets.zero,
+                    title: Text('Show unidentified ($_unidentifiedCount)'),
+                    value: _showUnidentified,
+                    onChanged: (value) =>
+                        setState(() => _showUnidentified = value),
+                  ),
                   TextField(
                     decoration: InputDecoration(
                       prefixIcon: const Icon(Icons.search),
@@ -114,10 +129,14 @@ class _ParameterDumpScreenState extends State<ParameterDumpScreen> {
                   final p = rows[index];
                   return ListTile(
                     dense: true,
-                    title: Text(p.def.name,
+                    title: Text(
+                        p.def.unidentified
+                            ? '${p.def.displayName} (unidentified)'
+                            : p.def.displayName,
                         style: TextStyle(
-                            color: p.def.unknown ? Colors.white54 : null)),
+                            color: p.def.unidentified ? Colors.white54 : null)),
                     subtitle: Text(
+                        '${p.def.displayName != p.def.name ? 'hpp ${p.def.name} · ' : ''}'
                         '${hexByte(p.def.block)} · w${hexByte(p.def.wordAddress)}'
                         ' · byte ${p.def.byteOffset} bits ${p.def.bitsLabel}'
                         ' · raw ${p.raw} · ${p.def.status}'),

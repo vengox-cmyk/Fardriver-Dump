@@ -1,3 +1,5 @@
+import 'package:arcdash/services/disclaimer.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:arcdash/app.dart';
 import 'package:arcdash/models/dashboard_layout.dart';
 import 'package:arcdash/providers/bluetooth_provider.dart';
@@ -9,6 +11,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
+  // The use-at-your-own-risk notice is covered in disclaimer_test.dart.
+  setUp(() => SharedPreferences.setMockInitialValues({Disclaimer.prefKey: 1}));
+
   testWidgets('editor adds and removes catalog values', (tester) async {
     final storage = _RecordingStorage(_singleTileDashboard());
     await _pumpEditor(tester, storage);
