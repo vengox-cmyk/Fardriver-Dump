@@ -10,6 +10,7 @@ import 'package:arcdash/providers/bluetooth_provider.dart';
 import 'package:arcdash/providers/controller_provider.dart';
 import 'package:arcdash/l10n/app_strings.dart';
 import 'package:arcdash/services/storage_service.dart';
+import 'package:arcdash/widgets/brand_version_label.dart';
 
 class DashboardScreen extends ConsumerStatefulWidget {
   const DashboardScreen({super.key});
@@ -291,6 +292,12 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             Text(strings.text(AppText.rideComputer),
                 style: const TextStyle(
                     fontSize: 9, letterSpacing: 1.8, color: Colors.white38)),
+            const BrandVersionLabel(
+                style: TextStyle(
+                    fontSize: 9,
+                    fontWeight: FontWeight.w500,
+                    letterSpacing: 0.6,
+                    color: Colors.white38)),
           ],
         ),
         actions: [
@@ -866,16 +873,16 @@ class _MetricView extends StatelessWidget {
           : '${state.rangeKm.toStringAsFixed(0)} ± ${state.rangeUncertaintyKm.toStringAsFixed(0)} km',
       DashboardMetric.profile => state.rideMode.displayName,
       DashboardMetric.gear => !state.isForward
-              ? 'R'
-              : state.gear == 1
-                  ? 'N'
-                  : state.gear == 2
-                      ? 'D1'
-                      : state.gear == 3
-                          ? 'D2'
-                          : state.gear == 4
-                              ? 'D3'
-                              : 'N',
+          ? 'R'
+          : state.gear == 1
+              ? 'N'
+              : state.gear == 2
+                  ? 'D1'
+                  : state.gear == 3
+                      ? 'D2'
+                      : state.gear == 4
+                          ? 'D3'
+                          : 'N',
       DashboardMetric.motorTemperature =>
         '${state.motorTempC.toStringAsFixed(0)} °C',
       DashboardMetric.controllerTemperature =>

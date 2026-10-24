@@ -11,6 +11,8 @@ import 'package:arcdash/utils/unit_converter.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/material.dart';
+import 'package:arcdash/widgets/brand_version_label.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 
 void main() {
   testWidgets('ArcDash starts on the dashboard route', (tester) async {
@@ -157,6 +159,40 @@ void main() {
     expect(find.byType(AppShell), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
+
+  for (final size in const [Size(390, 844), Size(844, 390)]) {
+    testWidgets('main screen shows Vengox and the runtime version ($size)',
+        (tester) async {
+      PackageInfo.setMockInitialValues(
+        appName: 'ArcDash',
+        packageName: 'com.arcdash',
+        version: '1.0.188',
+        buildNumber: '42',
+        buildSignature: '',
+      );
+      BrandVersionLabel.resetCache();
+      addTearDown(BrandVersionLabel.resetCache);
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            bluetoothServiceProvider.overrideWithValue(_FakeDongleService()),
+            storageServiceProvider.overrideWithValue(StorageService()),
+          ],
+          child: const ArcDashApp(),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.byType(DashboardScreen), findsOneWidget);
+      expect(find.text('Vengox · v1.0.188'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+  }
 
   testWidgets('uses offline localization and glove-friendly controls',
       (tester) async {
