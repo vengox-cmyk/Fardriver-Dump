@@ -255,7 +255,7 @@ const _germanText = {
   AppText.readOnlyActive: 'Read-only-Modus aktiv',
   AppText.readOnlyDescription:
       'Diese Version liest Telemetrie und Diagnosedaten. Parameteränderungen und Restore sind deaktiviert.',
-  AppText.about: 'ÜBER ARCDASH',
+  AppText.about: 'ÜBER FARSURE',
   AppText.appDescription:
       'Lokales FarDriver-Cockpit ohne Cloud oder laufende Kosten',
   AppText.cancel: 'Abbrechen',
@@ -439,7 +439,7 @@ const _englishText = {
   AppText.readOnlyActive: 'Read-only mode active',
   AppText.readOnlyDescription:
       'This version reads telemetry and diagnostics. Parameter changes and restore are disabled.',
-  AppText.about: 'ABOUT ARCDASH',
+  AppText.about: 'ABOUT FARSURE',
   AppText.appDescription:
       'Local FarDriver cockpit without cloud services or recurring costs',
   AppText.cancel: 'Cancel',

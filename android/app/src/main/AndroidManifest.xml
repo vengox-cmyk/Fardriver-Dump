@@ -23,7 +23,7 @@
         android:required="true" />
 
     <application
-        android:label="ArcDash"
+        android:label="FarSure"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher"
         android:allowBackup="false"

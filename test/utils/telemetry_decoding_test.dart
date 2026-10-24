@@ -126,9 +126,10 @@ void main() {
 
     test('extracts telemetry for 0xD0 (AddrD0: wheel geometry)', () {
       final raw = List<int>.filled(12, 0);
-      raw[4] = 12; // wheelRadius
-      raw[5] = 80; // wheelRatio
-      raw[6] = 120; // wheelWidth
+      raw[4] = 80; // wheelRatio
+      raw[5] = 12; // wheelRadius
+      raw[6] = 30; // AVGSpeed (not geometry)
+      raw[7] = 120; // wheelWidth
       raw[8] = 10; // rateRatio uint16LE
       raw[9] = 0;
 

@@ -10,6 +10,7 @@ import 'package:arcdash/providers/controller_provider.dart';
 import 'package:arcdash/providers/stats_provider.dart';
 import 'package:arcdash/l10n/app_strings.dart';
 import 'package:arcdash/providers/locale_provider.dart';
+import 'package:arcdash/widgets/disclaimer_gate.dart';
 
 class ArcDashApp extends ConsumerWidget {
   final Locale? locale;
@@ -31,7 +32,7 @@ class ArcDashApp extends ConsumerWidget {
     ));
 
     return MaterialApp(
-      title: 'ArcDash',
+      title: 'FarSure',
       debugShowCheckedModeBanner: false,
       theme: _buildTheme(),
       locale: locale ?? ref.watch(localeProvider),
@@ -43,7 +44,7 @@ class ArcDashApp extends ConsumerWidget {
       initialRoute: '/dashboard',
       routes: {
         '/': (_) => const ConnectionScreen(),
-        '/dashboard': (_) => const AppShell(),
+        '/dashboard': (_) => const DisclaimerGate(child: AppShell()),
         '/debug': (_) => const DebugScreen(),
       },
     );

@@ -5,6 +5,7 @@ import 'package:arcdash/providers/bluetooth_provider.dart';
 import 'package:arcdash/providers/controller_provider.dart';
 import 'package:arcdash/l10n/app_strings.dart';
 import 'package:arcdash/providers/locale_provider.dart';
+import 'package:arcdash/screens/about_screen.dart';
 import 'package:arcdash/screens/parameter_compare_screen.dart';
 import 'package:arcdash/screens/parameter_dump_screen.dart';
 import 'package:arcdash/services/diagnostic_log_exporter.dart';
@@ -218,10 +219,14 @@ class SettingsScreen extends ConsumerWidget {
                     ? 'v${snapshot.data!.version} (${snapshot.data!.buildNumber})'
                     : '1.0.0';
                 return ListTile(
+                  key: const ValueKey('settings-about'),
                   leading: const Icon(Icons.electric_bike_outlined),
                   title: Text(
-                      'ArcDash $version ${strings.text(AppText.readOnlyLabel)}'),
+                      'FarSure $version ${strings.text(AppText.readOnlyLabel)}'),
                   subtitle: Text(strings.text(AppText.appDescription)),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => Navigator.of(context).push(
+                      MaterialPageRoute(builder: (_) => const AboutScreen())),
                 );
               },
             ),

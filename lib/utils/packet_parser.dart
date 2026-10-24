@@ -287,10 +287,13 @@ class PacketParser {
         );
 
       case 0xD0: // AddrD0 — wheel geometry
-        final wheelRatio = d[5]; // WheelRatio at byte 5 of data
-        final wheelRadius = d[4]; // WheelRadius at byte 4
+        // Layout per fardriver.hpp AddrD0, confirmed on a real frame against
+        // the official app (12 inch rim, 120/70 tyre, RateRatio 4000):
+        // d[4] WheelRatio, d[5] WheelRadius, d[6] AVGSpeed, d[7] WheelWidth.
+        final wheelRatio = d[4];
+        final wheelRadius = d[5];
+        final wheelWidth = d[7];
         final rateRatio = readUint16LE(d, 8); // RateRatio
-        final wheelWidth = d[6]; // WheelWidth
         return TelemetryUpdate(
           capturedAt: capturedAt,
           wheelRadius: wheelRadius,

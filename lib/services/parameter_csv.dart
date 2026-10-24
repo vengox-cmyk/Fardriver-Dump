@@ -92,6 +92,14 @@ class ParameterCsvCodec {
 
   static const format = 'arcdash-param-csv-v1';
   static const title = '# ArcDash FarDriver parameter dump';
+
+  /// Disclaimer line written into every exported CSV (ignored on import).
+  static const notice =
+      'Informational only - verify before use. Not affiliated with FarDriver.';
+
+  /// Marker row that starts the trailing section of unidentified (`unk*`)
+  /// rows. Older files have no marker and interleave those rows; both parse.
+  static const unidentifiedMarker = '# unidentified';
   static const columns = [
     'block',
     'word_address',
@@ -112,7 +120,7 @@ class ParameterCsvCodec {
         hexByte(def.wordAddress),
         '${def.byteOffset}',
         def.bitsLabel,
-        def.name,
+        def.displayName,
       ];
 
   /// Encodes [dump] as CSV. Live snapshots must be complete unless
@@ -126,6 +134,7 @@ class ParameterCsvCodec {
     }
     final rows = <List<String>>[
       [title, format],
+      ['# notice', notice],
       ['# controller_id', dump.controllerId],
       ['# capture_time', dump.capturedAt?.toUtc().toIso8601String() ?? ''],
       ['# app_version', appVersion ?? dump.appVersion],
@@ -138,8 +147,9 @@ class ParameterCsvCodec {
       ],
       columns,
     ];
+    final unidentified = <List<String>>[];
     for (final p in dump.decode()) {
-      rows.add([
+      (p.def.unidentified ? unidentified : rows).add([
         ...commonCells(p.def),
         p.raw,
         p.value,
@@ -150,6 +160,9 @@ class ParameterCsvCodec {
         p.def.note,
       ]);
     }
+    rows
+      ..add([unidentifiedMarker])
+      ..addAll(unidentified);
     return FlatCsv.encode(rows);
   }
 
@@ -284,6 +297,7 @@ class ParameterDiff {
         d.capturedAt?.toUtc().toIso8601String() ?? '';
     final rows = <List<String>>[
       ['# ArcDash FarDriver parameter diff', format],
+      ['# notice', ParameterCsvCodec.notice],
       ['# a_source', a.sourceLabel],
       ['# a_controller_id', a.controllerId],
       ['# a_capture_time', time(a)],
@@ -294,8 +308,9 @@ class ParameterDiff {
       ['# show_all', showAll ? 'yes' : 'no'],
       columns,
     ];
+    final unidentified = <List<String>>[];
     for (final e in compare(a, b, showAll: showAll)) {
-      rows.add([
+      (e.def.unidentified ? unidentified : rows).add([
         e.changeLabel,
         ...ParameterCsvCodec.commonCells(e.def),
         e.def.unit,
@@ -308,6 +323,9 @@ class ParameterDiff {
         e.def.status,
       ]);
     }
+    rows
+      ..add([ParameterCsvCodec.unidentifiedMarker])
+      ..addAll(unidentified);
     return FlatCsv.encode(rows);
   }
 }

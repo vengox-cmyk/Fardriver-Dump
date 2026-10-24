@@ -8,12 +8,15 @@ class UnitConverter {
     required int rateRatio,
   }) {
     if (rateRatio == 0) return 0.0;
-    // Scale for Arctic Leopard XE Pro controllers (calibrated 40 km/h real = 40 km/h displayed)
-    return (measureSpeed *
-            (0.00456958953 *
-                (wheelRadius * 1270.0 + wheelWidth * wheelRatio) /
-                rateRatio)) /
-        10.0;
+    // fardriver.hpp / official app formula. Until v1.0 the 0xD0 parser read
+    // the wheel bytes shifted (radius<-ratio, ratio<-radius, width<-AVGSpeed)
+    // and an empirical /10 x1.21 "calibration" compensated for that on one
+    // bike. With the parser fixed the plain formula applies (also used by
+    // ProtocolService.kphToMaxSpeedRaw for the inverse).
+    return measureSpeed *
+        (0.00376991136 *
+            (wheelRadius * 1270.0 + wheelWidth * wheelRatio) /
+            rateRatio);
   }
 
   // Power in kW

@@ -123,7 +123,7 @@ class _ConnectionScreenState extends ConsumerState<ConnectionScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const Text(
-                        'ARCDASH',
+                        'FARSURE',
                         style: TextStyle(
                           color: Colors.white,
                           fontSize: 22,

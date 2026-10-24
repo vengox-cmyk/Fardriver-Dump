@@ -1,19 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
-/// Small "Vengox · v1.0.N" line. The version is read at runtime from the
-/// installed package (CI sets it via `flutter build --build-name=1.0.<commits>`),
+/// Small "FarSure by Vengox · v1.1.N" line. The version is read at runtime from the
+/// installed package (CI sets it via `flutter build --build-name=1.1.<commits>`),
 /// so it always matches the APK release version.
 class BrandVersionLabel extends StatefulWidget {
   const BrandVersionLabel({super.key, this.style});
 
   final TextStyle? style;
 
-  static const brand = 'Vengox';
+  static const brand = 'FarSure by Vengox';
 
   static Future<String?>? _cached;
 
-  /// Runtime app version (e.g. `1.0.188`), or null if unavailable.
+  /// Runtime app version (e.g. `1.1.188`), or null if unavailable.
   static Future<String?> version() => _cached ??= _load();
 
   static Future<String?> _load() async {

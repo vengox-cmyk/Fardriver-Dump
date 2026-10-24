@@ -11,7 +11,8 @@ Outputs (both regenerated in place):
 
 Usage:  python3 tool/gen_param_catalog.py [--check]
 
-Every decode is marked "unverified" (taken from the reverse-engineered header,
+Corrections checked against the official FarDriver app are applied on top
+of the header in apply_corrections() (issue #2). Every decode is marked "unverified" (taken from the reverse-engineered header,
 not confirmed on real hardware) or "unknown" (unk*/reserved fields). Scaling
 comes from the header comments plus the explicit SCALE_OVERRIDES below.
 """
@@ -68,8 +69,11 @@ SCALE_OVERRIDES = {
     'MotorTempProtect': (1, 0, '°C'),
     'MotorTempRestore': (1, 0, '°C'),
     'MosTempProtect': (1, 0, '°C'),
+    'LowSpeed': (1, 0, 'rpm'),
+    'BackSpeed': (1, 0, 'rpm'),
+    'SpeedAnalog': (1, 0, 'rpm'),
     'MosTempRestore': (1, 0, '°C'),
-    'BackPTime': (10, 0, 's'),
+    'BackPTime': (1, 0, ''),  # dropdown index, not seconds (see CORRECTIONS)
     'ReleaseToSeat': (1, 0, 's'),
     'BstTime': (1 / 500, 0, 's'),
     'BstRelease': (1 / 500, 0, 's'),
@@ -79,7 +83,7 @@ SCALE_OVERRIDES = {
     'AVGSpeed': (1, 0, 'km/h'),
     'Stage1Soc': (1, 0, '%'),
     'Stage2Soc': (1, 0, '%'),
-    'NoCanCnt': (1, 0, ''),  # ms rule is non-linear: >=6 -> *2 else *500
+    'NoCanCnt': (2, 0, 'ms'),  # official app: raw 75 -> 150 ms (raw >= 6 rule)
     'AlarmDelay': (1, 0, ''),
 }
 for _r in ['RatioMin'] + [f'Ratio{n}' for n in range(500, 9001, 500)] + ['RatioMax']:
@@ -89,14 +93,58 @@ for _n in range(20):
 
 # Extra provenance notes appended to the header comment.
 NOTE_OVERRIDES = {
-    'WheelRatio': 'ArcDash telemetry reads WheelRadius at byte 4 and WheelRatio '
-                  'at byte 5 (swapped vs fardriver.hpp); unconfirmed which is right',
-    'WheelRadius': 'see WheelRatio: ArcDash telemetry reads this at byte 4',
+    'WheelRatio': 'confirmed vs official app (byte 4 = 70 on a 120/70-12 tyre); '
+                  'live telemetry parser fixed in v1.1 to read this byte',
+    'WheelRadius': 'confirmed vs official app (byte 5 = 12 inch rim)',
     'DistanceMSB': 'total km = ((DistanceMSB << 16) | DistanceLSB) / 10 (per header)',
-    'NoCanCnt': 'non-linear: >= 6 -> *2 ms else *500 ms (per header)',
+    'NoCanCnt': 'official app: raw 75 = 150 ms (x2); header says raw < 6 is x500 ms (not applied)',
+    'RateRatio': 'official app shows GearRatio = RateRatio / 1000 (4000 -> 4)',
+    'LowVolProtect': 'official app also shows LowVolRestore = LowVolProtect + 2 V (derived, not stored)',
+    'MaxKP': 'low confidence: official app MaxKC showed 169 vs 120 here; not changed',
+    'CurveTime': 'low confidence: official app scale unclear; not changed',
+    'WeakA': 'low confidence: maybe official "Weak Character"; not renamed',
+    'QuickDown': 'low confidence: maybe official "Release Throttle"; not renamed',
+    'Stage2Soc': 'low confidence: maybe official "WeakCurrCoeff"; not renamed',
+    'WeakTime': 'maybe official "WeakResponse" (medium confidence); not renamed',
+    'ReIsinAcc': 'maybe official "Re Acc" (medium confidence); not renamed',
+    'unkBEb': 'maybe official "SensorAppTypeTens" (medium confidence)',
 }
 
-UNKNOWN_RE = re.compile(r'^(unk|Reserved|infoc|Data[01]$)')
+# Official FarDriver app labels (from screenshots, issue #2). The internal
+# `name` stays the fardriver.hpp name (stable key for byName / tooling); the
+# display name is what the app and CSV `name` column show.
+DISPLAY_NAMES = {
+    'CustomMaxLineCurr': 'BoostLineCurr',
+    'CustomMaxPhaseCurr': 'BoostPhaseCurr',
+    'Max_Acc': 'ThrottleAccStep',
+    'Max_Dec': 'ThrottleDecStep',
+    'AccCoeff': 'ECOAccCoeff',
+    'HighVolProtect': 'OverVolProtect',
+    'HighVolRestore': 'OverVolRestore',
+    'MosTempProtect': 'ControllerTempProtect',
+    'MosTempRestore': 'ControllerTempRestore',
+    'StartKP': 'StartKC',
+    'MidKP': 'MidKC',
+    'Idle': 'Step',
+    'ReverseTime': 'InverseTime',
+    'ParkCoeff': 'SlowDownCoeff',
+    'MinSpeedCapCoeff': 'LmtSpdMaxCoeff',
+    'Stage1Curr': 'TurtleSpeedCurrCoeff',
+    'SpecialWeak': 'DeepWeak',
+    'BCState': 'BCEnable',
+    'LineCoeff': 'LineCurrCoeff',
+    'SpeedAnalog': 'AnalogSpeedCoeff',
+    'ModelName': 'ProductCode',
+    'Data0': 'DATA0',
+    'Data1': 'DATA1',
+    'SppedKP': 'SpeedKP',
+    'MidSppedPhaseCurr': 'MidSpeedPhaseCurr',
+    'NoCanCnt': 'CANDetect',
+    'ParkConfig': 'Park',
+    'BackPTime': 'BackP_Time',
+}
+
+UNKNOWN_RE = re.compile(r'^(unk|Reserved|infoc)')
 
 
 def _strip_ifndef(text: str) -> str:
@@ -208,6 +256,84 @@ def parse(hpp_text: str):
             bit += 8 * size
         if bit != 96:
             raise SystemExit(f'{name} decodes to {bit} bits, expected 96')
+    return apply_corrections(params)
+
+
+def _find(params, block, name):
+    for p in params:
+        if p['block'] == block and p['name'] == name:
+            return p
+    raise SystemExit(f'correction target {name} not in block 0x{block:02X}')
+
+
+def _note(p, text):
+    p['note'] = (p['note'] + '; ' if p['note'] else '') + text
+
+
+def apply_corrections(params):
+    """Fixes checked against the official FarDriver app (issue #2,
+    screen_vs_csv_mapping.csv, high confidence). The header stays untouched;
+    every correction is documented in the row note."""
+    # 0x24: the header has BackSpeed/LowSpeed swapped (official: byte 8 =
+    # LowSpeed 3500 rpm, byte 10 = BackSpeed 250 rpm).
+    a, b = _find(params, 0x24, 'BackSpeed'), _find(params, 0x24, 'LowSpeed')
+    a['name'] = a['display'] = 'LowSpeed'
+    b['name'] = b['display'] = 'BackSpeed'
+    for p in (a, b):
+        p['note'] = 'swapped vs fardriver.hpp (checked against official app)'
+
+    # 0x9A: AN is 5 bits (0-16); the header's AlarmRecord_1 is AN bit 4.
+    an = _find(params, 0x9A, 'AN')
+    an['bitWidth'] = 5
+    _note(an, '5 bits (0-16) per official app; fardriver.hpp had 4 bits + AlarmRecord_1')
+    params.remove(_find(params, 0x9A, 'AlarmRecord_1'))
+
+    # 0xC4: LearnVolLow/High are u16 at bytes 0-1 / 2-3 in the official app.
+    # The H72 flag bits in bytes 0 and 2 share those bits: kept as overlay
+    # rows (not counted in block coverage) so no information is lost.
+    for name, off in (('LearnVolLow', 0), ('LearnVolHigh', 2)):
+        p = _find(params, 0xC4, name)
+        p['byteOffset'], p['bitOffset'], p['bitWidth'] = off, 0, 16
+        _note(p, 'u16 per official app (fardriver.hpp read only the high byte)')
+    for p in params:
+        if p['block'] == 0xC4 and p['byteOffset'] in (0, 2) and p['bitWidth'] == 1:
+            p['overlay'] = True
+            _note(p, 'overlay: shares bits with LearnVol u16 (H72 firmware flag)')
+
+    # 0x06: official app shows raw 2 as Disabled.
+    park = _find(params, 0x06, 'ParkConfig')
+    park['labels'] = dict(park['labels'])
+    park['labels'][2] = 'Disabled'
+    _note(park, 'raw 2 = Disabled per official app (fardriver.hpp: SlowDownPark); '
+                'labels 0/1/3 from header, unconfirmed')
+
+    # 0xB8: BackPTime is a dropdown index; only index 18 = 240 s is known.
+    bp = _find(params, 0xB8, 'BackPTime')
+    bp['kind'], bp['labels'] = 'enum', {18: '240s'}
+    _note(bp, 'dropdown index, not seconds (official app shows 18-240s); '
+              'other indexes unknown')
+
+    # 0x1E bytes 6-7 (word 0x21): official app also shows RelayDelay as u16 ms.
+    first = next(i for i, p in enumerate(params)
+                 if p['block'] == 0x1E and p['byteOffset'] == 6)
+    relay = _mk(0x1E, 'RelayDelay', 48, 16, False, 'int',
+                'ms; overlay: same word as the BCEnable..RelayDelay1S flag bits '
+                '(official app shows both views; medium confidence)', None)
+    relay['unit'], relay['overlay'] = 'ms', True
+    params.insert(first, relay)
+
+    # 0xD0: derived GearRatio = RateRatio / 1000 as the official app shows it.
+    rr = _find(params, 0xD0, 'RateRatio')
+    gear = _mk(0xD0, 'GearRatio', 64, 16, False, 'int',
+               'overlay: RateRatio / 1000 as shown by the official app', None)
+    gear['factor'], gear['overlay'] = 0.001, True
+    params.insert(params.index(rr) + 1, gear)
+
+    for blk in CONFIG_BLOCKS:
+        bits = sum(p['bitWidth'] for p in params
+                   if p['block'] == blk and not p['overlay'])
+        if bits != 96:
+            raise SystemExit(f'0x{blk:02X} covers {bits} bits after corrections')
     return params
 
 
@@ -222,9 +348,14 @@ def _mk(block, name, bit, width, signed, kind, comment, labels):
     if name in NOTE_OVERRIDES:
         comment = (comment + '; ' if comment else '') + NOTE_OVERRIDES[name]
     status = 'unknown' if UNKNOWN_RE.match(name) else 'unverified'
+    display = DISPLAY_NAMES.get(name, name)
+    if display != name:
+        comment = (comment + '; ' if comment else '') + f'fardriver.hpp name: {name}'
     return {
         'block': block,
         'name': name,
+        'display': display,
+        'overlay': False,
         'byteOffset': bit // 8,
         'bitOffset': bit % 8,
         'bitWidth': width,
@@ -266,12 +397,14 @@ def render_dart(params) -> str:
         out.append(
             '  FardriverParamDef('
             f"block: 0x{p['block']:02X}, name: {_dart_str(p['name'])}, "
+            f"displayName: {_dart_str(p['display'])}, "
             f"byteOffset: {p['byteOffset']}, bitOffset: {p['bitOffset']}, "
             f"bitWidth: {p['bitWidth']}, signed: {'true' if p['signed'] else 'false'}, "
             f"kind: FardriverParamKind.{KIND[p['kind']]}, factor: {_dart_num(p['factor'])}, "
             f"offset: {_dart_num(p['offset'])}, unit: {_dart_str(p['unit'])}, "
             f"note: {_dart_str(p['note'])}, unverified: {'false' if p['status'] == 'unknown' else 'true'}, "
-            f"unknown: {'true' if p['status'] == 'unknown' else 'false'}{labels}),")
+            f"unknown: {'true' if p['status'] == 'unknown' else 'false'}"
+            f"{', overlay: true' if p['overlay'] else ''}{labels}),")
     out.append('];')
     out.append('')
     return '\n'.join(out)
@@ -281,7 +414,8 @@ def render_py(params) -> str:
     compact = [
         [p['block'], p['name'], p['byteOffset'], p['bitOffset'], p['bitWidth'],
          p['signed'], p['kind'], p['factor'], p['offset'], p['unit'],
-         {str(k): v for k, v in p['labels'].items()}, p['note'], p['status']]
+         {str(k): v for k, v in p['labels'].items()}, p['note'], p['status'],
+         p['display'], p['overlay']]
         for p in params
     ]
     lines = ['CATALOG = [']

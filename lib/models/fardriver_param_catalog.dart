@@ -18,7 +18,14 @@ enum FardriverParamKind { int, enumeration, text }
 class FardriverParamDef {
   /// Block start address (word address of the first word in the 12-byte block).
   final int block;
+
+  /// Stable internal key: the fardriver.hpp field name (corrected where the
+  /// header was proven wrong, e.g. LowSpeed/BackSpeed). Use for lookups.
   final String name;
+
+  /// Label shown to users and written to the CSV `name` column: the official
+  /// FarDriver app name where known, otherwise [name].
+  final String displayName;
 
   /// Byte offset inside the 12-byte block data (0..11).
   final int byteOffset;
@@ -44,9 +51,14 @@ class FardriverParamDef {
   /// Field name is a placeholder (`unk*`, reserved) in the header.
   final bool unknown;
 
+  /// Alternative view of bits that another row already covers (e.g. the
+  /// RelayDelay u16 over flag bits). Not counted in block coverage.
+  final bool overlay;
+
   const FardriverParamDef({
     required this.block,
     required this.name,
+    required this.displayName,
     required this.byteOffset,
     required this.bitOffset,
     required this.bitWidth,
@@ -58,6 +70,7 @@ class FardriverParamDef {
     required this.note,
     required this.unverified,
     required this.unknown,
+    this.overlay = false,
     this.labels = const {},
   });
 
@@ -68,6 +81,11 @@ class FardriverParamDef {
   String get bitsLabel => '$bitOffset-${bitOffset + bitWidth - 1}';
 
   String get status => unknown ? 'unknown' : 'unverified';
+
+  /// True for placeholder fields nobody has identified yet (`unk*` etc.).
+  /// Exports list them in a trailing `# unidentified` section and the dump
+  /// viewer hides them unless asked.
+  bool get unidentified => unknown;
 
   /// Stable key used to match parameters across dumps.
   String get key => '${block.toRadixString(16)}:$byteOffset:$bitOffset:$name';

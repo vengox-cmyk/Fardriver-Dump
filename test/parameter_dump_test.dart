@@ -45,6 +45,9 @@ DecodedParameter _decode(String name, List<int> block, {int? at}) =>
     FardriverDecoder.decode(
         FardriverParamCatalog.byName(name, block: at), block);
 
+List<int> _hex(String text) =>
+    [for (final b in text.split(' ')) int.parse(b, radix: 16)];
+
 List<int> _block(Map<int, int> bytes) =>
     List<int>.generate(12, (i) => bytes[i] ?? 0);
 
@@ -65,6 +68,7 @@ void main() {
       expect(blocks, contains(0x5D));
       for (final block in blocks) {
         final bits = FardriverParamCatalog.forBlock(block)
+            .where((p) => !p.overlay)
             .fold<int>(0, (sum, p) => sum + p.bitWidth);
         expect(bits, 96, reason: 'block 0x${block.toRadixString(16)}');
       }
@@ -245,9 +249,12 @@ void main() {
       final csv = ParameterDiff.toCsv(_hebDump(), _hebDump(changed));
       final rows = FlatCsv.decode(csv);
       final header = rows.indexWhere((r) => r.first == 'change');
+      final marker = rows
+          .indexWhere((r) => r.first == ParameterCsvCodec.unidentifiedMarker);
       expect(rows[header], ParameterDiff.columns);
-      expect(rows.sublist(header + 1), hasLength(1));
-      expect(rows.last.first, 'changed');
+      expect(rows.sublist(header + 1, marker), hasLength(1));
+      expect(rows[header + 1].first, 'changed');
+      expect(marker, rows.length - 1, reason: 'no unidentified changes');
     });
 
     test('blocks present on one side only are listed as only_a / only_b', () {
@@ -260,6 +267,151 @@ void main() {
       expect(entries, isNotEmpty);
       expect(entries.every((e) => e.change == ParameterChange.onlyB), isTrue);
       expect(entries.every((e) => e.def.block == 0x5D), isTrue);
+    });
+  });
+
+  group('v1.1 corrections (real controller frames, issue #2)', () {
+    // Raw blocks from a real ND96 controller dump (owner's scooter, app
+    // v1.0.191), values checked against the official FarDriver app.
+    final real = <int, List<int>>{
+      0x06: _hex('00 00 09 0A 16 49 80 00 31 00 E0 C1'),
+      0x1E: _hex('40 00 76 02 4E 44 00 50 1A 0A 16 14'),
+      0x24: _hex('2C 23 BF 04 B0 04 B8 0B AC 0D FA 00'),
+      0x9A: _hex('00 00 00 00 10 16 F8 00 35 00 6A 00'),
+      0xB8: _hex('01 80 DD 02 00 00 40 00 52 A8 19 40'),
+      0xC4: _hex('00 48 00 5F 00 02 00 02 00 01 00 80'),
+      0xCA: _hex('55 00 4B 0B 18 00 00 1A 80 3A 40 00'),
+      0xD0: _hex('08 61 00 AB 46 0C 1E 78 A0 0F 29 15'),
+    };
+    String v(String name, int block) =>
+        _decode(name, real[block]!, at: block).value;
+
+    test('LowSpeed is byte 8 (3500 rpm), BackSpeed byte 10 (250 rpm)', () {
+      expect(v('LowSpeed', 0x24), '3500');
+      expect(v('BackSpeed', 0x24), '250');
+      expect(FardriverParamCatalog.byName('LowSpeed').byteOffset, 8);
+      expect(FardriverParamCatalog.byName('BackSpeed').byteOffset, 10);
+    });
+
+    test('LearnVolLow / LearnVolHigh are u16 (18432 / 24320)', () {
+      expect(v('LearnVolLow', 0xC4), '18432');
+      expect(v('LearnVolHigh', 0xC4), '24320');
+      final overlays =
+          FardriverParamCatalog.forBlock(0xC4).where((p) => p.overlay).toList();
+      expect(overlays, hasLength(16), reason: 'H72 flag bits kept as overlay');
+    });
+
+    test('AN is 5 bits (16) and AlarmRecord_1 is gone', () {
+      expect(v('AN', 0x9A), '16');
+      expect(FardriverParamCatalog.all.where((p) => p.name == 'AlarmRecord_1'),
+          isEmpty);
+    });
+
+    test('wheel geometry and GearRatio match the official app', () {
+      expect(v('WheelRadius', 0xD0), '12');
+      expect(v('WheelRatio', 0xD0), '70');
+      expect(v('WheelWidth', 0xD0), '120');
+      expect(v('RateRatio', 0xD0), '4000');
+      expect(v('GearRatio', 0xD0), '4');
+    });
+
+    test('ParkConfig 2 = Disabled, NoCanCnt x2 ms, BackPTime index', () {
+      final park = _decode('ParkConfig', real[0x06]!, at: 0x06);
+      expect(park.raw, '2');
+      expect(park.label, 'Disabled');
+      expect(v('NoCanCnt', 0xCA), '150');
+      expect(FardriverParamCatalog.byName('NoCanCnt').unit, 'ms');
+      final bp = _decode('BackPTime', real[0xB8]!, at: 0xB8);
+      expect(bp.raw, '18');
+      expect(bp.value, '18');
+      expect(bp.label, '240s');
+    });
+
+    test('RelayDelay is the u16 at word 0x21 (20480 ms)', () {
+      final def = FardriverParamCatalog.byName('RelayDelay');
+      expect(def.wordAddress, 0x21);
+      expect(def.overlay, isTrue);
+      expect(v('RelayDelay', 0x1E), '20480');
+    });
+
+    test('official names are display names, internal keys stay stable', () {
+      const renames = {
+        'CustomMaxLineCurr': 'BoostLineCurr',
+        'HighVolProtect': 'OverVolProtect',
+        'MosTempProtect': 'ControllerTempProtect',
+        'StartKP': 'StartKC',
+        'ModelName': 'ProductCode',
+        'SppedKP': 'SpeedKP',
+        'Data0': 'DATA0',
+      };
+      renames.forEach((key, display) {
+        final def = FardriverParamCatalog.byName(key);
+        expect(def.displayName, display);
+        expect(def.note, contains('fardriver.hpp name: $key'));
+      });
+      expect(FardriverParamCatalog.byName('Data0').unknown, isFalse);
+    });
+  });
+
+  group('csv formats (v1.1 notice + unidentified section)', () {
+    test('export has the notice line and a trailing unidentified section', () {
+      final csv = ParameterCsvCodec.encode(_hebDump());
+      final lines = csv.split('\n');
+      expect(lines[1],
+          '# notice,Informational only - verify before use. Not affiliated with FarDriver.');
+      final marker = lines.indexOf(ParameterCsvCodec.unidentifiedMarker);
+      expect(marker, greaterThan(0));
+      final main = lines.sublist(0, marker);
+      final tail = lines.sublist(marker + 1).where((l) => l.isNotEmpty);
+      expect(main.where((l) => l.contains(',unknown,')), isEmpty);
+      expect(tail, isNotEmpty);
+      expect(tail.every((l) => l.contains(',unknown,')), isTrue);
+      expect(
+          tail.length,
+          FardriverParamCatalog.all
+              .where((p) => p.unidentified && p.block != 0x5D)
+              .length);
+    });
+
+    test('new-format CSV round-trips', () {
+      final dump = _hebDump();
+      final back = ParameterCsvCodec.decode(ParameterCsvCodec.encode(dump));
+      expect(back.blocks, dump.blocks);
+    });
+
+    test('old v1.0 CSV (no notice, unknowns interleaved) still parses', () {
+      final old =
+          File('$_fixtureDir/synthetic_696_v1_0.csv').readAsStringSync();
+      expect(old, isNot(contains('# notice')));
+      expect(old, isNot(contains('# unidentified')));
+      final dump = ParameterDumpIo.parseFile(utf8.encode(old), 'old.csv');
+      expect(dump.blocks, _hebDump().blocks);
+      expect(ParameterDiff.compare(dump, _hebDump()), isEmpty);
+    });
+
+    test('compare old CSV vs new CSV vs HEB shows no differences', () {
+      final heb = _hebDump();
+      final newer = ParameterCsvCodec.decode(ParameterCsvCodec.encode(heb));
+      final old = ParameterCsvCodec.decode(
+          File('$_fixtureDir/synthetic_696_v1_0.csv').readAsStringSync());
+      expect(ParameterDiff.compare(old, newer), isEmpty);
+      expect(ParameterDiff.compare(heb, old), isEmpty);
+    });
+
+    test('changed unidentified rows stay in the diff, in their own section',
+        () {
+      final changed = _syntheticHeb();
+      final def = FardriverParamCatalog.all.firstWhere(
+          (p) => p.unidentified && p.block != 0x5D && p.bitWidth >= 8);
+      final index = HebFile.blockAddresses.indexOf(def.block);
+      changed[index * 12 + def.byteOffset] ^= 0xFF;
+      final entries = ParameterDiff.compare(_hebDump(), _hebDump(changed));
+      expect(entries.any((e) => e.def.unidentified), isTrue);
+      final rows =
+          FlatCsv.decode(ParameterDiff.toCsv(_hebDump(), _hebDump(changed)));
+      final marker = rows
+          .indexWhere((r) => r.first == ParameterCsvCodec.unidentifiedMarker);
+      expect(rows.sublist(marker + 1).map((r) => r.last), contains('unknown'));
     });
   });
 

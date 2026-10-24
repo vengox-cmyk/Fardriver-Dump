@@ -24,8 +24,8 @@ class DiagnosticLogExporter {
           XFile(file.path,
               mimeType: 'text/plain', name: 'arcdash_diagnostic_log.txt')
         ],
-        subject: 'ArcDash BLE diagnostic log',
-        text: 'ArcDash BLE diagnostic log',
+        subject: 'FarSure BLE diagnostic log',
+        text: 'FarSure BLE diagnostic log',
       ));
       if (result.status == ShareResultStatus.success) {
         shared = true;

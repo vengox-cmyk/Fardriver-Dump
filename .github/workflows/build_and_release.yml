@@ -1,4 +1,4 @@
-name: ArcDash Build & Release
+name: FarSure Build & Release
 
 on:
   push:
@@ -41,7 +41,7 @@ jobs:
         id: versioning
         run: |
           COMMITS=$(git rev-list --count HEAD)
-          VERSION="1.0.${COMMITS}"
+          VERSION="1.1.${COMMITS}"
           echo "VERSION=$VERSION" >> $GITHUB_ENV
           echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
           echo "Calculated version: $VERSION"
@@ -52,7 +52,7 @@ jobs:
       - name: Prepare APK File
         run: |
           mkdir -p release-apk
-          cp build/app/outputs/flutter-apk/app-release.apk release-apk/ArcDash-v${{ env.VERSION }}.apk
+          cp build/app/outputs/flutter-apk/app-release.apk release-apk/FarSure-v${{ env.VERSION }}.apk
 
       - name: Delete Old Rolling Release if exists
         env:
@@ -64,11 +64,11 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ env.VERSION }}
-          name: "ArcDash v${{ env.VERSION }}"
+          name: "FarSure v${{ env.VERSION }}"
           body: |
             Automatic release build **v${{ env.VERSION }}** (commit `${{ github.sha }}`).
             Universal release APK (all ABIs, one file), signed with the same development key as earlier builds, so it installs over previous versions.
             Workflow run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-          files: release-apk/ArcDash-v${{ env.VERSION }}.apk
+          files: release-apk/FarSure-v${{ env.VERSION }}.apk
           prerelease: false
 

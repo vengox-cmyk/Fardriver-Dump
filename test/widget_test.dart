@@ -1,3 +1,5 @@
+import 'package:arcdash/services/disclaimer.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:arcdash/app.dart';
 import 'package:arcdash/providers/bluetooth_provider.dart';
 import 'package:arcdash/providers/controller_provider.dart';
@@ -18,6 +20,9 @@ import 'package:arcdash/services/app_settings_repository.dart';
 import 'package:arcdash/services/range_prediction_repository.dart';
 
 void main() {
+  // The use-at-your-own-risk notice is covered in disclaimer_test.dart.
+  setUp(() => SharedPreferences.setMockInitialValues({Disclaimer.prefKey: 1}));
+
   testWidgets('ArcDash starts on the dashboard route', (tester) async {
     await tester.pumpWidget(
       ProviderScope(
@@ -229,12 +234,13 @@ void main() {
   });
 
   for (final size in const [Size(390, 844), Size(844, 390)]) {
-    testWidgets('main screen shows Vengox and the runtime version ($size)',
+    testWidgets(
+        'main screen shows FarSure by Vengox and the runtime version ($size)',
         (tester) async {
       PackageInfo.setMockInitialValues(
         appName: 'ArcDash',
         packageName: 'com.arcdash',
-        version: '1.0.188',
+        version: '1.1.188',
         buildNumber: '42',
         buildSignature: '',
       );
@@ -257,7 +263,7 @@ void main() {
       await tester.pump();
 
       expect(find.byType(DashboardScreen), findsOneWidget);
-      expect(find.text('Vengox · v1.0.188'), findsOneWidget);
+      expect(find.text('FarSure by Vengox · v1.1.188'), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
   }
@@ -340,6 +346,35 @@ void main() {
           avgConsumptionWhPerKm: 0,
         ),
         0);
+  });
+  testWidgets('fresh install shows the disclaimer over the dashboard',
+      (tester) async {
+    SharedPreferences.setMockInitialValues({});
+    PackageInfo.setMockInitialValues(
+      appName: 'FarSure',
+      packageName: 'com.arcdash',
+      version: '1.1.200',
+      buildNumber: '1',
+      buildSignature: '',
+    );
+    BrandVersionLabel.resetCache();
+    addTearDown(BrandVersionLabel.resetCache);
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          bluetoothServiceProvider.overrideWithValue(_FakeDongleService()),
+          storageServiceProvider.overrideWithValue(StorageService()),
+        ],
+        child: const ArcDashApp(locale: Locale('en')),
+      ),
+    );
+    await tester.pump();
+    await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 100)));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+    expect(find.text('I understand'), findsOneWidget);
+    expect(find.text('FarSure'), findsWidgets);
   });
 }
 

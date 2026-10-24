@@ -1,0 +1,321 @@
+# ArcDash FarDriver parameter dump,arcdash-param-csv-v1
+# controller_id,
+# capture_time,
+# app_version,fardriver_dump.py/1
+# source,heb:synthetic_696.heb
+# complete,yes
+# missing_blocks,
+# missing_optional_blocks,
+block,word_address,byte_offset,bits,name,raw_value,scaled_value,unit,enum_label,raw_block_hex,status,note
+0x00,0x00,0,0-15,VolCoeff,12299,12299,,,0B 30 55 7A 9F C4 E9 0E 33 58 7D A2,unverified,
+0x00,0x01,2,0-15,Voltage2Coeff,31317,31317,,,0B 30 55 7A 9F C4 E9 0E 33 58 7D A2,unverified,
+0x00,0x02,4,0-15,PhaseACoeff,-15201,-15201,,,0B 30 55 7A 9F C4 E9 0E 33 58 7D A2,unverified,
+0x00,0x03,6,0-15,LineCoeff,3817,3817,,,0B 30 55 7A 9F C4 E9 0E 33 58 7D A2,unverified,
+0x00,0x04,8,0-15,PhaseCCoeff,22579,22579,,,0B 30 55 7A 9F C4 E9 0E 33 58 7D A2,unverified,
+0x00,0x05,10,0-15,SaveNum,-23939,-23939,,,0B 30 55 7A 9F C4 E9 0E 33 58 7D A2,unverified,
+0x06,0x06,0,0-0,Arg2,1,1,,,C7 EC 11 36 5B 80 A5 CA EF 14 39 5E,unverified,
+0x06,0x06,0,1-2,AntiTheftPulse,3,3,,Type3,C7 EC 11 36 5B 80 A5 CA EF 14 39 5E,unverified,PulseFD
+0x06,0x06,0,3-3,unk02a,0,0,,,C7 EC 11 36 5B 80 A5 CA EF 14 39 5E,unknown,
+0x06,0x06,0,4-7,Protocol485,12,12,,,C7 EC 11 36 5B 80 A5 CA EF 14 39 5E,unverified,
+0x06,0x06,1,0-6,MorseCode,108,108,,,C7 EC 11 36 5B 80 A5 CA EF 14 39 5E,unverified,
+0x06,0x06,1,7-7,unk06b,1,1,,,C7 EC 11 36 5B 80 A5 CA EF 14 39 5E,unknown,
+0x06,0x07,2,0-7,SpeedKI,17,17,,,C7 EC 11 36 5B 80 A5 CA EF 14 39 5E,unverified,
+0x06,0x07,3,0-7,SppedKP,54,54,,,C7 EC 11 36 5B 80 A5 CA EF 14 39 5E,unverified,
+0x06,0x08,4,0-7,ThrottleLow,91,4.55,V,,C7 EC 11 36 5B 80 A5 CA EF 14 39 5E,unverified,/ 20
+0x06,0x08,5,0-7,ThrottleHigh,128,6.4,V,,C7 EC 11 36 5B 80 A5 CA EF 14 39 5E,unverified,/ 20
+0x06,0x09,6,0-15,FAIF,-13659,-13659,,,C7 EC 11 36 5B 80 A5 CA EF 14 39 5E,unverified,
+0x06,0x0A,8,0-15,CurveTime,5359,5359,,,C7 EC 11 36 5B 80 A5 CA EF 14 39 5E,unverified,
+0x06,0x0B,10,0-3,BrakeConfig,9,9,,?,C7 EC 11 36 5B 80 A5 CA EF 14 39 5E,unverified,
+0x06,0x0B,10,4-6,TempSensor,3,3,,KTY84_130,C7 EC 11 36 5B 80 A5 CA EF 14 39 5E,unverified,"NTC_PTC, Send(0x11, 0x01)"
+0x06,0x0B,10,7-7,PhaseExchange,0,0,,,C7 EC 11 36 5B 80 A5 CA EF 14 39 5E,unverified,
+0x06,0x0B,11,0-2,SlowDown,6,6,,,C7 EC 11 36 5B 80 A5 CA EF 14 39 5E,unverified,0x07
+0x06,0x0B,11,3-3,PC13Config,1,1,,,C7 EC 11 36 5B 80 A5 CA EF 14 39 5E,unverified,RaceResponse 0x08
+0x06,0x0B,11,4-4,CurrAntiTheft,1,1,,,C7 EC 11 36 5B 80 A5 CA EF 14 39 5E,unverified,0x10
+0x06,0x0B,11,5-6,ParkConfig,2,2,,SlowDownPark,C7 EC 11 36 5B 80 A5 CA EF 14 39 5E,unverified,0x60
+0x06,0x0B,11,7-7,Direction,0,0,,,C7 EC 11 36 5B 80 A5 CA EF 14 39 5E,unverified,"Send(0x12, 0x07) 0x80"
+0x0C,0x0C,0,0-15,PhaseOffset,-22397,-2239.7,,,83 A8 CD F2 17 3C 61 86 AB D0 F5 1A,unverified,"/ 10.0, Send(0x0A, 0x07)"
+0x0C,0x0D,2,0-15,ZeroBattCoeff,-3379,-3379,,,83 A8 CD F2 17 3C 61 86 AB D0 F5 1A,unverified,
+0x0C,0x0E,4,0-15,FullBattCoeff,15383,15383,,,83 A8 CD F2 17 3C 61 86 AB D0 F5 1A,unverified,
+0x0C,0x0F,6,0-7,StartKI,97,97,,,83 A8 CD F2 17 3C 61 86 AB D0 F5 1A,unverified,
+0x0C,0x0F,7,0-7,MidKI,134,134,,,83 A8 CD F2 17 3C 61 86 AB D0 F5 1A,unverified,
+0x0C,0x10,8,0-7,MaxKI,171,171,,,83 A8 CD F2 17 3C 61 86 AB D0 F5 1A,unverified,
+0x0C,0x10,9,0-7,StartKP,208,208,,,83 A8 CD F2 17 3C 61 86 AB D0 F5 1A,unverified,
+0x0C,0x11,10,0-7,MidKP,245,245,,,83 A8 CD F2 17 3C 61 86 AB D0 F5 1A,unverified,
+0x0C,0x11,11,0-7,MaxKP,26,26,,,83 A8 CD F2 17 3C 61 86 AB D0 F5 1A,unverified,
+0x12,0x12,0,0-15,LD,25663,25663,,,3F 64 89 AE D3 F8 1D 42 67 8C B1 D6,unverified,
+0x12,0x13,2,0-15,AlarmDelay,44681,44681,,,3F 64 89 AE D3 F8 1D 42 67 8C B1 D6,unverified,0x13
+0x12,0x14,4,0-7,PolePairs,211,211,,,3F 64 89 AE D3 F8 1D 42 67 8C B1 D6,unverified,"0x14, Send(0x12, 0x01)"
+0x12,0x14,5,0-7,unk14b,248,248,,,3F 64 89 AE D3 F8 1D 42 67 8C B1 D6,unknown,alway_s sent 0x59?
+0x12,0x15,6,0-15,MaxSpeed,16925,16925,rpm,,3F 64 89 AE D3 F8 1D 42 67 8C B1 D6,unverified,"0x15, Send(0x12, 0x02)"
+0x12,0x16,8,0-15,RatedPower,35943,35943,W,,3F 64 89 AE D3 F8 1D 42 67 8C B1 D6,unverified,"0x16, Send(0x12, 0x03)"
+0x12,0x17,10,0-15,RatedVoltage,54961,5496.1,V,,3F 64 89 AE D3 F8 1D 42 67 8C B1 D6,unverified,"0x17 / 10, Send(0x12, 0x04)"
+0x18,0x18,0,0-15,RatedSpeed,8443,8443,rpm,,FB 20 45 6A 8F B4 D9 FE 23 48 6D 92,unverified,"Send(0x12, 0x05)"
+0x18,0x19,2,0-15,MaxLineCurr,27205,6801.25,A,,FB 20 45 6A 8F B4 D9 FE 23 48 6D 92,unverified,"/ 4, Send(0x12, 0x1B)"
+0x18,0x1A,4,0-1,FollowConfig,3,3,,EABSWhenReleaseThrottle,FB 20 45 6A 8F B4 D9 FE 23 48 6D 92,unverified,
+0x18,0x1A,4,2-3,ThrottleResponse,3,3,,?,FB 20 45 6A 8F B4 D9 FE 23 48 6D 92,unverified,ECOConfig
+0x18,0x1A,4,4-5,WeakA,0,0,,,FB 20 45 6A 8F B4 D9 FE 23 48 6D 92,unverified,
+0x18,0x1A,4,6-7,RXD,2,2,,PP,FB 20 45 6A 8F B4 D9 FE 23 48 6D 92,unverified,"B10 GPIO config, == 3 affects A12 & USART2"
+0x18,0x1A,5,0-4,SpeedPulse,20,20,,,FB 20 45 6A 8F B4 D9 FE 23 48 6D 92,unverified,
+0x18,0x1A,5,5-7,GearConfig,5,5,,DefaultButtonMiddle,FB 20 45 6A 8F B4 D9 FE 23 48 6D 92,unverified,
+0x18,0x1B,6,0-15,LQ,65241,65241,,,FB 20 45 6A 8F B4 D9 FE 23 48 6D 92,unverified,
+0x18,0x1C,8,0-15,BattRatedCap,18467,18467,,,FB 20 45 6A 8F B4 D9 FE 23 48 6D 92,unverified,
+0x18,0x1D,10,0-15,IntRes,37485,37485,,,FB 20 45 6A 8F B4 D9 FE 23 48 6D 92,unverified,"Send(0x0F, 0x08)"
+0x1E,0x1E,0,0-7,FwReRatio,183,183,,,B7 DC 01 26 4B 70 95 BA DF 04 29 4E,unverified,
+0x1E,0x1E,1,0-0,ReverseSideStandSignal,0,0,,,B7 DC 01 26 4B 70 95 BA DF 04 29 4E,unverified,
+0x1E,0x1E,1,1-1,AllowSmallCurrentSwitching,0,0,,,B7 DC 01 26 4B 70 95 BA DF 04 29 4E,unverified,
+0x1E,0x1E,1,2-2,NeutralAntiSkidParking,1,1,,,B7 DC 01 26 4B 70 95 BA DF 04 29 4E,unverified,
+0x1E,0x1E,1,3-3,RecordMileage,1,1,,,B7 DC 01 26 4B 70 95 BA DF 04 29 4E,unverified,
+0x1E,0x1E,1,4-4,LowerMagneticBrake,1,1,,,B7 DC 01 26 4B 70 95 BA DF 04 29 4E,unverified,Extension code Y
+0x1E,0x1E,1,5-5,DownhillReverseOvervoltageCutoff,0,0,,,B7 DC 01 26 4B 70 95 BA DF 04 29 4E,unverified,
+0x1E,0x1E,1,6-6,ShieldedGearSpeedLimit2,1,1,,,B7 DC 01 26 4B 70 95 BA DF 04 29 4E,unverified,
+0x1E,0x1E,1,7-7,PD1Input,1,1,,,B7 DC 01 26 4B 70 95 BA DF 04 29 4E,unverified,
+0x1E,0x1F,2,0-15,LowVolProtect,9729,972.9,V,,B7 DC 01 26 4B 70 95 BA DF 04 29 4E,unverified,/ 10
+0x1E,0x20,4,0-15,CustomCode,4B70,Kp,,,B7 DC 01 26 4B 70 95 BA DF 04 29 4E,unverified,
+0x1E,0x21,6,0-0,BCState,1,1,,,B7 DC 01 26 4B 70 95 BA DF 04 29 4E,unverified,"Edge support, Side stand?"
+0x1E,0x21,6,1-1,SeatEnable,0,0,,,B7 DC 01 26 4B 70 95 BA DF 04 29 4E,unverified,"Zuotong, ""bucket"""
+0x1E,0x21,6,2-2,PEnable,1,1,,,B7 DC 01 26 4B 70 95 BA DF 04 29 4E,unverified,"PGear, ""P file"""
+0x1E,0x21,6,3-3,AutoBackPEnable,0,0,,,B7 DC 01 26 4B 70 95 BA DF 04 29 4E,unverified,AutoBackPStat
+0x1E,0x21,6,4-4,CruiseEnable,1,1,,,B7 DC 01 26 4B 70 95 BA DF 04 29 4E,unverified,XHStat
+0x1E,0x21,6,5-5,EABSEnable,0,0,,,B7 DC 01 26 4B 70 95 BA DF 04 29 4E,unverified,
+0x1E,0x21,6,6-6,PushEnable,0,0,,,B7 DC 01 26 4B 70 95 BA DF 04 29 4E,unverified,"TuixingS, ""Power implementation function"", enabling cancels PEnable"
+0x1E,0x21,6,7-7,ForceAntiTheft,1,1,,,B7 DC 01 26 4B 70 95 BA DF 04 29 4E,unverified,
+0x1E,0x21,7,0-0,OverSpeedAlarm,0,0,,,B7 DC 01 26 4B 70 95 BA DF 04 29 4E,unverified,
+0x1E,0x21,7,1-1,BrakeStillPark,1,1,,,B7 DC 01 26 4B 70 95 BA DF 04 29 4E,unverified,ParkDisableBrake
+0x1E,0x21,7,2-2,RememberGear,0,0,,,B7 DC 01 26 4B 70 95 BA DF 04 29 4E,unverified,GearRememberS
+0x1E,0x21,7,3-3,unk21a,1,1,,,B7 DC 01 26 4B 70 95 BA DF 04 29 4E,unknown,default 1
+0x1E,0x21,7,4-4,unk21b,1,1,,,B7 DC 01 26 4B 70 95 BA DF 04 29 4E,unknown,default 1
+0x1E,0x21,7,5-5,unk21c,1,1,,,B7 DC 01 26 4B 70 95 BA DF 04 29 4E,unknown,default 0
+0x1E,0x21,7,6-6,BackEnable,0,0,,,B7 DC 01 26 4B 70 95 BA DF 04 29 4E,unverified,REGear
+0x1E,0x21,7,7-7,RelayDelay1S,1,1,,,B7 DC 01 26 4B 70 95 BA DF 04 29 4E,unverified,
+0x1E,0x22,8,0-7,ModelYear,223,2223,,,B7 DC 01 26 4B 70 95 BA DF 04 29 4E,unverified,+ 2000
+0x1E,0x22,9,0-7,ModelMonth,4,4,,,B7 DC 01 26 4B 70 95 BA DF 04 29 4E,unverified,
+0x1E,0x23,10,0-7,ModelDay,41,41,,,B7 DC 01 26 4B 70 95 BA DF 04 29 4E,unverified,
+0x1E,0x23,11,0-7,TimeHour,78,78,,,B7 DC 01 26 4B 70 95 BA DF 04 29 4E,unverified,
+0x24,0x24,0,0-7,TimeMin,115,115,,,73 98 BD E2 07 2C 51 76 9B C0 E5 0A,unverified,
+0x24,0x24,1,0-7,TimeSecond,152,152,,,73 98 BD E2 07 2C 51 76 9B C0 E5 0A,unverified,
+0x24,0x25,2,0-15,HighVolProtect,58045,5804.5,V,,73 98 BD E2 07 2C 51 76 9B C0 E5 0A,unverified,/ 10
+0x24,0x26,4,0-15,CustomMaxLineCurr,11271,2817.75,A,,73 98 BD E2 07 2C 51 76 9B C0 E5 0A,unverified,/ 4
+0x24,0x27,6,0-15,CustomMaxPhaseCurr,30289,7572.25,A,,73 98 BD E2 07 2C 51 76 9B C0 E5 0A,unverified,/ 4
+0x24,0x28,8,0-15,BackSpeed,49307,49307,,,73 98 BD E2 07 2C 51 76 9B C0 E5 0A,unverified,"Send(0x11, 0x03)"
+0x24,0x29,10,0-15,LowSpeed,2789,2789,,,73 98 BD E2 07 2C 51 76 9B C0 E5 0A,unverified,"Send(0x11, 0x02)"
+0x2A,0x2A,0,0-15,MidSpeed,21551,21551,,,2F 54 79 9E C3 E8 0D 32 57 7C A1 C6,unverified,
+0x2A,0x2B,2,0-15,Max_Dec,40569,40569,,,2F 54 79 9E C3 E8 0D 32 57 7C A1 C6,unverified,
+0x2A,0x2C,4,0-7,FreeThrottle,195,195,,,2F 54 79 9E C3 E8 0D 32 57 7C A1 C6,unverified,
+0x2A,0x2C,5,0-7,unk2Cb,232,232,,,2F 54 79 9E C3 E8 0D 32 57 7C A1 C6,unknown,
+0x2A,0x2D,6,0-15,MaxPhaseCurr,12813,3203.25,A,,2F 54 79 9E C3 E8 0D 32 57 7C A1 C6,unverified,"/ 4, Send(0x12, 0x1A)"
+0x2A,0x2E,8,0-15,SpeedAnalog,31831,31831,,,2F 54 79 9E C3 E8 0D 32 57 7C A1 C6,unverified,
+0x2A,0x2F,10,0-15,Max_Acc,50849,50849,,,2F 54 79 9E C3 E8 0D 32 57 7C A1 C6,unverified,
+0x30,0x30,0,0-15,StopBackCurr,4331,4331,,,EB 10 35 5A 7F A4 C9 EE 13 38 5D 82,unverified,"Send(0x12, 0x18)"
+0x30,0x31,2,0-15,MaxBackCurr,23093,23093,,,EB 10 35 5A 7F A4 C9 EE 13 38 5D 82,unverified,"Send(0x12, 0x19)"
+0x30,0x32,4,0-7,LowSpeedLineCurr,127,99.2188,%,,EB 10 35 5A 7F A4 C9 EE 13 38 5D 82,unverified,
+0x30,0x32,5,0-7,MidSpeedLineCurr,164,128.125,%,,EB 10 35 5A 7F A4 C9 EE 13 38 5D 82,unverified,
+0x30,0x33,6,0-7,LowSpeedPhaseCurr,201,157.0313,%,,EB 10 35 5A 7F A4 C9 EE 13 38 5D 82,unverified,
+0x30,0x33,7,0-7,MidSppedPhaseCurr,238,185.9375,%,,EB 10 35 5A 7F A4 C9 EE 13 38 5D 82,unverified,
+0x30,0x34,8,0-15,BlockTime,14355,14355,,,EB 10 35 5A 7F A4 C9 EE 13 38 5D 82,unverified,
+0x30,0x35,10,0-15,SpdPulseNum,33373,33373,,,EB 10 35 5A 7F A4 C9 EE 13 38 5D 82,unverified,
+0x63,0x63,0,0-15,MaxLineCurr2,52391,52391,,,A7 CC F1 16 3B 60 85 AA CF F4 19 3E,unverified,
+0x63,0x64,2,0-15,MaxPhaseCurr2,5873,5873,,,A7 CC F1 16 3B 60 85 AA CF F4 19 3E,unverified,0x64
+0x63,0x65,4,0-7,MotorDia,59,59,,,A7 CC F1 16 3B 60 85 AA CF F4 19 3E,unverified,"0x65,  maybe not MotorDia - values include 4. prolly Application type"
+0x63,0x65,5,0-7,unk65b,96,96,,,A7 CC F1 16 3B 60 85 AA CF F4 19 3E,unknown,"33, 35, 36 - MaxPhaseCurr2 multipler?"
+0x63,0x66,6,0-15,TempCoeff,43653,43653,,,A7 CC F1 16 3B 60 85 AA CF F4 19 3E,unverified,0x66
+0x63,0x67,8,0-15,ProdMaxVol,62671,6267.1,V,,A7 CC F1 16 3B 60 85 AA CF F4 19 3E,unverified,"/ 10.0 67, paracnt_0"
+0x63,0x68,10,0-15,ISMax,15897,15897,,,A7 CC F1 16 3B 60 85 AA CF F4 19 3E,unverified,"0x68, paracnt_1"
+0x69,0x69,0,0-3,PausePin,3,3,,PIN5,63 88 AD D2 F7 1C 41 66 8B B0 D5 FA,unverified,"PPin, park? NC disables this feature"
+0x69,0x69,0,4-7,SideStandPin,6,6,,PIN3,63 88 AD D2 F7 1C 41 66 8B B0 D5 FA,unverified,BCPin
+0x69,0x69,1,0-3,CruisePin,8,8,,PB4,63 88 AD D2 F7 1C 41 66 8B B0 D5 FA,unverified,XHPin
+0x69,0x69,1,4-7,BoostPin,8,8,,PB4,63 88 AD D2 F7 1C 41 66 8B B0 D5 FA,unverified,Boost Pin
+0x69,0x6A,2,0-3,LowSpeedPin,13,13,,PD1,63 88 AD D2 F7 1C 41 66 8B B0 D5 FA,unverified,SDLPin
+0x69,0x6A,2,4-7,HighSpeedPin,10,10,,PIN2,63 88 AD D2 F7 1C 41 66 8B B0 D5 FA,unverified,SDHPin
+0x69,0x6A,3,0-3,ReversePin,2,2,,PIN15,63 88 AD D2 F7 1C 41 66 8B B0 D5 FA,unverified,REPin
+0x69,0x6A,3,4-7,ForwardPin,13,13,,PD1,63 88 AD D2 F7 1C 41 66 8B B0 D5 FA,unverified,FWPin
+0x69,0x6B,4,0-3,SwitchVolPin,7,7,,PIN8,63 88 AD D2 F7 1C 41 66 8B B0 D5 FA,unverified,Switch Voltage Pin 7 -> C15
+0x69,0x6B,4,4-7,SeatPin,15,15,,PINInvalid3,63 88 AD D2 F7 1C 41 66 8B B0 D5 FA,unverified,ZuotongPin
+0x69,0x6B,5,0-3,AntiTheftPin,12,12,,PIN9,63 88 AD D2 F7 1C 41 66 8B B0 D5 FA,unverified,"FDPin, ""Steel"" Pin"
+0x69,0x6B,5,4-7,ChargePin,1,1,,PIN24,63 88 AD D2 F7 1C 41 66 8B B0 D5 FA,unverified,CHGPin
+0x69,0x6C,6,0-15,LmtSpeed,26177,26177,,,63 88 AD D2 F7 1C 41 66 8B B0 D5 FA,unverified,LmtSpeed 6C
+0x69,0x6D,8,0-15,DistanceLSB,45195,4519.5,km,,63 88 AD D2 F7 1C 41 66 8B B0 D5 FA,unverified,/ 10 6D
+0x69,0x6E,10,0-7,ParaIndex,213,213,,,63 88 AD D2 F7 1C 41 66 8B B0 D5 FA,unverified,"ParaIndex 6E, prolly Function Code"
+0x69,0x6E,11,0-7,SpecialCode,FA,.,,,63 88 AD D2 F7 1C 41 66 8B B0 D5 FA,unverified,Y makes A11 output. X may be needed for CAN??
+0x7C,0x7C,0,0-0,unk7Ca,1,1,,,1F 44 69 8E B3 D8 FD 22 47 6C 91 B6,unknown,
+0x7C,0x7C,0,1-3,WeakTime,7,7,,,1F 44 69 8E B3 D8 FD 22 47 6C 91 B6,unverified,
+0x7C,0x7C,0,4-4,unk7Cb,1,1,,,1F 44 69 8E B3 D8 FD 22 47 6C 91 B6,unknown,
+0x7C,0x7C,0,5-7,QuickDown,0,0,,,1F 44 69 8E B3 D8 FD 22 47 6C 91 B6,unverified,
+0x7C,0x7C,1,0-0,SpeedMeterConfig1,0,0,,,1F 44 69 8E B3 D8 FD 22 47 6C 91 B6,unverified,Pulse
+0x7C,0x7C,1,1-1,SpeedMeterConfig2,0,0,,,1F 44 69 8E B3 D8 FD 22 47 6C 91 B6,unverified,IsolatedPulse
+0x7C,0x7C,1,2-2,FastRE,1,1,,,1F 44 69 8E B3 D8 FD 22 47 6C 91 B6,unverified,
+0x7C,0x7C,1,3-3,SpecialWeak,0,0,,,1F 44 69 8E B3 D8 FD 22 47 6C 91 B6,unverified,DeepWeak Special
+0x7C,0x7C,1,4-4,ZeroSwitch,0,0,,,1F 44 69 8E B3 D8 FD 22 47 6C 91 B6,unverified,"SpeedSwitch Valid, marked when Control_ID recevied via CAN"
+0x7C,0x7C,1,5-5,unk7Cc,0,0,,,1F 44 69 8E B3 D8 FD 22 47 6C 91 B6,unknown,
+0x7C,0x7C,1,6-6,MOE,1,1,,,1F 44 69 8E B3 D8 FD 22 47 6C 91 B6,unverified,
+0x7C,0x7C,1,7-7,SpeedMeterConfig3,0,0,,,1F 44 69 8E B3 D8 FD 22 47 6C 91 B6,unverified,Analog
+0x7C,0x7D,2,0-31,TotalTime,3635646057,3635646057,min,,1F 44 69 8E B3 D8 FD 22 47 6C 91 B6,unverified,"minutes, infoc0, wktime"
+0x7C,0x7F,6,0-31,infoc1,1816601341,1816601341,,,1F 44 69 8E B3 D8 FD 22 47 6C 91 B6,unknown,
+0x7C,0x81,10,0-15,DistanceMSB,46737,46737,,,1F 44 69 8E B3 D8 FD 22 47 6C 91 B6,unverified,"this << 16 / 10, km; total km = ((DistanceMSB << 16) | DistanceLSB) / 10 (per header)"
+0x82,0x82,0,0-15,ThrottleVoltage,219,2.19,V,,DB 00 25 4A 6F 94 B9 DE 03 28 4D 72,unverified,"* 0.01, 0x82"
+0x82,0x83,2,0-15,HighVolRestore,18981,1898.1,V,,DB 00 25 4A 6F 94 B9 DE 03 28 4D 72,unverified,"/ 10.0, 0x83"
+0x82,0x84,4,0-7,MotorTempProtect,111,111,°C,,DB 00 25 4A 6F 94 B9 DE 03 28 4D 72,unverified,0x84
+0x82,0x84,5,0-7,MotorTempRestore,148,148,°C,,DB 00 25 4A 6F 94 B9 DE 03 28 4D 72,unverified,
+0x82,0x85,6,0-7,MosTempProtect,185,185,°C,,DB 00 25 4A 6F 94 B9 DE 03 28 4D 72,unverified,0x85
+0x82,0x85,7,0-7,MosTempRestore,222,222,°C,,DB 00 25 4A 6F 94 B9 DE 03 28 4D 72,unverified,
+0x82,0x86,8,0-5,CANConfig,3,3,,,DB 00 25 4A 6F 94 B9 DE 03 28 4D 72,unverified,!= 0 -> A12 = AF_PP
+0x82,0x86,8,6-7,unk86b,0,0,,,DB 00 25 4A 6F 94 B9 DE 03 28 4D 72,unknown,
+0x82,0x86,9,0-7,HardwareVersion,28,(,,,DB 00 25 4A 6F 94 B9 DE 03 28 4D 72,unverified,Version0
+0x82,0x87,10,0-7,SoftwareVersionMajor,4D,M,,,DB 00 25 4A 6F 94 B9 DE 03 28 4D 72,unverified,Version1
+0x82,0x87,11,0-7,SoftwareVersionMinor,114,114,,,DB 00 25 4A 6F 94 B9 DE 03 28 4D 72,unverified,
+0x88,0x88,0,0-7,RatioMin,151,151,%,,97 BC E1 06 2B 50 75 9A BF E4 09 2E,unverified,
+0x88,0x88,1,0-7,Ratio500,188,188,%,,97 BC E1 06 2B 50 75 9A BF E4 09 2E,unverified,
+0x88,0x89,2,0-7,Ratio1000,225,225,%,,97 BC E1 06 2B 50 75 9A BF E4 09 2E,unverified,
+0x88,0x89,3,0-7,Ratio1500,6,6,%,,97 BC E1 06 2B 50 75 9A BF E4 09 2E,unverified,
+0x88,0x8A,4,0-7,Ratio2000,43,43,%,,97 BC E1 06 2B 50 75 9A BF E4 09 2E,unverified,
+0x88,0x8A,5,0-7,Ratio2500,80,80,%,,97 BC E1 06 2B 50 75 9A BF E4 09 2E,unverified,
+0x88,0x8B,6,0-7,Ratio3000,117,117,%,,97 BC E1 06 2B 50 75 9A BF E4 09 2E,unverified,
+0x88,0x8B,7,0-7,Ratio3500,154,154,%,,97 BC E1 06 2B 50 75 9A BF E4 09 2E,unverified,
+0x88,0x8C,8,0-7,Ratio4000,191,191,%,,97 BC E1 06 2B 50 75 9A BF E4 09 2E,unverified,
+0x88,0x8C,9,0-7,Ratio4500,228,228,%,,97 BC E1 06 2B 50 75 9A BF E4 09 2E,unverified,
+0x88,0x8D,10,0-7,Ratio5000,9,9,%,,97 BC E1 06 2B 50 75 9A BF E4 09 2E,unverified,
+0x88,0x8D,11,0-7,Ratio5500,46,46,%,,97 BC E1 06 2B 50 75 9A BF E4 09 2E,unverified,
+0x8E,0x8E,0,0-7,Ratio6000,83,83,%,,53 78 9D C2 E7 0C 31 56 7B A0 C5 EA,unverified,
+0x8E,0x8E,1,0-7,Ratio6500,120,120,%,,53 78 9D C2 E7 0C 31 56 7B A0 C5 EA,unverified,
+0x8E,0x8F,2,0-7,Ratio7000,157,157,%,,53 78 9D C2 E7 0C 31 56 7B A0 C5 EA,unverified,
+0x8E,0x8F,3,0-7,Ratio7500,194,194,%,,53 78 9D C2 E7 0C 31 56 7B A0 C5 EA,unverified,
+0x8E,0x90,4,0-7,Ratio8000,231,231,%,,53 78 9D C2 E7 0C 31 56 7B A0 C5 EA,unverified,
+0x8E,0x90,5,0-7,Ratio8500,12,12,%,,53 78 9D C2 E7 0C 31 56 7B A0 C5 EA,unverified,
+0x8E,0x91,6,0-7,Ratio9000,49,49,%,,53 78 9D C2 E7 0C 31 56 7B A0 C5 EA,unverified,
+0x8E,0x91,7,0-7,RatioMax,86,86,%,,53 78 9D C2 E7 0C 31 56 7B A0 C5 EA,unverified,
+0x8E,0x92,8,0-7,nratio_0,123,123,%,,53 78 9D C2 E7 0C 31 56 7B A0 C5 EA,unverified,
+0x8E,0x92,9,0-7,nratio_1,-96,-96,%,,53 78 9D C2 E7 0C 31 56 7B A0 C5 EA,unverified,
+0x8E,0x93,10,0-7,nratio_2,-59,-59,%,,53 78 9D C2 E7 0C 31 56 7B A0 C5 EA,unverified,
+0x8E,0x93,11,0-7,nratio_3,-22,-22,%,,53 78 9D C2 E7 0C 31 56 7B A0 C5 EA,unverified,
+0x94,0x94,0,0-7,nratio_4,15,15,%,,0F 34 59 7E A3 C8 ED 12 37 5C 81 A6,unverified,
+0x94,0x94,1,0-7,nratio_5,52,52,%,,0F 34 59 7E A3 C8 ED 12 37 5C 81 A6,unverified,
+0x94,0x95,2,0-7,nratio_6,89,89,%,,0F 34 59 7E A3 C8 ED 12 37 5C 81 A6,unverified,
+0x94,0x95,3,0-7,nratio_7,126,126,%,,0F 34 59 7E A3 C8 ED 12 37 5C 81 A6,unverified,
+0x94,0x96,4,0-7,nratio_8,-93,-93,%,,0F 34 59 7E A3 C8 ED 12 37 5C 81 A6,unverified,
+0x94,0x96,5,0-7,nratio_9,-56,-56,%,,0F 34 59 7E A3 C8 ED 12 37 5C 81 A6,unverified,
+0x94,0x97,6,0-7,nratio_10,-19,-19,%,,0F 34 59 7E A3 C8 ED 12 37 5C 81 A6,unverified,
+0x94,0x97,7,0-7,nratio_11,18,18,%,,0F 34 59 7E A3 C8 ED 12 37 5C 81 A6,unverified,
+0x94,0x98,8,0-7,nratio_12,55,55,%,,0F 34 59 7E A3 C8 ED 12 37 5C 81 A6,unverified,
+0x94,0x98,9,0-7,nratio_13,92,92,%,,0F 34 59 7E A3 C8 ED 12 37 5C 81 A6,unverified,
+0x94,0x99,10,0-7,nratio_14,-127,-127,%,,0F 34 59 7E A3 C8 ED 12 37 5C 81 A6,unverified,
+0x94,0x99,11,0-7,nratio_15,-90,-90,%,,0F 34 59 7E A3 C8 ED 12 37 5C 81 A6,unverified,
+0x9A,0x9A,0,0-7,nratio_16,-53,-53,%,,CB F0 15 3A 5F 84 A9 CE F3 18 3D 62,unverified,9A
+0x9A,0x9A,1,0-7,nratio_17,-16,-16,%,,CB F0 15 3A 5F 84 A9 CE F3 18 3D 62,unverified,
+0x9A,0x9B,2,0-7,nratio_18,21,21,%,,CB F0 15 3A 5F 84 A9 CE F3 18 3D 62,unverified,9B
+0x9A,0x9B,3,0-7,nratio_19,58,58,%,,CB F0 15 3A 5F 84 A9 CE F3 18 3D 62,unverified,
+0x9A,0x9C,4,0-3,AN,15,15,,,CB F0 15 3A 5F 84 A9 CE F3 18 3D 62,unverified,
+0x9A,0x9C,4,4-4,AlarmRecord_1,1,1,,,CB F0 15 3A 5F 84 A9 CE F3 18 3D 62,unverified,
+0x9A,0x9C,4,5-5,RelayOut,0,0,,,CB F0 15 3A 5F 84 A9 CE F3 18 3D 62,unverified,
+0x9A,0x9C,4,6-7,EmptySpeed,1,1,,,CB F0 15 3A 5F 84 A9 CE F3 18 3D 62,unverified,
+0x9A,0x9C,5,0-4,LM,4,4,,,CB F0 15 3A 5F 84 A9 CE F3 18 3D 62,unverified,
+0x9A,0x9C,5,5-7,unk9Db,4,4,,,CB F0 15 3A 5F 84 A9 CE F3 18 3D 62,unknown,
+0x9A,0x9D,6,0-15,InitVol,-12631,-12631,,,CB F0 15 3A 5F 84 A9 CE F3 18 3D 62,unverified,9D
+0x9A,0x9E,8,0-15,Stage1Curr,6387,6387,,,CB F0 15 3A 5F 84 A9 CE F3 18 3D 62,unverified,TurtleSpeedCurrCoeff
+0x9A,0x9F,10,0-7,VolSelectRatio,61,61,,,CB F0 15 3A 5F 84 A9 CE F3 18 3D 62,unverified,9F
+0x9A,0x9F,11,0-7,unk9Fb,98,98,,,CB F0 15 3A 5F 84 A9 CE F3 18 3D 62,unknown,
+0xA0,0xA0,0,0-7,unkA0,135,135,,,87 AC D1 F6 1B 40 65 8A AF D4 F9 1E,unknown,0x88 usually?
+0xA0,0xA0,1,0-7,SysCmd,172,172,,,87 AC D1 F6 1B 40 65 8A AF D4 F9 1E,unverified,
+0xA0,0xA1,2,0-79,ModelName,D1F61B40658AAFD4F91E,...@e.....,,,87 AC D1 F6 1B 40 65 8A AF D4 F9 1E,unverified,
+0xA6,0xA6,0,0-79,ModelName,43688DB2D7FC21466B90,Ch....!Fk.,,,43 68 8D B2 D7 FC 21 46 6B 90 B5 DA,unverified,
+0xA6,0xAB,10,0-15,unkAB,55989,55989,,,43 68 8D B2 D7 FC 21 46 6B 90 B5 DA,unknown,where password is stored?
+0xAC,0xAC,0,0-15,unkAC,9471,9471,,,FF 24 49 6E 93 B8 DD 02 27 4C 71 96,unknown,"more password, pin states?"
+0xAC,0xAD,2,0-15,unkAD,28233,28233,,,FF 24 49 6E 93 B8 DD 02 27 4C 71 96,unknown,phone number start1[14]
+0xAC,0xAE,4,0-15,unkAE,47251,47251,,,FF 24 49 6E 93 B8 DD 02 27 4C 71 96,unknown,phone number start0[14]
+0xAC,0xAF,6,0-15,unkAF,733,733,,,FF 24 49 6E 93 B8 DD 02 27 4C 71 96,unknown,
+0xAC,0xB0,8,0-15,unkB0,19495,19495,,,FF 24 49 6E 93 B8 DD 02 27 4C 71 96,unknown,
+0xAC,0xB1,10,0-15,unkB1,38513,38513,,,FF 24 49 6E 93 B8 DD 02 27 4C 71 96,unknown,
+0xB2,0xB2,0,0-15,unkB2,57531,57531,,,BB E0 05 2A 4F 74 99 BE E3 08 2D 52,unknown,
+0xB2,0xB3,2,0-15,unkB3,10757,10757,,,BB E0 05 2A 4F 74 99 BE E3 08 2D 52,unknown,
+0xB2,0xB4,4,0-7,OneCommSec_0,79,79,,,BB E0 05 2A 4F 74 99 BE E3 08 2D 52,unverified,SEC0 B4
+0xB2,0xB4,5,0-7,OneCommSec_1,116,116,,,BB E0 05 2A 4F 74 99 BE E3 08 2D 52,unverified,SEC1
+0xB2,0xB5,6,0-7,OneCommSec_2,153,153,,,BB E0 05 2A 4F 74 99 BE E3 08 2D 52,unverified,SEC2 B5
+0xB2,0xB5,7,0-7,OneCommSec_3,190,190,,,BB E0 05 2A 4F 74 99 BE E3 08 2D 52,unverified,SEC3
+0xB2,0xB6,8,0-7,OneCommSec_4,227,227,,,BB E0 05 2A 4F 74 99 BE E3 08 2D 52,unverified,SEC4
+0xB2,0xB6,9,0-7,OneCommSec_5,8,8,,,BB E0 05 2A 4F 74 99 BE E3 08 2D 52,unverified,SEC5
+0xB2,0xB7,10,0-7,OneCommSec_6,45,45,,,BB E0 05 2A 4F 74 99 BE E3 08 2D 52,unverified,SEC6
+0xB2,0xB7,11,0-7,OneCommSec_7,82,82,,,BB E0 05 2A 4F 74 99 BE E3 08 2D 52,unverified,SEC7
+0xB8,0xB8,0,0-3,PausePosition,7,7,,,77 9C C1 E6 0B 30 55 7A 9F C4 E9 0E,unverified,PPosition
+0xB8,0xB8,0,4-7,SideStandPosition,7,7,,,77 9C C1 E6 0B 30 55 7A 9F C4 E9 0E,unverified,BCPosition
+0xB8,0xB8,1,0-3,HBarPosition,12,12,,,77 9C C1 E6 0B 30 55 7A 9F C4 E9 0E,unverified,
+0xB8,0xB8,1,4-7,AntiTheftPosition,9,9,,,77 9C C1 E6 0B 30 55 7A 9F C4 E9 0E,unverified,FDPosition
+0xB8,0xB9,2,0-15,unkB9,59073,59073,,,77 9C C1 E6 0B 30 55 7A 9F C4 E9 0E,unknown,
+0xB8,0xBA,4,0-7,Pulse,11,11,,,77 9C C1 E6 0B 30 55 7A 9F C4 E9 0E,unverified,
+0xB8,0xBA,5,0-7,SQH,48,48,,,77 9C C1 E6 0B 30 55 7A 9F C4 E9 0E,unverified,
+0xB8,0xBB,6,0-15,OnelineCurrCoeff,31317,31317,,,77 9C C1 E6 0B 30 55 7A 9F C4 E9 0E,unverified,CurrentCoeff
+0xB8,0xBC,8,0-4,BackPTime,31,310,s,,77 9C C1 E6 0B 30 55 7A 9F C4 E9 0E,unverified,"ReleasePTime, ReleaseToPTime, * 10, seconds"
+0xB8,0xBC,8,5-7,ReleaseToSeat,4,4,s,,77 9C C1 E6 0B 30 55 7A 9F C4 E9 0E,unverified,"SeatDelay, seconds"
+0xB8,0xBC,9,0-1,CANBaud,0,0,,Baud250K,77 9C C1 E6 0B 30 55 7A 9F C4 E9 0E,unverified,CanSel
+0xB8,0xBC,9,2-3,unkBC,1,1,,,77 9C C1 E6 0B 30 55 7A 9F C4 E9 0E,unknown,set by CAN processing? resets baud to 250K as well
+0xB8,0xBC,9,4-5,PasswordStatus,0,0,,PasswordProtected,77 9C C1 E6 0B 30 55 7A 9F C4 E9 0E,unverified,
+0xB8,0xBC,9,6-7,unkBCb,3,3,,,77 9C C1 E6 0B 30 55 7A 9F C4 E9 0E,unknown,
+0xB8,0xBD,10,0-7,Stage1Soc,233,233,%,,77 9C C1 E6 0B 30 55 7A 9F C4 E9 0E,unverified,
+0xB8,0xBD,11,0-7,Stage2Soc,14,14,%,,77 9C C1 E6 0B 30 55 7A 9F C4 E9 0E,unverified,"paracnt_3 : 4, LINECURR?"
+0xBE,0xBE,0,0-7,LowVolWay,51,51,,?,33 58 7D A2 C7 EC 11 36 5B 80 A5 CA,unverified,"cfg190l, CurrLimitWay"
+0xBE,0xBE,1,0-3,unkBEb,8,8,,,33 58 7D A2 C7 EC 11 36 5B 80 A5 CA,unknown,"< 8 with (SpecialCode - A < 7) makes GPIOB_9 output, affects Sensor/Application type. prolly Current sensor type"
+0xBE,0xBE,1,4-7,AccCoeff,5,5,,,33 58 7D A2 C7 EC 11 36 5B 80 A5 CA,unverified,
+0xBE,0xBF,2,0-15,BstTime,41597,83.194,s,,33 58 7D A2 C7 EC 11 36 5B 80 A5 CA,unverified,"/ 500, seconds"
+0xBE,0xC0,4,0-15,BstRelease,60615,121.23,s,,33 58 7D A2 C7 EC 11 36 5B 80 A5 CA,unverified,"/ 500, seconds"
+0xBE,0xC1,6,0-15,ParkTime,13841,27.682,s,,33 58 7D A2 C7 EC 11 36 5B 80 A5 CA,unverified,"/ 500, seconds"
+0xBE,0xC2,8,0-5,ReverseTime,27,27,,,33 58 7D A2 C7 EC 11 36 5B 80 A5 CA,unverified,InverseTime
+0xBE,0xC2,8,6-6,JLNationalStandardStatus,1,1,,,33 58 7D A2 C7 EC 11 36 5B 80 A5 CA,unverified,
+0xBE,0xC2,8,7-7,Press2ForP,0,0,,,33 58 7D A2 C7 EC 11 36 5B 80 A5 CA,unverified,doesn't use D1 maybe?
+0xBE,0xC2,9,0-0,LowMediumToHighSpeed,0,0,,,33 58 7D A2 C7 EC 11 36 5B 80 A5 CA,unverified,
+0xBE,0xC2,9,1-1,NoSoundPrompt,0,0,,,33 58 7D A2 C7 EC 11 36 5B 80 A5 CA,unverified,
+0xBE,0xC2,9,2-2,Reserved,0,0,,,33 58 7D A2 C7 EC 11 36 5B 80 A5 CA,unknown,
+0xBE,0xC2,9,3-3,SilenceBuzzer,0,0,,,33 58 7D A2 C7 EC 11 36 5B 80 A5 CA,unverified,
+0xBE,0xC2,9,4-4,EnableBackupBuzzer,0,0,,,33 58 7D A2 C7 EC 11 36 5B 80 A5 CA,unverified,
+0xBE,0xC2,9,5-5,DisableMotorAngleSensorRepair,0,0,,,33 58 7D A2 C7 EC 11 36 5B 80 A5 CA,unverified,
+0xBE,0xC2,9,6-6,AllowBrakeFaultRepair,0,0,,,33 58 7D A2 C7 EC 11 36 5B 80 A5 CA,unverified,
+0xBE,0xC2,9,7-7,ReverseOneLine,1,1,,,33 58 7D A2 C7 EC 11 36 5B 80 A5 CA,unverified,
+0xBE,0xC3,10,0-15,TorqueCoeff,51877,51877,,,33 58 7D A2 C7 EC 11 36 5B 80 A5 CA,unverified,C3
+0xC4,0xC4,0,0-0,IdleClutchFunction,1,1,,,EF 14 39 5E 83 A8 CD F2 17 3C 61 86,unverified,H67
+0xC4,0xC4,0,1-1,AutomaticVoltageSwitching,1,1,,,EF 14 39 5E 83 A8 CD F2 17 3C 61 86,unverified,H72
+0xC4,0xC4,0,2-2,ReverseNeutralForIgnition,1,1,,,EF 14 39 5E 83 A8 CD F2 17 3C 61 86,unverified,H72
+0xC4,0xC4,0,3-3,KnobToAdjustMaximumBusBar,1,1,,,EF 14 39 5E 83 A8 CD F2 17 3C 61 86,unverified,H72
+0xC4,0xC4,0,4-4,OneTouchRepairSwitching,0,0,,,EF 14 39 5E 83 A8 CD F2 17 3C 61 86,unverified,H72
+0xC4,0xC4,0,5-5,SqueezeBrake2xForPark,1,1,,,EF 14 39 5E 83 A8 CD F2 17 3C 61 86,unverified,H72
+0xC4,0xC4,0,6-6,SqueezeBrakeToReleasePark,1,1,,,EF 14 39 5E 83 A8 CD F2 17 3C 61 86,unverified,H72
+0xC4,0xC4,0,7-7,SingleCellNoBoost,1,1,,,EF 14 39 5E 83 A8 CD F2 17 3C 61 86,unverified,H72
+0xC4,0xC4,1,0-7,LearnVolLow,20,20,,,EF 14 39 5E 83 A8 CD F2 17 3C 61 86,unverified,"LearnVol, VQL"
+0xC4,0xC5,2,0-0,TapForwardAndBack,1,1,,,EF 14 39 5E 83 A8 CD F2 17 3C 61 86,unverified,H67
+0xC4,0xC5,2,1-1,DualThrottleVoltage,0,0,,,EF 14 39 5E 83 A8 CD F2 17 3C 61 86,unverified,H72
+0xC4,0xC5,2,2-2,CenterThrottleNeutral,0,0,,,EF 14 39 5E 83 A8 CD F2 17 3C 61 86,unverified,H74
+0xC4,0xC5,2,3-3,EnableOneClickRepair,1,1,,,EF 14 39 5E 83 A8 CD F2 17 3C 61 86,unverified,H72
+0xC4,0xC5,2,4-4,EnhancedInpuSignalFiltering,1,1,,,EF 14 39 5E 83 A8 CD F2 17 3C 61 86,unverified,H72
+0xC4,0xC5,2,5-5,UnlimitedCruiseSpeed,1,1,,,EF 14 39 5E 83 A8 CD F2 17 3C 61 86,unverified,H72
+0xC4,0xC5,2,6-6,HallDetectionX6,0,0,,,EF 14 39 5E 83 A8 CD F2 17 3C 61 86,unverified,H72
+0xC4,0xC5,2,7-7,NewMTPAVector,0,0,,,EF 14 39 5E 83 A8 CD F2 17 3C 61 86,unverified,H72
+0xC4,0xC5,3,0-7,LearnVolHigh,94,94,,,EF 14 39 5E 83 A8 CD F2 17 3C 61 86,unverified,"LearnVoh, VQH, related to A11"
+0xC4,0xC6,4,0-15,SlowDownRpm,43139,43139,,,EF 14 39 5E 83 A8 CD F2 17 3C 61 86,unverified,ParkDiff
+0xC4,0xC7,6,0-15,StartIs,62157,62157,,,EF 14 39 5E 83 A8 CD F2 17 3C 61 86,unverified,IsInStart
+0xC4,0xC8,8,0-15,ThrottleInsert,15383,15383,,,EF 14 39 5E 83 A8 CD F2 17 3C 61 86,unverified,& 0x20 TCS
+0xC4,0xC9,10,0-7,ExitFollowSpeed,97,97,,,EF 14 39 5E 83 A8 CD F2 17 3C 61 86,unverified,
+0xC4,0xC9,11,0-7,ReCurrRatio,134,134,,,EF 14 39 5E 83 A8 CD F2 17 3C 61 86,unverified,
+0xCA,0xCA,0,0-7,AngleLearn,171,171,,,AB D0 F5 1A 3F 64 89 AE D3 F8 1D 42,unverified,
+0xCA,0xCA,1,0-3,SpeedLimitPin,0,0,,NC,AB D0 F5 1A 3F 64 89 AE D3 F8 1D 42,unverified,"4 -> A15, 5 -> C13"
+0xCA,0xCA,1,4-7,RepairPin,13,13,,PD1,AB D0 F5 1A 3F 64 89 AE D3 F8 1D 42,unverified,OneKeyPin
+0xCA,0xCB,2,0-7,NoCanCnt,245,245,,,AB D0 F5 1A 3F 64 89 AE D3 F8 1D 42,unverified,"CAN Detect, ms, if >= 6 then * 2 else * 500; non-linear: >= 6 -> *2 ms else *500 ms (per header)"
+0xCA,0xCB,3,0-3,SPModeConfig,10,10,,Button4SpeedHigh,AB D0 F5 1A 3F 64 89 AE D3 F8 1D 42,unverified,"HighLowSpeed, SDHDs/SDLDs"
+0xCA,0xCB,3,4-5,Temp70,1,1,,,AB D0 F5 1A 3F 64 89 AE D3 F8 1D 42,unverified,
+0xCA,0xCB,3,6-6,LongBack,0,0,,,AB D0 F5 1A 3F 64 89 AE D3 F8 1D 42,unverified,"Push RE, toggle vs momentary?"
+0xCA,0xCB,3,7-7,ThrottleLost,0,0,,,AB D0 F5 1A 3F 64 89 AE D3 F8 1D 42,unverified,
+0xCA,0xCC,4,0-7,LearnThrottle,63,63,,,AB D0 F5 1A 3F 64 89 AE D3 F8 1D 42,unverified,
+0xCA,0xCC,5,0-7,SpeedLowCap,100,100,,,AB D0 F5 1A 3F 64 89 AE D3 F8 1D 42,unverified,LmtSpdMinCap
+0xCA,0xCD,6,0-7,MidSpeedCap,137,137,,,AB D0 F5 1A 3F 64 89 AE D3 F8 1D 42,unverified,LmtSpdStartCap
+0xCA,0xCD,7,0-7,SpeedLimitByCap,174,174,,,AB D0 F5 1A 3F 64 89 AE D3 F8 1D 42,unverified,
+0xCA,0xCE,8,0-7,MinSpeedCapCoeff,211,211,,,AB D0 F5 1A 3F 64 89 AE D3 F8 1D 42,unverified,LmtSpdMaxCoeff
+0xCA,0xCE,9,0-3,ParkCoeff,8,8,,,AB D0 F5 1A 3F 64 89 AE D3 F8 1D 42,unverified,SlowDownCoeff
+0xCA,0xCE,9,4-7,BattSignal,15,15,,?,AB D0 F5 1A 3F 64 89 AE D3 F8 1D 42,unverified,BatSel
+0xCA,0xCF,10,0-15,ReIsinAcc,16925,16925,,,AB D0 F5 1A 3F 64 89 AE D3 F8 1D 42,unverified,
+0xD0,0xD0,0,0-7,Data0,103,103,,,67 8C B1 D6 FB 20 45 6A 8F B4 D9 FE,unknown,
+0xD0,0xD0,1,0-7,Data1,140,140,,,67 8C B1 D6 FB 20 45 6A 8F B4 D9 FE,unknown,
+0xD0,0xD1,2,0-7,BMQHALL,177,177,,,67 8C B1 D6 FB 20 45 6A 8F B4 D9 FE,unverified,
+0xD0,0xD1,3,0-7,AVGPower,214,856,Wh/km,,67 8C B1 D6 FB 20 45 6A 8F B4 D9 FE,unverified,"* 4, Wh/km, DataVoltage1"
+0xD0,0xD2,4,0-7,WheelRatio,251,251,,,67 8C B1 D6 FB 20 45 6A 8F B4 D9 FE,unverified,ArcDash telemetry reads WheelRadius at byte 4 and WheelRatio at byte 5 (swapped vs fardriver.hpp); unconfirmed which is right
+0xD0,0xD2,5,0-7,WheelRadius,32,32,,,67 8C B1 D6 FB 20 45 6A 8F B4 D9 FE,unverified,see WheelRatio: ArcDash telemetry reads this at byte 4
+0xD0,0xD3,6,0-7,AVGSpeed,69,69,km/h,,67 8C B1 D6 FB 20 45 6A 8F B4 D9 FE,unverified,"km/h, DataVoltage4"
+0xD0,0xD3,7,0-7,WheelWidth,106,106,,,67 8C B1 D6 FB 20 45 6A 8F B4 D9 FE,unverified,
+0xD0,0xD4,8,0-15,RateRatio,46223,46223,,,67 8C B1 D6 FB 20 45 6A 8F B4 D9 FE,unverified,SpeedRatio
+0xD0,0xD5,10,0-1,Idle,1,1,,Idle0_9ms,67 8C B1 D6 FB 20 45 6A 8F B4 D9 FE,unverified,
+0xD0,0xD5,10,2-3,Stop,2,2,,Stop124ms,67 8C B1 D6 FB 20 45 6A 8F B4 D9 FE,unverified,
+0xD0,0xD5,10,4-7,ByteOption,13,13,,,67 8C B1 D6 FB 20 45 6A 8F B4 D9 FE,unverified,Byte89Sel
+0xD0,0xD5,11,0-7,SpecialFrame,254,254,,?,67 8C B1 D6 FB 20 45 6A 8F B4 D9 FE,unverified,ESQH
