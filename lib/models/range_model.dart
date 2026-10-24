@@ -77,7 +77,9 @@ class EnergyIntegration {
   void add(EnergySample sample) {
     if (!sample.voltageV.isFinite ||
         !sample.currentA.isFinite ||
-        sample.elapsed <= Duration.zero) return;
+        sample.elapsed <= Duration.zero) {
+      return;
+    }
     if (sample.elapsed > maxGap) hasGap = true;
     final hours = sample.elapsed.inMicroseconds / Duration.microsecondsPerHour;
     final wh = sample.voltageV * sample.currentA * hours;

@@ -61,17 +61,17 @@ class TuningScreen extends ConsumerWidget {
                   padding: const EdgeInsets.all(12),
                   margin: const EdgeInsets.only(bottom: 20),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFFF9800).withOpacity(0.08),
+                    color: const Color(0xFFFF9800).withValues(alpha: 0.08),
                     borderRadius: BorderRadius.circular(10),
                     border: Border.all(
-                        color: const Color(0xFFFF9800).withOpacity(0.3)),
+                        color: const Color(0xFFFF9800).withValues(alpha: 0.3)),
                   ),
                   child: const Text(
                     'PROFILE EDITOR LOCKED: hardware limits and verified controller data are required.',
                     style: TextStyle(color: Color(0xFFFF9800), fontSize: 12),
                   ),
                 ),
-              _SectionHeader(title: 'PRESETS'),
+              const _SectionHeader(title: 'PRESETS'),
               const SizedBox(height: 10),
               _PresetRow(
                 onPreset: (p) => notifier.loadPreset(p),
@@ -80,7 +80,7 @@ class TuningScreen extends ConsumerWidget {
               const SizedBox(height: 24),
 
               // Controls
-              _SectionHeader(title: 'CONTROLS'),
+              const _SectionHeader(title: 'CONTROLS'),
               const SizedBox(height: 14),
 
               // Max Speed
@@ -139,7 +139,7 @@ class TuningScreen extends ConsumerWidget {
               const SizedBox(height: 24),
 
               // Throttle response
-              _SectionHeader(title: 'THROTTLE RESPONSE'),
+              const _SectionHeader(title: 'THROTTLE RESPONSE'),
               const SizedBox(height: 10),
               _ThrottleResponseSelector(
                 value: profile.throttleResponse,
@@ -154,10 +154,10 @@ class TuningScreen extends ConsumerWidget {
                   padding: const EdgeInsets.all(12),
                   margin: const EdgeInsets.only(bottom: 12),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFFF1744).withOpacity(0.1),
+                    color: const Color(0xFFFF1744).withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(10),
                     border: Border.all(
-                        color: const Color(0xFFFF1744).withOpacity(0.3)),
+                        color: const Color(0xFFFF1744).withValues(alpha: 0.3)),
                   ),
                   child: Text(
                     tuningState.lastError!,
@@ -174,17 +174,17 @@ class TuningScreen extends ConsumerWidget {
                   padding: const EdgeInsets.all(12),
                   margin: const EdgeInsets.only(bottom: 12),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF39FF14).withOpacity(0.1),
+                    color: const Color(0xFF39FF14).withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(10),
                     border: Border.all(
-                        color: const Color(0xFF39FF14).withOpacity(0.3)),
+                        color: const Color(0xFF39FF14).withValues(alpha: 0.3)),
                   ),
-                  child: Row(
+                  child: const Row(
                     children: [
-                      const Icon(Icons.check_circle,
+                      Icon(Icons.check_circle,
                           color: Color(0xFF39FF14), size: 16),
-                      const SizedBox(width: 8),
-                      const Text(
+                      SizedBox(width: 8),
+                      Text(
                         'Profile applied successfully',
                         style: TextStyle(
                           color: Color(0xFF39FF14),
@@ -253,7 +253,7 @@ class TuningScreen extends ConsumerWidget {
           borderRadius: BorderRadius.circular(16),
           side: BorderSide(
             color: isFullSend
-                ? const Color(0xFFFF1744).withOpacity(0.5)
+                ? const Color(0xFFFF1744).withValues(alpha: 0.5)
                 : const Color(0xFF2A3548),
           ),
         ),
@@ -369,9 +369,9 @@ class _WarningBanner extends StatelessWidget {
       return Container(
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: const Color(0xFFFF1744).withOpacity(0.12),
+          color: const Color(0xFFFF1744).withValues(alpha: 0.12),
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: const Color(0xFFFF1744).withOpacity(0.4)),
+          border: Border.all(color: const Color(0xFFFF1744).withValues(alpha: 0.4)),
         ),
         child: const Row(
           children: [
@@ -396,9 +396,9 @@ class _WarningBanner extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: const Color(0xFFFF9800).withOpacity(0.08),
+        color: const Color(0xFFFF9800).withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFFF9800).withOpacity(0.3)),
+        border: Border.all(color: const Color(0xFFFF9800).withValues(alpha: 0.3)),
       ),
       child: const Row(
         children: [
@@ -474,7 +474,7 @@ class _PresetRow extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(vertical: 10),
                 decoration: BoxDecoration(
                   color: isSelected
-                      ? color.withOpacity(0.15)
+                      ? color.withValues(alpha: 0.15)
                       : const Color(0xFF111518),
                   borderRadius: BorderRadius.circular(10),
                   border: Border.all(
@@ -542,7 +542,7 @@ class _TuningSlider extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: _isWarning
-              ? const Color(0xFFFF9800).withOpacity(0.35)
+              ? const Color(0xFFFF9800).withValues(alpha: 0.35)
               : const Color(0xFF1A2030),
         ),
       ),
@@ -554,7 +554,7 @@ class _TuningSlider extends StatelessWidget {
                 width: 32,
                 height: 32,
                 decoration: BoxDecoration(
-                  color: color.withOpacity(0.1),
+                  color: color.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Icon(icon, color: color, size: 17),
@@ -570,7 +570,7 @@ class _TuningSlider extends StatelessWidget {
               ),
               const Spacer(),
               Text(
-                '$displayValue',
+                displayValue,
                 style: TextStyle(
                   color: color,
                   fontSize: 26,
@@ -584,7 +584,7 @@ class _TuningSlider extends StatelessWidget {
                 child: Text(
                   unit,
                   style: TextStyle(
-                    color: color.withOpacity(0.7),
+                    color: color.withValues(alpha: 0.7),
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
                   ),
@@ -600,7 +600,7 @@ class _TuningSlider extends StatelessWidget {
               inactiveTrackColor: const Color(0xFF1A2030),
               thumbColor: color,
               thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 9),
-              overlayColor: color.withOpacity(0.15),
+              overlayColor: color.withValues(alpha: 0.15),
             ),
             child: Slider(
               value: value.clamp(min, max),
@@ -615,15 +615,15 @@ class _TuningSlider extends StatelessWidget {
             ),
           ),
           if (_isWarning)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 4),
+            const Padding(
+              padding: EdgeInsets.only(bottom: 4),
               child: Row(
                 children: [
-                  const SizedBox(width: 4),
-                  const Icon(Icons.warning_amber,
+                  SizedBox(width: 4),
+                  Icon(Icons.warning_amber,
                       color: Color(0xFFFF9800), size: 12),
-                  const SizedBox(width: 4),
-                  const Text(
+                  SizedBox(width: 4),
+                  Text(
                     'High — monitor temps closely',
                     style: TextStyle(
                       color: Color(0xFFFF9800),
@@ -676,7 +676,7 @@ class _ThrottleResponseSelector extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(vertical: 12),
                 decoration: BoxDecoration(
                   color: isSelected
-                      ? color.withOpacity(0.15)
+                      ? color.withValues(alpha: 0.15)
                       : const Color(0xFF111518),
                   borderRadius: BorderRadius.circular(10),
                   border: Border.all(

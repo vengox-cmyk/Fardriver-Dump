@@ -54,13 +54,17 @@ class DongleService implements BleTransport {
   final _scanResultsController =
       StreamController<List<DiscoveredDongle>>.broadcast();
 
+  @override
   Stream<DongleConnectionState> get connectionStateStream =>
       _connectionStateController.stream;
+  @override
   Stream<List<int>> get rawDataStream => _rawDataController.stream;
+  @override
   Stream<List<DiscoveredDongle>> get scanResultsStream =>
       _scanResultsController.stream;
 
   DongleConnectionState _state = DongleConnectionState.idle;
+  @override
   DongleConnectionState get state => _state;
 
   BluetoothDevice? get connectedDevice => _connectedDevice;
@@ -73,6 +77,7 @@ class DongleService implements BleTransport {
   }
 
   /// Checks if Bluetooth adapter is on.
+  @override
   Future<bool> isBluetoothOn() async {
     final adapterState = await FlutterBluePlus.adapterState.first;
     return adapterState == BluetoothAdapterState.on;
@@ -82,6 +87,7 @@ class DongleService implements BleTransport {
   ///
   /// Scans without an advertisement UUID restriction because some target
   /// dongles expose their UART only after service discovery.
+  @override
   Future<void> startScan(
       {Duration timeout = const Duration(seconds: 10)}) async {
     _setState(DongleConnectionState.scanning);
@@ -144,6 +150,7 @@ class DongleService implements BleTransport {
     }
   }
 
+  @override
   Future<void> stopScan() async {
     await FlutterBluePlus.stopScan();
     if (_state == DongleConnectionState.scanning) {
@@ -152,6 +159,7 @@ class DongleService implements BleTransport {
   }
 
   /// Connects to a discovered dongle and subscribes to UART notify characteristic.
+  @override
   Future<bool> connect(DiscoveredDongle dongle) async {
     _setState(DongleConnectionState.connecting);
     diagnostics?.add(DiagnosticEventType.connect, details: {
@@ -359,6 +367,7 @@ class DongleService implements BleTransport {
   }
 
   /// Writes bytes to the UART write characteristic.
+  @override
   Future<bool> write(List<int> data) async {
     if (_writeChar == null || _state != DongleConnectionState.connected) {
       diagnostics?.add(DiagnosticEventType.command, details: {
@@ -384,6 +393,7 @@ class DongleService implements BleTransport {
     }
   }
 
+  @override
   Future<void> disconnect() async {
     await _notifySubscription?.cancel();
     _notifySubscription = null;
@@ -414,6 +424,7 @@ class DongleService implements BleTransport {
     _setState(DongleConnectionState.disconnected);
   }
 
+  @override
   void dispose() {
     _notifySubscription?.cancel();
     _deviceStateSubscription?.cancel();

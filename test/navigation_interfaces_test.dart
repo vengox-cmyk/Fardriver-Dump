@@ -4,13 +4,13 @@ import 'package:arcdash/domain/navigation/navigation_interfaces.dart';
 void main() {
   group('Navigation Domain Models & Interfaces', () {
     test('GeoLatLng represents coordinates correctly', () {
-      final loc = const GeoLatLng(latitude: 51.5074, longitude: -0.1278);
+      const loc = GeoLatLng(latitude: 51.5074, longitude: -0.1278);
       expect(loc.latitude, equals(51.5074));
       expect(loc.longitude, equals(-0.1278));
     });
 
     test('RouteSegment calculates distance and elevation delta', () {
-      final seg = const RouteSegment(
+      const seg = RouteSegment(
         start: GeoLatLng(latitude: 50.0, longitude: 10.0),
         end: GeoLatLng(latitude: 50.1, longitude: 10.1),
         distanceMeters: 12500.0,
@@ -25,14 +25,14 @@ void main() {
     });
 
     test('EnergyProfile estimation returns valid consumption and end SOC', () {
-      final profile = const EnergyProfile(
+      const profile = EnergyProfile(
         baseConsumptionWhPerKm: 25.0,
         elevationGainWhPerMeter: 0.15,
         elevationLossRegenWhPerMeter: 0.05,
       );
 
       // 10 km route with 200 m climb and 50 m descent
-      final seg = const RouteSegment(
+      const seg = RouteSegment(
         start: GeoLatLng(latitude: 50.0, longitude: 10.0),
         end: GeoLatLng(latitude: 50.1, longitude: 10.1),
         distanceMeters: 10000.0,

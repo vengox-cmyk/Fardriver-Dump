@@ -61,8 +61,9 @@ class ProfileExporter {
 
     try {
       final decoded = jsonDecode(result.trim());
-      if (decoded is! Map<String, dynamic>)
+      if (decoded is! Map<String, dynamic>) {
         throw const FormatException('Invalid JSON object');
+      }
       return RangePredictionState.fromJson(decoded);
     } catch (e) {
       if (context.mounted) {

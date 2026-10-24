@@ -62,7 +62,7 @@ class ConnectionStatusBar extends StatelessWidget {
                   boxShadow: state == DongleConnectionState.connected
                       ? [
                           BoxShadow(
-                            color: _dotColor.withOpacity(0.6),
+                            color: _dotColor.withValues(alpha: 0.6),
                             blurRadius: 6,
                           ),
                         ]
@@ -122,7 +122,7 @@ class _PulsingDotState extends State<_PulsingDot>
         height: 8,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          color: widget.color.withOpacity(_anim.value),
+          color: widget.color.withValues(alpha: _anim.value),
         ),
       ),
     );

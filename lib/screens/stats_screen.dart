@@ -6,7 +6,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:arcdash/providers/stats_provider.dart';
 import 'package:arcdash/l10n/app_strings.dart';
-import 'package:arcdash/models/ride_stats.dart';
 
 class StatsScreen extends ConsumerWidget {
   const StatsScreen({super.key});
@@ -235,7 +234,7 @@ class _StatCard extends StatelessWidget {
           Text(
             label,
             style: TextStyle(
-              color: color.withOpacity(0.7),
+              color: color.withValues(alpha: 0.7),
               fontSize: 10,
               fontWeight: FontWeight.w700,
               letterSpacing: 1.5,
@@ -259,7 +258,7 @@ class _StatCard extends StatelessWidget {
                 Text(
                   unit,
                   style: TextStyle(
-                    color: Colors.white.withOpacity(0.4),
+                    color: Colors.white.withValues(alpha: 0.4),
                     fontSize: 11,
                   ),
                 ),
@@ -341,8 +340,8 @@ class _SpeedChart extends StatelessWidget {
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                   colors: [
-                    const Color(0xFF00E5FF).withOpacity(0.25),
-                    const Color(0xFF00E5FF).withOpacity(0.0),
+                    const Color(0xFF00E5FF).withValues(alpha: 0.25),
+                    const Color(0xFF00E5FF).withValues(alpha: 0.0),
                   ],
                 ),
               ),
@@ -561,7 +560,7 @@ class _EmptySession extends StatelessWidget {
           Text(
             AppStrings.of(context).text(AppText.connectToTrack),
             style:
-                TextStyle(color: Colors.white.withOpacity(0.2), fontSize: 13),
+                TextStyle(color: Colors.white.withValues(alpha: 0.2), fontSize: 13),
           ),
         ],
       ),

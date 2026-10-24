@@ -26,7 +26,7 @@ void main() {
   });
 
   test('layout validation rejects duplicate ids and out of bounds tiles', () {
-    final tile = DashboardTile(
+    const tile = DashboardTile(
       id: 'speed',
       metric: DashboardMetric.speed,
       kind: DashboardTileKind.value,
@@ -35,7 +35,7 @@ void main() {
       width: 2,
       height: 2,
     );
-    final invalid = DashboardOrientationLayout(
+    const invalid = DashboardOrientationLayout(
       columns: 4,
       rows: 4,
       tiles: [tile, tile],
@@ -95,7 +95,7 @@ void main() {
   test(
       'supports bar and circle tile kinds and validates compatible combinations',
       () {
-    final tileBar = DashboardTile(
+    const tileBar = DashboardTile(
       id: 'power_bar',
       metric: DashboardMetric.power,
       kind: DashboardTileKind.bar,
@@ -104,7 +104,7 @@ void main() {
       width: 4,
       height: 2,
     );
-    final tileCircle = DashboardTile(
+    const tileCircle = DashboardTile(
       id: 'speed_circle',
       metric: DashboardMetric.speed,
       kind: DashboardTileKind.circle,
@@ -114,12 +114,12 @@ void main() {
       height: 3,
     );
 
-    final layoutBar = DashboardOrientationLayout(
+    const layoutBar = DashboardOrientationLayout(
       columns: 4,
       rows: 4,
       tiles: [tileBar],
     );
-    final layoutCircle = DashboardOrientationLayout(
+    const layoutCircle = DashboardOrientationLayout(
       columns: 4,
       rows: 4,
       tiles: [tileCircle],
@@ -128,7 +128,7 @@ void main() {
     expect(layoutBar.validate, returnsNormally);
     expect(layoutCircle.validate, returnsNormally);
 
-    final invalidKindTile = DashboardTile(
+    const invalidKindTile = DashboardTile(
       id: 'connection_arc',
       metric: DashboardMetric.connection,
       kind: DashboardTileKind.arc,
@@ -137,7 +137,7 @@ void main() {
       width: 2,
       height: 2,
     );
-    final invalidLayout = DashboardOrientationLayout(
+    const invalidLayout = DashboardOrientationLayout(
       columns: 4,
       rows: 4,
       tiles: [invalidKindTile],
@@ -147,7 +147,7 @@ void main() {
   });
 
   test('validates tile minimum dimensions per tile kind', () {
-    final tooSmallArc = DashboardTile(
+    const tooSmallArc = DashboardTile(
       id: 'speed_arc_small',
       metric: DashboardMetric.speed,
       kind: DashboardTileKind.arc,
@@ -156,7 +156,7 @@ void main() {
       width: 1,
       height: 1,
     );
-    final layoutSmall = DashboardOrientationLayout(
+    const layoutSmall = DashboardOrientationLayout(
       columns: 4,
       rows: 4,
       tiles: [tooSmallArc],

@@ -31,8 +31,8 @@ class _ConnectionScreenState extends ConsumerState<ConnectionScreen> {
 
     // Explicitly request both Bluetooth and Fine Location permissions on Android
     try {
-      final permService =
-          const AndroidPermissionService(PermissionHandlerRequester());
+      const permService =
+          AndroidPermissionService(PermissionHandlerRequester());
       await permService.requestForSdk(33);
       await permService.requestForSdk(30);
     } catch (_) {}
@@ -106,10 +106,10 @@ class _ConnectionScreenState extends ConsumerState<ConnectionScreen> {
                     width: 42,
                     height: 42,
                     decoration: BoxDecoration(
-                      color: const Color(0xFF00E5FF).withOpacity(0.1),
+                      color: const Color(0xFF00E5FF).withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(10),
                       border: Border.all(
-                        color: const Color(0xFF00E5FF).withOpacity(0.3),
+                        color: const Color(0xFF00E5FF).withValues(alpha: 0.3),
                       ),
                     ),
                     child: const Icon(
@@ -134,7 +134,7 @@ class _ConnectionScreenState extends ConsumerState<ConnectionScreen> {
                       Text(
                         AppStrings.of(context).text(AppText.controllerConnect),
                         style: TextStyle(
-                          color: Colors.white.withOpacity(0.4),
+                          color: Colors.white.withValues(alpha: 0.4),
                           fontSize: 12,
                           letterSpacing: 1,
                         ),
@@ -212,7 +212,7 @@ class _ConnectionScreenState extends ConsumerState<ConnectionScreen> {
               Container(
                 padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF1A2030).withOpacity(0.5),
+                  color: const Color(0xFF1A2030).withValues(alpha: 0.5),
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
                     color: const Color(0xFF2A3548),
@@ -230,7 +230,7 @@ class _ConnectionScreenState extends ConsumerState<ConnectionScreen> {
                       child: Text(
                         'Der Scan zeigt JETZT ALLE Bluetooth-Geräte in deiner Umgebung an (ohne Filter).',
                         style: TextStyle(
-                          color: Colors.white.withOpacity(0.4),
+                          color: Colors.white.withValues(alpha: 0.4),
                           fontSize: 12,
                           height: 1.5,
                         ),
@@ -296,7 +296,7 @@ class _DongleCard extends StatelessWidget {
               width: 40,
               height: 40,
               decoration: BoxDecoration(
-                color: const Color(0xFF00E5FF).withOpacity(0.08),
+                color: const Color(0xFF00E5FF).withValues(alpha: 0.08),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: const Icon(
@@ -321,7 +321,7 @@ class _DongleCard extends StatelessWidget {
                   Text(
                     dongle.device.remoteId.str,
                     style: TextStyle(
-                      color: Colors.white.withOpacity(0.35),
+                      color: Colors.white.withValues(alpha: 0.35),
                       fontSize: 11,
                       fontFamily: 'monospace',
                     ),
@@ -372,10 +372,10 @@ class _EmptyState extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
+          const Icon(
             Icons.bluetooth_searching,
             size: 56,
-            color: const Color(0xFF2A3548),
+            color: Color(0xFF2A3548),
           ),
           const SizedBox(height: 16),
           Text(

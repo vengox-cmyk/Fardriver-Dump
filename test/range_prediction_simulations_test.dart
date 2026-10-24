@@ -10,7 +10,7 @@ void main() {
     late ConsumptionWindow consumptionWindow;
     late SocFilter socFilter;
 
-    final ocvCurve72V = const [
+    const ocvCurve72V = [
       OcvPoint(60.0, 0.0),
       OcvPoint(72.0, 50.0),
       OcvPoint(84.0, 100.0),

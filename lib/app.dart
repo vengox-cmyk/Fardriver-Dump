@@ -106,21 +106,21 @@ class ArcDashApp extends ConsumerWidget {
           fontSize: 10,
           fontWeight: FontWeight.w700,
           letterSpacing: 1.5,
-          color: const Color(0xFF4A5568),
+          color: Color(0xFF4A5568),
         ),
       ),
-      appBarTheme: AppBarTheme(
-        backgroundColor: const Color(0xFF0D1117),
+      appBarTheme: const AppBarTheme(
+        backgroundColor: Color(0xFF0D1117),
         foregroundColor: Colors.white,
         elevation: 0,
-        titleTextStyle: const TextStyle(
+        titleTextStyle: TextStyle(
           fontSize: 16,
           fontWeight: FontWeight.w800,
           letterSpacing: 3,
           color: Colors.white,
         ),
-        iconTheme: const IconThemeData(color: Colors.white),
-        systemOverlayStyle: const SystemUiOverlayStyle(
+        iconTheme: IconThemeData(color: Colors.white),
+        systemOverlayStyle: SystemUiOverlayStyle(
           statusBarColor: Colors.transparent,
           statusBarIconBrightness: Brightness.light,
         ),
@@ -190,11 +190,11 @@ class ArcDashApp extends ConsumerWidget {
         ),
         trackColor: WidgetStateProperty.resolveWith(
           (s) => s.contains(WidgetState.selected)
-              ? accentCyan.withOpacity(0.4)
+              ? accentCyan.withValues(alpha: 0.4)
               : const Color(0xFF2A3548),
         ),
       ),
-      pageTransitionsTheme: PageTransitionsTheme(
+      pageTransitionsTheme: const PageTransitionsTheme(
         builders: {
           TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
           TargetPlatform.android: FadeUpwardsPageTransitionsBuilder(),

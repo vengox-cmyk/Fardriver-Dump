@@ -399,11 +399,11 @@ class DashboardLayout {
 
   const DashboardLayout({required this.portrait, required this.landscape});
 
-  static DashboardLayout defaults() => DashboardLayout(
+  static DashboardLayout defaults() => const DashboardLayout(
         portrait: DashboardOrientationLayout(
           columns: 4,
           rows: 8,
-          tiles: const [
+          tiles: [
             DashboardTile(
                 id: 'speed',
                 metric: DashboardMetric.speed,
@@ -457,7 +457,7 @@ class DashboardLayout {
         landscape: DashboardOrientationLayout(
           columns: 12,
           rows: 6,
-          tiles: const [
+          tiles: [
             DashboardTile(
               id: 'power',
               metric: DashboardMetric.power,
