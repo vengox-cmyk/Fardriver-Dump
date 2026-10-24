@@ -288,7 +288,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('ARCDASH'),
+            const Text('FARSURE'),
             Text(strings.text(AppText.rideComputer),
                 style: const TextStyle(
                     fontSize: 9, letterSpacing: 1.8, color: Colors.white38)),

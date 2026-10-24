@@ -63,9 +63,9 @@ class ParameterDumpIo {
   static Future<String> appVersion() async {
     try {
       final info = await PackageInfo.fromPlatform();
-      return 'ArcDash ${info.version}+${info.buildNumber}';
+      return 'FarSure ${info.version}+${info.buildNumber}';
     } on Object {
-      return 'ArcDash';
+      return 'FarSure';
     }
   }
 
