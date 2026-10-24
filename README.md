@@ -152,17 +152,18 @@ DongleService (flutter_blue_plus)
 MIT
 ## Development APK
 
-Jeder Push auf `main` fuehrt Tests und einen Android-Debug-Build in der
-gepinnten Docker-Toolchain aus. Bei Erfolg aktualisiert GitHub Actions das
-Prerelease `latest-development` und ersetzt dort
-`ArcDash-development.apk` sowie die SHA-256-Datei.
+The `ArcDash Build & Release` workflow (run manually via `workflow_dispatch`)
+runs the tests and builds a **release-mode, universal APK** (one file for all
+ABIs) with `flutter build apk --release`. The version is `1.0.<commit count>`,
+and each run publishes a GitHub release `v1.0.<N>` with the asset
+`ArcDash-v1.0.<N>.apk`. Builds up to v1.0.190 were debug APKs (~156 MB); the
+release builds are much smaller and faster.
 
-Das Development-Release ist mit dem festen, oeffentlichen ArcDash-Development-
-Key `android/dev-keystore.jks` signiert. Lokale Docker-Builds und GitHub-Builds
-koennen sich dadurch gegenseitig als Update installieren. Beim ersten Wechsel
-von einer aelteren, zufaellig signierten APK ist einmalig eine Deinstallation
-notwendig; danach bleibt die Signatur stabil.
+All builds are signed with the fixed, public ArcDash development key
+`android/dev-keystore.jks` (alias `arcdash-development`), for both debug and
+release build types, so every new APK installs as an update over the previous
+one. R8/resource shrinking is disabled for safety.
 
-Der Development-Key ist absichtlich nicht geheim und darf niemals fuer ein
-stabiles Produktionsrelease verwendet werden. Die produktive Signatur wird erst
-nach dem Release-Sicherheitsgate T082 als geschuetztes GitHub Secret eingerichtet.
+The development key is intentionally not secret and must never be used for a
+stable production release. Production signing will be set up as a protected
+GitHub secret after the release security gate T082.

@@ -46,13 +46,13 @@ jobs:
           echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
           echo "Calculated version: $VERSION"
 
-      - name: Build Android APK (Debug)
-        run: flutter build apk --debug --build-name=${{ env.VERSION }} --build-number=${{ github.run_number }}
+      - name: Build Android APK (Release, universal)
+        run: flutter build apk --release --build-name=${{ env.VERSION }} --build-number=${{ github.run_number }}
 
       - name: Prepare APK File
         run: |
           mkdir -p release-apk
-          cp build/app/outputs/flutter-apk/app-debug.apk release-apk/ArcDash-v${{ env.VERSION }}.apk
+          cp build/app/outputs/flutter-apk/app-release.apk release-apk/ArcDash-v${{ env.VERSION }}.apk
 
       - name: Delete Old Rolling Release if exists
         env:
@@ -66,8 +66,9 @@ jobs:
           tag_name: v${{ env.VERSION }}
           name: "ArcDash v${{ env.VERSION }}"
           body: |
-            Automatischer Release-Build **v${{ env.VERSION }}** (Commit `${{ github.sha }}`).
-            Workflow-Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+            Automatic release build **v${{ env.VERSION }}** (commit `${{ github.sha }}`).
+            Universal release APK (all ABIs, one file), signed with the same development key as earlier builds, so it installs over previous versions.
+            Workflow run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
           files: release-apk/ArcDash-v${{ env.VERSION }}.apk
           prerelease: false
 

@@ -43,8 +43,15 @@ android {
             signingConfig = signingConfigs.getByName("development")
         }
         release {
-            // Release signing is intentionally not configured before T082.
+            // Signed with the same public development key as earlier (debug)
+            // releases so the release APK installs over them. Production
+            // signing is intentionally not configured before T082.
             signingConfig = signingConfigs.getByName("development")
+            // R8/resource shrinking off: plugins (flutter_blue_plus,
+            // permission_handler, share_plus, file_picker, package_info_plus)
+            // rely on reflection/platform channels; keep the build safe.
+            isMinifyEnabled = false
+            isShrinkResources = false
         }
     }
 }
