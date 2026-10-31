@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:arcdash/models/gps_calibration.dart';
@@ -57,6 +58,10 @@ class CalibrationSessionState {
   final List<DkdSnapshot> dkdSnapshots;
   final GpsSpeedSample? latestGps;
 
+  /// Permanent file of this ride (Saved files), once auto-saved.
+  final String? savedPath;
+  final DateTime? lastSavedAt;
+
   const CalibrationSessionState({
     this.status = CalibrationStatus.idle,
     this.gpsProblem,
@@ -68,6 +73,8 @@ class CalibrationSessionState {
     this.fit,
     this.dkdSnapshots = const [],
     this.latestGps,
+    this.savedPath,
+    this.lastSavedAt,
   });
 
   bool get isRecording => status == CalibrationStatus.recording;
@@ -89,6 +96,8 @@ class CalibrationSessionState {
     bool clearFit = false,
     List<DkdSnapshot>? dkdSnapshots,
     GpsSpeedSample? latestGps,
+    String? savedPath,
+    DateTime? lastSavedAt,
   }) =>
       CalibrationSessionState(
         status: status ?? this.status,
@@ -100,8 +109,15 @@ class CalibrationSessionState {
         fit: clearFit ? null : fit ?? this.fit,
         dkdSnapshots: dkdSnapshots ?? this.dkdSnapshots,
         latestGps: latestGps ?? this.latestGps,
+        savedPath: savedPath ?? this.savedPath,
+        lastSavedAt: lastSavedAt ?? this.lastSavedAt,
       );
 }
+
+/// Writes the ride to its permanent file and returns the path (null when
+/// there is nothing to save). See `CalibrationArchive`.
+typedef CalibrationSaver = Future<String?> Function(
+    CalibrationSessionState state);
 
 /// Live telemetry the session needs from the controller, read on demand.
 class ControllerReadout {
@@ -126,6 +142,15 @@ class GpsCalibrationNotifier extends StateNotifier<CalibrationSessionState> {
   Timer? _watchdog;
   DateTime? _lastSampleAt;
 
+  final CalibrationSaver? _saver;
+
+  /// Incremental save while recording, so a crash or a killed app loses at
+  /// most this much of the ride.
+  final Duration autoSaveInterval;
+  Timer? _autoSave;
+  Timer? _debouncedSave;
+  Future<String?> _saving = Future.value();
+
   /// Without a fix for this long a "no GPS" second is recorded, so lost
   /// lock shows up live and in the CSV.
   static const _gpsTimeout = Duration(milliseconds: 2000);
@@ -136,7 +161,10 @@ class GpsCalibrationNotifier extends StateNotifier<CalibrationSessionState> {
     required ControllerReadout Function() controller,
     DateTime Function()? clock,
     CalibrationAnalyzer analyzer = const CalibrationAnalyzer(),
-  })  : _gps = gps,
+    CalibrationSaver? saver,
+    this.autoSaveInterval = const Duration(seconds: 12),
+  })  : _saver = saver,
+        _gps = gps,
         _rpm = rpm,
         _controller = controller,
         _clock = clock ?? DateTime.now,
@@ -148,6 +176,10 @@ class GpsCalibrationNotifier extends StateNotifier<CalibrationSessionState> {
   /// Starts a fresh ride. Returns the GPS availability (permission etc.).
   Future<GpsAvailability> start() async {
     await _cancel();
+    if (_debouncedSave?.isActive ?? false) {
+      _debouncedSave!.cancel();
+      await saveNow(); // keep DKD edits of the previous ride
+    }
     state = const CalibrationSessionState(status: CalibrationStatus.starting);
     final availability = await _gps.ensureReady();
     if (!mounted) return availability;
@@ -163,7 +195,43 @@ class GpsCalibrationNotifier extends StateNotifier<CalibrationSessionState> {
     _rpmSub = _rpm.listen(_pairer.addRpm);
     _gpsSub = _gps.fixes().listen(onFix, onError: (_) {});
     _watchdog = Timer.periodic(const Duration(seconds: 1), (_) => onTick());
+    if (_saver != null) {
+      _autoSave = Timer.periodic(autoSaveInterval, (_) => saveNow());
+    }
     return availability;
+  }
+
+  /// Writes the current ride to its permanent file now (serialised with
+  /// earlier saves). Safe to call any time; a no-op without data.
+  Future<String?> saveNow() {
+    final saver = _saver;
+    if (saver == null) return Future.value(state.savedPath);
+    final next = _saving.then((_) async {
+      if (!mounted) return null;
+      final snapshot = state;
+      if (!snapshot.hasData && snapshot.dkdSnapshots.isEmpty) {
+        return snapshot.savedPath;
+      }
+      try {
+        final path = await saver(snapshot);
+        if (path != null && mounted && state.startedAt == snapshot.startedAt) {
+          state = state.copyWith(savedPath: path, lastSavedAt: _clock());
+        }
+        return path;
+      } catch (e) {
+        debugPrint('Calibration auto-save failed: $e');
+        return null;
+      }
+    });
+    _saving = next;
+    return next;
+  }
+
+  /// DKD edits are saved shortly after the last keystroke.
+  void _scheduleSave() {
+    if (_saver == null) return;
+    _debouncedSave?.cancel();
+    _debouncedSave = Timer(const Duration(milliseconds: 600), () => saveNow());
   }
 
   /// One GPS fix = one calibration second.
@@ -222,6 +290,7 @@ class GpsCalibrationNotifier extends StateNotifier<CalibrationSessionState> {
         controllerKph: _controller().speedKph,
       ),
     ]);
+    _scheduleSave();
     return true;
   }
 
@@ -230,12 +299,14 @@ class GpsCalibrationNotifier extends StateNotifier<CalibrationSessionState> {
     final snapshots = [...state.dkdSnapshots];
     snapshots[index] = snapshots[index].withReading(kph);
     state = state.copyWith(dkdSnapshots: snapshots);
+    _scheduleSave();
   }
 
   void removeDkdSnapshot(int index) {
     if (index < 0 || index >= state.dkdSnapshots.length) return;
     state =
         state.copyWith(dkdSnapshots: [...state.dkdSnapshots]..removeAt(index));
+    _scheduleSave();
   }
 
   Future<void> stop() async {
@@ -244,6 +315,7 @@ class GpsCalibrationNotifier extends StateNotifier<CalibrationSessionState> {
         state.status == CalibrationStatus.starting) {
       state = state.copyWith(
           status: CalibrationStatus.stopped, stoppedAt: _clock());
+      await saveNow();
     }
   }
 
@@ -252,6 +324,8 @@ class GpsCalibrationNotifier extends StateNotifier<CalibrationSessionState> {
   Future<void> _cancel() async {
     _watchdog?.cancel();
     _watchdog = null;
+    _autoSave?.cancel();
+    _autoSave = null;
     unawaited(_gpsSub?.cancel());
     _gpsSub = null;
     unawaited(_rpmSub?.cancel());
@@ -261,6 +335,8 @@ class GpsCalibrationNotifier extends StateNotifier<CalibrationSessionState> {
   @override
   void dispose() {
     _watchdog?.cancel();
+    _autoSave?.cancel();
+    _debouncedSave?.cancel();
     _gpsSub?.cancel();
     _rpmSub?.cancel();
     super.dispose();

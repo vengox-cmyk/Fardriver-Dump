@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart'
     show FlutterBluePlus, BluetoothAdapterState;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:arcdash/providers/saved_files_provider.dart';
 import 'package:arcdash/providers/bluetooth_provider.dart';
 import 'package:arcdash/services/bluetooth_service.dart';
 import 'package:arcdash/widgets/connection_status_bar.dart';
@@ -247,7 +248,8 @@ class _ConnectionScreenState extends ConsumerState<ConnectionScreen> {
                 child: OutlinedButton.icon(
                   onPressed: () {
                     final diagnostics = ref.read(diagnosticsLogProvider);
-                    DiagnosticLogExporter.shareOrCopy(context, diagnostics);
+                    DiagnosticLogExporter.shareOrCopy(context, diagnostics,
+                        store: ref.read(savedFilesStoreProvider));
                   },
                   icon: const Icon(Icons.share, size: 18),
                   label: Text(

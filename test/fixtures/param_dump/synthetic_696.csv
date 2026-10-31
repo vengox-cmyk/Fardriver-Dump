@@ -280,7 +280,7 @@ block,word_address,byte_offset,bits,name,raw_value,scaled_value,unit,enum_label,
 0xD0,0xD0,0,0-7,DATA0,103,103,,,67 8C B1 D6 FB 20 45 6A 8F B4 D9 FE,unverified,fardriver.hpp name: Data0
 0xD0,0xD0,1,0-7,DATA1,140,140,,,67 8C B1 D6 FB 20 45 6A 8F B4 D9 FE,unverified,fardriver.hpp name: Data1
 0xD0,0xD1,2,0-7,BMQHALL,177,177,,,67 8C B1 D6 FB 20 45 6A 8F B4 D9 FE,unverified,
-0xD0,0xD1,3,0-7,AVGPower,214,856,Wh/km,,67 8C B1 D6 FB 20 45 6A 8F B4 D9 FE,unverified,"* 4, Wh/km, DataVoltage1"
+0xD0,0xD1,3,0-7,AVGPower,214,856,Wh/km,,67 8C B1 D6 FB 20 45 6A 8F B4 D9 FE,unverified,"* 4, Wh/km, DataVoltage1; low confidence: x4 Wh/km matches fardriver.hpp and the official app (raw 171 shown as 684Wh/Km), but that is ~10x real consumption; possibly 0.1 Wh/km (68.4); rolling value; not rescaled"
 0xD0,0xD2,4,0-7,WheelRatio,251,251,,,67 8C B1 D6 FB 20 45 6A 8F B4 D9 FE,unverified,confirmed vs official app (byte 4 = 70 on a 120/70-12 tyre); live telemetry parser fixed in v1.1 to read this byte
 0xD0,0xD2,5,0-7,WheelRadius,32,32,,,67 8C B1 D6 FB 20 45 6A 8F B4 D9 FE,unverified,confirmed vs official app (byte 5 = 12 inch rim)
 0xD0,0xD3,6,0-7,AVGSpeed,69,69,km/h,,67 8C B1 D6 FB 20 45 6A 8F B4 D9 FE,unverified,"km/h, DataVoltage4"

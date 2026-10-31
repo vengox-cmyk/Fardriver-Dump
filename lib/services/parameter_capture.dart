@@ -33,6 +33,10 @@ class ParameterCaptureService {
   final ParameterSnapshotBuilder _builder;
   final Duration timeout;
 
+  /// Called with every new complete snapshot (e.g. to keep a permanent
+  /// CSV copy in Saved files).
+  final void Function(PersistedParameterSnapshot snapshot)? onSnapshot;
+
   bool _started = false;
   String? _lastSavedSignature;
   PersistedParameterSnapshot? _latest;
@@ -44,6 +48,7 @@ class ParameterCaptureService {
     DateTime Function()? clock,
     this.appVersion = '',
     Duration timeout = const Duration(seconds: 10),
+    this.onSnapshot,
   })  : _repository = repository,
         _controllerId = controllerId,
         _clock = clock ?? DateTime.now,
@@ -112,6 +117,7 @@ class ParameterCaptureService {
       complete: true,
     );
     _latest = persisted;
+    onSnapshot?.call(persisted);
     final repository = _repository;
     if (repository != null) {
       _pendingSave = repository.save(persisted).catchError((Object _) {

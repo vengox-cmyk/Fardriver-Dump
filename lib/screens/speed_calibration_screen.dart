@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -6,6 +8,8 @@ import 'package:arcdash/models/speed_source.dart';
 import 'package:arcdash/providers/bluetooth_provider.dart';
 import 'package:arcdash/providers/calibration_provider.dart';
 import 'package:arcdash/providers/controller_provider.dart';
+import 'package:arcdash/providers/units_provider.dart';
+import 'package:arcdash/l10n/app_strings.dart';
 import 'package:arcdash/screens/speed_calibration_results.dart';
 import 'package:arcdash/services/disclaimer.dart';
 import 'package:arcdash/services/gps_calibration_session.dart';
@@ -31,10 +35,32 @@ class SpeedCalibrationScreen extends ConsumerStatefulWidget {
       _SpeedCalibrationScreenState();
 }
 
-class _SpeedCalibrationScreenState
-    extends ConsumerState<SpeedCalibrationScreen> {
+class _SpeedCalibrationScreenState extends ConsumerState<SpeedCalibrationScreen>
+    with WidgetsBindingObserver {
+  late final GpsCalibrationNotifier _notifier;
+
+  @override
+  void initState() {
+    super.initState();
+    _notifier = ref.read(gpsCalibrationProvider.notifier);
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // The ride keeps recording in the background, but whatever is there is
+    // written to Saved files now in case Android kills the app.
+    if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.hidden ||
+        state == AppLifecycleState.detached) {
+      unawaited(_notifier.saveNow());
+    }
+  }
+
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    unawaited(_notifier.saveNow());
     widget.screenAwake.set(false);
     super.dispose();
   }
@@ -60,7 +86,7 @@ class _SpeedCalibrationScreenState
       builder: (context) => AlertDialog(
         title: const Text('Stop calibration?'),
         content: const Text(
-            'The ride stops recording. Results stay available until you start a new ride.'),
+            'The ride stops recording. It is kept in Settings → Data management → Saved files.'),
         actions: [
           TextButton(
               onPressed: () => Navigator.of(context).pop(false),
@@ -178,6 +204,8 @@ class _LiveView extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final controller = ref.watch(controllerProvider);
+    final unit = ref.watch(speedUnitProvider);
+    final strings = AppStrings.of(context);
     final gps = session.latestGps;
     final gpsFresh = gps != null &&
         DateTime.now().difference(gps.capturedAt) < const Duration(seconds: 3);
@@ -206,22 +234,22 @@ class _LiveView extends ConsumerWidget {
               style: const TextStyle(color: Colors.white70, letterSpacing: 2)),
           FittedBox(
             child: Text(
-              gpsKph == null ? '--' : gpsKph.toStringAsFixed(0),
+              gpsKph == null ? '--' : unit.fromKph(gpsKph).toStringAsFixed(0),
               key: const ValueKey('calibration-gps-speed'),
               style: const TextStyle(
                   fontSize: 120, fontWeight: FontWeight.w900, height: 1),
             ),
           ),
-          const Text('km/h',
+          Text(unit.speedLabel,
               textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.white70)),
+              style: const TextStyle(color: Colors.white70)),
           const SizedBox(height: 12),
           Row(
             children: [
               Expanded(
                 child: _Metric(
                   label: SpeedSource.controller.label,
-                  value: '${controllerKph.toStringAsFixed(1)} km/h',
+                  value: unit.speed(controllerKph, digits: 1),
                   valueKey: const ValueKey('calibration-controller-speed'),
                 ),
               ),
@@ -300,6 +328,25 @@ class _LiveView extends ConsumerWidget {
             label: const Text('Stop & see results'),
           ),
           const SizedBox(height: 8),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                  session.savedPath == null
+                      ? Icons.save_outlined
+                      : Icons.check_circle_outline,
+                  size: 14,
+                  color: Colors.white54),
+              const SizedBox(width: 6),
+              Flexible(
+                child: Text(strings.text(AppText.calibrationAutosaving),
+                    key: const ValueKey('calibration-autosave-note'),
+                    style:
+                        const TextStyle(fontSize: 12, color: Colors.white54)),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
           const CalibrationSafetyLines(compact: true),
         ],
       ),

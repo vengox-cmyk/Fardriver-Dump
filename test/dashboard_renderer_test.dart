@@ -3,6 +3,7 @@ import 'package:arcdash/models/controller_state.dart';
 import 'package:arcdash/models/dashboard_layout.dart';
 import 'package:arcdash/models/telemetry_quality.dart';
 import 'package:arcdash/screens/dashboard_screen.dart';
+import 'package:arcdash/utils/speed_units.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -31,6 +32,32 @@ void main() {
       expect(tester.takeException(), isNull);
     });
   }
+
+  testWidgets('speed and range follow the mph setting', (tester) async {
+    for (final metric in [DashboardMetric.speed, DashboardMetric.range]) {
+      await tester.pumpWidget(_app(
+        metric: metric,
+        state: _stateFor(metric, now),
+        now: now,
+        speedUnit: SpeedUnit.mph,
+      ));
+      expect(tester.takeException(), isNull);
+      final texts = tester
+          .widgetList<Text>(find.byType(Text))
+          .map((t) => t.data ?? t.textSpan?.toPlainText() ?? '')
+          .join(' | ');
+      if (metric == DashboardMetric.speed) {
+        // 32 km/h → 19.9 mph
+        expect(texts, contains('20'));
+        expect(texts, contains('mph'));
+        expect(texts, isNot(contains('km/h')));
+      } else {
+        // 42 km → 26.1 mi
+        expect(texts, contains('mi'));
+        expect(texts, isNot(contains('km')));
+      }
+    }
+  });
 
   testWidgets('renderer distinguishes missing stale invalid and disconnected',
       (tester) async {
@@ -190,6 +217,7 @@ Widget _app({
   required ControllerState state,
   required DateTime now,
   bool connected = true,
+  SpeedUnit speedUnit = SpeedUnit.kmh,
 }) {
   final definition = dashboardMeasurementCatalog[metric]!;
   final layout = DashboardOrientationLayout(
@@ -223,6 +251,7 @@ Widget _app({
           state: state,
           connected: connected,
           now: now,
+          speedUnit: speedUnit,
         ),
       ),
     ),
