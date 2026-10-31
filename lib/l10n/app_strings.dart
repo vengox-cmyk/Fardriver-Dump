@@ -199,6 +199,11 @@ enum AppText {
   savedCalibrationReadOnly,
   savedCalibrationInterrupted,
   openSavedFiles,
+  pressBackAgainToExit,
+  exitConfirmTitle,
+  exitConfirmBody,
+  exitConfirmStay,
+  exitConfirmExit,
 }
 
 class AppStrings {
@@ -448,6 +453,12 @@ const _germanText = {
   AppText.savedCalibrationInterrupted:
       'Die App wurde während dieser Fahrt beendet; die Daten bis dahin sind erhalten.',
   AppText.openSavedFiles: 'Gespeicherte Dateien öffnen',
+  AppText.pressBackAgainToExit: 'Zum Beenden erneut Zurück drücken',
+  AppText.exitConfirmTitle: 'Trennen und beenden?',
+  AppText.exitConfirmBody:
+      'Die Verbindung zum Controller wird getrennt. Eine laufende Fahrt oder Kalibrierung wird vorher gespeichert.',
+  AppText.exitConfirmStay: 'Bleiben',
+  AppText.exitConfirmExit: 'Trennen und beenden',
 };
 
 const _englishText = {
@@ -669,6 +680,12 @@ const _englishText = {
   AppText.savedCalibrationInterrupted:
       'The app closed during this ride; everything up to then is kept.',
   AppText.openSavedFiles: 'Open Saved files',
+  AppText.pressBackAgainToExit: 'Press back again to exit',
+  AppText.exitConfirmTitle: 'Disconnect and exit?',
+  AppText.exitConfirmBody:
+      'The controller connection will be closed. A running ride or calibration is saved first.',
+  AppText.exitConfirmStay: 'Stay',
+  AppText.exitConfirmExit: 'Disconnect and exit',
 };
 
 const _germanMetrics = {

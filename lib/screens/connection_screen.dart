@@ -68,7 +68,14 @@ class _ConnectionScreenState extends ConsumerState<ConnectionScreen> {
     if (mounted) {
       setState(() => _connectingId = null);
       if (success) {
-        Navigator.of(context).pushReplacementNamed('/dashboard');
+        // Opened from the cockpit/settings: return to the existing shell
+        // instead of stacking a second one (which made back behave oddly).
+        final navigator = Navigator.of(context);
+        if (navigator.canPop()) {
+          navigator.pop();
+        } else {
+          navigator.pushReplacementNamed('/dashboard');
+        }
       } else {
         _showError(AppStrings.of(context).text(AppText.connectionFailed));
       }
