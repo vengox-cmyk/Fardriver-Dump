@@ -6,6 +6,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:arcdash/providers/stats_provider.dart';
 import 'package:arcdash/l10n/app_strings.dart';
+import 'package:arcdash/providers/units_provider.dart';
+import 'package:arcdash/utils/speed_units.dart';
 
 class StatsScreen extends ConsumerWidget {
   const StatsScreen({super.key});
@@ -13,6 +15,7 @@ class StatsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final statsState = ref.watch(statsProvider);
+    final unit = ref.watch(speedUnitProvider);
     final session = statsState.currentSession;
     final strings = AppStrings.of(context);
 
@@ -97,15 +100,17 @@ class StatsScreen extends ConsumerWidget {
                   avgSpeedKph: session.avgSpeedKph,
                   maxSpeedKph: session.maxSpeedKph,
                   totalWhUsed: session.totalWhUsed,
+                  unit: unit,
                 ),
                 const SizedBox(height: 20),
                 if (session.speedHistory.isNotEmpty) ...[
                   _SectionHeader(title: strings.text(AppText.speedHistory)),
                   const SizedBox(height: 12),
                   _SpeedChart(
-                    samples:
-                        session.speedHistory.map((s) => s.speedKph).toList(),
-                    unit: 'km/h',
+                    samples: session.speedHistory
+                        .map((s) => unit.fromKph(s.speedKph))
+                        .toList(),
+                    unit: unit.speedLabel,
                   ),
                   const SizedBox(height: 24),
                 ],
@@ -117,7 +122,7 @@ class StatsScreen extends ConsumerWidget {
                 _SectionHeader(title: strings.text(AppText.pastSessions)),
                 const SizedBox(height: 12),
                 for (final json in statsState.pastSessions.reversed)
-                  _PastSessionCard(json: json),
+                  _PastSessionCard(json: json, unit: unit),
               ],
             ],
           ),
@@ -133,6 +138,7 @@ class _SessionSummaryCards extends StatelessWidget {
   final double avgSpeedKph;
   final double maxSpeedKph;
   final double totalWhUsed;
+  final SpeedUnit unit;
 
   const _SessionSummaryCards({
     required this.distanceKm,
@@ -140,6 +146,7 @@ class _SessionSummaryCards extends StatelessWidget {
     required this.avgSpeedKph,
     required this.maxSpeedKph,
     required this.totalWhUsed,
+    this.unit = SpeedUnit.kmh,
   });
 
   String _formatDuration(int seconds) {
@@ -163,8 +170,8 @@ class _SessionSummaryCards extends StatelessWidget {
       children: [
         _StatCard(
           label: strings.text(AppText.distance),
-          value: distanceKm.toStringAsFixed(2),
-          unit: 'km',
+          value: unit.fromKm(distanceKm).toStringAsFixed(2),
+          unit: unit.distanceLabel,
           color: const Color(0xFF00E5FF),
         ),
         _StatCard(
@@ -175,14 +182,14 @@ class _SessionSummaryCards extends StatelessWidget {
         ),
         _StatCard(
           label: strings.text(AppText.averageSpeed),
-          value: avgSpeedKph.toStringAsFixed(1),
-          unit: 'km/h',
+          value: unit.fromKph(avgSpeedKph).toStringAsFixed(1),
+          unit: unit.speedLabel,
           color: const Color(0xFFFF9800),
         ),
         _StatCard(
           label: strings.text(AppText.topSpeed),
-          value: maxSpeedKph.toStringAsFixed(1),
-          unit: 'km/h',
+          value: unit.fromKph(maxSpeedKph).toStringAsFixed(1),
+          unit: unit.speedLabel,
           color: const Color(0xFF00E5FF),
         ),
         _StatCard(
@@ -194,9 +201,11 @@ class _SessionSummaryCards extends StatelessWidget {
         _StatCard(
           label: strings.text(AppText.efficiency),
           value: distanceKm > 0
-              ? (totalWhUsed / distanceKm).toStringAsFixed(1)
+              ? unit
+                  .whPerDistanceFromWhPerKm(totalWhUsed / distanceKm)
+                  .toStringAsFixed(1)
               : '--',
-          unit: 'Wh/km',
+          unit: unit.energyPerDistanceLabel,
           color: const Color(0xFFFF9800),
         ),
       ],
@@ -354,7 +363,8 @@ class _SpeedChart extends StatelessWidget {
 
 class _PastSessionCard extends StatelessWidget {
   final Map<String, dynamic> json;
-  const _PastSessionCard({required this.json});
+  final SpeedUnit unit;
+  const _PastSessionCard({required this.json, this.unit = SpeedUnit.kmh});
 
   @override
   Widget build(BuildContext context) {
@@ -397,7 +407,7 @@ class _PastSessionCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    '${distKm.toStringAsFixed(2)} km  •  '
+                    '${unit.distance(distKm, digits: 2)}  •  '
                     '${_fmt(durSec)}  •  '
                     '${wh.toStringAsFixed(0)} Wh',
                     style: const TextStyle(
@@ -416,7 +426,7 @@ class _PastSessionCard extends StatelessWidget {
             ),
             const SizedBox(width: 4),
             Text(
-              '${maxSpd.toStringAsFixed(0)}\n${AppStrings.of(context).text(AppText.kmhTop)}',
+              '${unit.fromKph(maxSpd).toStringAsFixed(0)}\n${AppStrings.of(context).text(AppText.kmhTop).replaceFirst('km/h', unit.speedLabel)}',
               style: const TextStyle(
                 color: Color(0xFF00E5FF),
                 fontSize: 13,
@@ -455,7 +465,9 @@ class _PastSessionCard extends StatelessWidget {
     double wh,
     Map<String, dynamic> sessionJson,
   ) {
-    final whPerKm = distKm > 0.05 ? (wh / distKm).toStringAsFixed(1) : '—';
+    final whPerKm = distKm > 0.05
+        ? unit.whPerDistanceFromWhPerKm(wh / distKm).toStringAsFixed(1)
+        : '—';
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -477,22 +489,22 @@ class _PastSessionCard extends StatelessWidget {
           children: [
             _DetailRow(
                 label: AppStrings.of(context).text(AppText.detailDistance),
-                value: '${distKm.toStringAsFixed(2)} km'),
+                value: unit.distance(distKm, digits: 2)),
             _DetailRow(
                 label: AppStrings.of(context).text(AppText.detailRideTime),
                 value: _fmt(durSec)),
             _DetailRow(
                 label: AppStrings.of(context).text(AppText.detailTopSpeed),
-                value: '${maxSpd.toStringAsFixed(1)} km/h'),
+                value: unit.speed(maxSpd, digits: 1)),
             _DetailRow(
                 label: AppStrings.of(context).text(AppText.detailAverage),
-                value: '${avgSpd.toStringAsFixed(1)} km/h'),
+                value: unit.speed(avgSpd, digits: 1)),
             _DetailRow(
                 label: AppStrings.of(context).text(AppText.detailEnergy),
                 value: '${wh.toStringAsFixed(1)} Wh'),
             _DetailRow(
                 label: AppStrings.of(context).text(AppText.detailEfficiency),
-                value: '$whPerKm Wh/km'),
+                value: '$whPerKm ${unit.energyPerDistanceLabel}'),
           ],
         ),
         actions: [

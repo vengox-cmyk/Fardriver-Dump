@@ -373,7 +373,7 @@ CATALOG = [
     [208, 'Data0', 0, 0, 8, False, 'int', 1.0, 0.0, '', {}, 'fardriver.hpp name: Data0', 'unverified', 'DATA0', False],
     [208, 'Data1', 1, 0, 8, False, 'int', 1.0, 0.0, '', {}, 'fardriver.hpp name: Data1', 'unverified', 'DATA1', False],
     [208, 'BMQHALL', 2, 0, 8, False, 'int', 1.0, 0.0, '', {}, '', 'unverified', 'BMQHALL', False],
-    [208, 'AVGPower', 3, 0, 8, False, 'int', 4.0, 0.0, 'Wh/km', {}, '* 4, Wh/km, DataVoltage1', 'unverified', 'AVGPower', False],
+    [208, 'AVGPower', 3, 0, 8, False, 'int', 4.0, 0.0, 'Wh/km', {}, '* 4, Wh/km, DataVoltage1; low confidence: x4 Wh/km matches fardriver.hpp and the official app (raw 171 shown as 684Wh/Km), but that is ~10x real consumption; possibly 0.1 Wh/km (68.4); rolling value; not rescaled', 'unverified', 'AVGPower', False],
     [208, 'WheelRatio', 4, 0, 8, False, 'int', 1.0, 0.0, '', {}, 'confirmed vs official app (byte 4 = 70 on a 120/70-12 tyre); live telemetry parser fixed in v1.1 to read this byte', 'unverified', 'WheelRatio', False],
     [208, 'WheelRadius', 5, 0, 8, False, 'int', 1.0, 0.0, '', {}, 'confirmed vs official app (byte 5 = 12 inch rim)', 'unverified', 'WheelRadius', False],
     [208, 'AVGSpeed', 6, 0, 8, False, 'int', 1.0, 0.0, 'km/h', {}, 'km/h, DataVoltage4', 'unverified', 'AVGSpeed', False],

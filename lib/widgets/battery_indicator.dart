@@ -1,10 +1,15 @@
 import 'package:flutter/material.dart';
 
+import 'package:arcdash/utils/speed_units.dart';
+
 class BatteryIndicator extends StatelessWidget {
   final double percentage; // 0–100
   final double voltageV;
   final double? estimatedRangeKm;
   final String? rangeStatus;
+
+  /// Display unit for the range (stored value is always km).
+  final SpeedUnit unit;
 
   const BatteryIndicator({
     super.key,
@@ -12,6 +17,7 @@ class BatteryIndicator extends StatelessWidget {
     required this.voltageV,
     this.estimatedRangeKm,
     this.rangeStatus,
+    this.unit = SpeedUnit.kmh,
   });
 
   Color get _batteryColor {
@@ -94,7 +100,7 @@ class BatteryIndicator extends StatelessWidget {
             if (estimatedRangeKm != null) ...[
               const SizedBox(width: 12),
               Text(
-                '~${estimatedRangeKm!.toStringAsFixed(0)} km',
+                '~${unit.distance(estimatedRangeKm!, digits: 0)}',
                 style: const TextStyle(
                   color: Color(0xFF8899AA),
                   fontSize: 13,

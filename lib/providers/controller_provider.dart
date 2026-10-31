@@ -14,6 +14,9 @@ import 'package:arcdash/utils/packet_parser.dart';
 import 'package:arcdash/utils/packet_framer.dart';
 import 'package:arcdash/services/diagnostic_log.dart';
 import 'package:arcdash/services/parameter_capture.dart';
+import 'package:arcdash/services/dump_archive.dart';
+import 'package:arcdash/services/parameter_dump_io.dart';
+import 'package:arcdash/providers/saved_files_provider.dart';
 import 'package:arcdash/models/range_prediction_state.dart';
 import 'package:arcdash/services/range_prediction_repository.dart';
 
@@ -444,8 +447,16 @@ final controllerProvider =
 /// complete snapshot via [StorageService.parameterSnapshots].
 final parameterCaptureProvider = Provider<ParameterCaptureService>((ref) {
   final storage = ref.watch(storageServiceProvider);
+  final archiver = ref.watch(liveDumpArchiverProvider);
   return ParameterCaptureService(
     repository: storage.parameterSnapshots,
     controllerId: () => ref.read(connectedDeviceIdProvider) ?? '',
+    onSnapshot: (snapshot) => unawaited(archiver.onSnapshot(snapshot)),
   );
 });
+
+/// Keeps a permanent CSV of live parameter snapshots in Saved files.
+final liveDumpArchiverProvider = Provider<LiveDumpArchiver>((ref) =>
+    LiveDumpArchiver(
+        store: ref.watch(savedFilesStoreProvider),
+        appVersion: ParameterDumpIo.appVersion));

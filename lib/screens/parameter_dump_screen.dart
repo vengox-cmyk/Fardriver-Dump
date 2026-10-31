@@ -1,4 +1,8 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:arcdash/services/saved_files.dart';
 
 import 'package:arcdash/l10n/app_strings.dart';
 import 'package:arcdash/services/parameter_csv.dart';
@@ -10,7 +14,14 @@ import 'package:arcdash/widgets/disclaimer_gate.dart';
 class ParameterDumpScreen extends StatefulWidget {
   final ParameterDump dump;
 
-  const ParameterDumpScreen({super.key, required this.dump});
+  /// The permanent copy in Saved files, when opened from there.
+  final File? savedFile;
+
+  /// Where shared dumps are kept (defaults to the app documents folder).
+  final SavedFilesStore? store;
+
+  const ParameterDumpScreen(
+      {super.key, required this.dump, this.savedFile, this.store});
 
   @override
   State<ParameterDumpScreen> createState() => _ParameterDumpScreenState();
@@ -38,6 +49,26 @@ class _ParameterDumpScreenState extends State<ParameterDumpScreen> {
       return;
     }
     if (!mounted) return;
+    // Keep every exported dump in Saved files and share that file.
+    var file = widget.savedFile;
+    if (file == null) {
+      try {
+        file = await ParameterDumpIo.saveDump(
+            widget.store ??
+                SavedFilesStore(documentsDir: getApplicationDocumentsDirectory),
+            dump,
+            appVersion: await ParameterDumpIo.appVersion());
+      } catch (e) {
+        debugPrint('Saving parameter dump failed: $e');
+      }
+    }
+    if (!mounted) return;
+    if (file != null) {
+      await ParameterDumpIo.shareSavedFile(context, file,
+          subject: 'FarSure FarDriver parameters',
+          copiedMessage: strings.text(AppText.paramCopied));
+      return;
+    }
     final stamp = (dump.capturedAt ?? DateTime.now())
         .toUtc()
         .toIso8601String()

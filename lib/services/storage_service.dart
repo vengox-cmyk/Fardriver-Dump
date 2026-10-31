@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:path_provider/path_provider.dart';
+import 'package:arcdash/services/saved_files.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:arcdash/models/tuning_profile.dart';
 import 'package:arcdash/models/ride_stats.dart';
@@ -203,10 +204,13 @@ class StorageService {
   Future<String> exportSessionToCsv(RideSession session) async {
     final rows = session.toCsvRows();
     final csv = const ListToCsvConverter().convert(rows);
-    final dir = await getApplicationDocumentsDirectory();
-    final file = File(
-        '${dir.path}/arcdash_ride_${session.startTime.millisecondsSinceEpoch}.csv');
-    await file.writeAsString(csv);
+    // Permanent: <documents>/farsure/rides/ (listed in Saved files).
+    final file =
+        await SavedFilesStore(documentsDir: getApplicationDocumentsDirectory)
+            .write(
+                SavedFileKind.rideCsv,
+                'arcdash_ride_${session.startTime.millisecondsSinceEpoch}.csv',
+                csv);
     return file.path;
   }
 

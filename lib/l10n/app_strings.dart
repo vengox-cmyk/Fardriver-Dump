@@ -167,6 +167,38 @@ enum AppText {
   close,
   kmhTop,
   readOnlyLabel,
+  speedUnit,
+  savedFiles,
+  savedFilesHint,
+  savedFilesEmpty,
+  savedFilesLocation,
+  savedCalibrations,
+  savedDumps,
+  savedLogs,
+  savedRides,
+  savedShare,
+  savedDelete,
+  savedDeleteQuestion,
+  savedDeleteBody,
+  savedDeleteAll,
+  savedDeleteAllQuestion,
+  savedDeleteAllBody,
+  savedDeleted,
+  savedOpenFailed,
+  savedConfidence,
+  savedSuggestedGearRatio,
+  savedNoFit,
+  savedInterrupted,
+  savedController,
+  savedSource,
+  calibrationSavedTitle,
+  calibrationSavedWhere,
+  calibrationNextSteps,
+  calibrationAutosaving,
+  savedCalibrationTitle,
+  savedCalibrationReadOnly,
+  savedCalibrationInterrupted,
+  openSavedFiles,
 }
 
 class AppStrings {
@@ -376,6 +408,46 @@ const _germanText = {
   AppText.close: 'Schließen',
   AppText.kmhTop: 'km/h top',
   AppText.readOnlyLabel: 'Nur lesen',
+  AppText.speedUnit: 'Geschwindigkeit/Distanz',
+  AppText.savedFiles: 'Gespeicherte Dateien',
+  AppText.savedFilesHint:
+      'Kalibrierfahrten, Parameter-Dumps, Logs – dauerhaft auf dem Handy, auch offline',
+  AppText.savedFilesEmpty: 'Noch keine gespeicherten Dateien.',
+  AppText.savedFilesLocation: 'Gespeichert auf diesem Handy in',
+  AppText.savedCalibrations: 'Kalibrierfahrten',
+  AppText.savedDumps: 'Parameter-Dumps',
+  AppText.savedLogs: 'Diagnose-Logs',
+  AppText.savedRides: 'Fahrt-CSVs',
+  AppText.savedShare: 'Teilen',
+  AppText.savedDelete: 'Löschen',
+  AppText.savedDeleteQuestion: 'Diese Datei löschen?',
+  AppText.savedDeleteBody:
+      'Die Datei wird von diesem Handy entfernt. Das kann nicht rückgängig gemacht werden.',
+  AppText.savedDeleteAll: 'Alle löschen',
+  AppText.savedDeleteAllQuestion: 'Alle gespeicherten Dateien löschen?',
+  AppText.savedDeleteAllBody:
+      'Entfernt alle Kalibrierfahrten, Parameter-Dumps, Logs und Fahrt-CSVs von diesem Handy. Das kann nicht rückgängig gemacht werden.',
+  AppText.savedDeleted: 'Datei gelöscht',
+  AppText.savedOpenFailed: 'Datei konnte nicht geöffnet werden',
+  AppText.savedConfidence: 'Konfidenz',
+  AppText.savedSuggestedGearRatio: 'Vorschlag GearRatio',
+  AppText.savedNoFit: 'noch kein Ergebnis',
+  AppText.savedInterrupted: 'unterbrochen',
+  AppText.savedController: 'Controller',
+  AppText.savedSource: 'Quelle',
+  AppText.calibrationSavedTitle: 'In „Gespeicherte Dateien“ gesichert',
+  AppText.calibrationSavedWhere:
+      'Einstellungen → Datenverwaltung → Gespeicherte Dateien. Bleibt erhalten, auch wenn die App geschlossen wird.',
+  AppText.calibrationNextSteps:
+      'Nächste Schritte: 1. DKD-Werte unten eintragen  2. Vorschläge ablesen  3. Exportieren',
+  AppText.calibrationAutosaving:
+      'Wird alle paar Sekunden in „Gespeicherte Dateien“ gesichert',
+  AppText.savedCalibrationTitle: 'Gespeicherte Kalibrierfahrt',
+  AppText.savedCalibrationReadOnly:
+      'Aus „Gespeicherte Dateien“ geöffnet (nur lesen). Eingetragene DKD-Werte werden in dieser Datei gespeichert.',
+  AppText.savedCalibrationInterrupted:
+      'Die App wurde während dieser Fahrt beendet; die Daten bis dahin sind erhalten.',
+  AppText.openSavedFiles: 'Gespeicherte Dateien öffnen',
 };
 
 const _englishText = {
@@ -558,6 +630,45 @@ const _englishText = {
   AppText.close: 'Close',
   AppText.kmhTop: 'km/h top',
   AppText.readOnlyLabel: 'Read-only',
+  AppText.speedUnit: 'Speed / distance unit',
+  AppText.savedFiles: 'Saved files',
+  AppText.savedFilesHint:
+      'Calibration rides, parameter dumps, logs – kept on this phone, works offline',
+  AppText.savedFilesEmpty: 'No saved files yet.',
+  AppText.savedFilesLocation: 'Stored on this phone in',
+  AppText.savedCalibrations: 'Calibration rides',
+  AppText.savedDumps: 'Parameter dumps',
+  AppText.savedLogs: 'Diagnostic logs',
+  AppText.savedRides: 'Ride CSVs',
+  AppText.savedShare: 'Share',
+  AppText.savedDelete: 'Delete',
+  AppText.savedDeleteQuestion: 'Delete this file?',
+  AppText.savedDeleteBody:
+      'The file is removed from this phone. This cannot be undone.',
+  AppText.savedDeleteAll: 'Delete all',
+  AppText.savedDeleteAllQuestion: 'Delete all saved files?',
+  AppText.savedDeleteAllBody:
+      'Removes every calibration ride, parameter dump, log and ride CSV from this phone. This cannot be undone.',
+  AppText.savedDeleted: 'File deleted',
+  AppText.savedOpenFailed: 'Could not open the file',
+  AppText.savedConfidence: 'Confidence',
+  AppText.savedSuggestedGearRatio: 'Suggested GearRatio',
+  AppText.savedNoFit: 'no result yet',
+  AppText.savedInterrupted: 'interrupted',
+  AppText.savedController: 'Controller',
+  AppText.savedSource: 'Source',
+  AppText.calibrationSavedTitle: 'Saved to Saved files',
+  AppText.calibrationSavedWhere:
+      'Settings → Data management → Saved files. Kept even if the app closes.',
+  AppText.calibrationNextSteps:
+      'Next steps: 1. Enter the DKD readings below  2. Read the suggestions  3. Export',
+  AppText.calibrationAutosaving: 'Auto-saving to Saved files every few seconds',
+  AppText.savedCalibrationTitle: 'Saved calibration ride',
+  AppText.savedCalibrationReadOnly:
+      'Opened from Saved files (read-only). DKD readings you enter are saved into this file.',
+  AppText.savedCalibrationInterrupted:
+      'The app closed during this ride; everything up to then is kept.',
+  AppText.openSavedFiles: 'Open Saved files',
 };
 
 const _germanMetrics = {

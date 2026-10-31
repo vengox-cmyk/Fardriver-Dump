@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:arcdash/providers/saved_files_provider.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:arcdash/providers/bluetooth_provider.dart';
 import 'package:arcdash/providers/controller_provider.dart';
@@ -9,6 +10,8 @@ import 'package:arcdash/screens/about_screen.dart';
 import 'package:arcdash/screens/parameter_compare_screen.dart';
 import 'package:arcdash/screens/parameter_dump_screen.dart';
 import 'package:arcdash/screens/speed_calibration_screen.dart';
+import 'package:arcdash/screens/saved_files_screen.dart';
+import 'package:arcdash/providers/units_provider.dart';
 import 'package:arcdash/services/diagnostic_log_exporter.dart';
 import 'package:arcdash/services/parameter_dump_io.dart';
 import 'package:arcdash/services/profile_exporter.dart';
@@ -33,6 +36,7 @@ class SettingsScreen extends ConsumerWidget {
           children: [
             _SectionTitle(strings.text(AppText.display)),
             const LanguageSelector(),
+            const SpeedUnitSelector(),
             const SizedBox(height: 20),
             _SectionTitle(strings.text(AppText.connection)),
             ListTile(
@@ -60,7 +64,8 @@ class SettingsScreen extends ConsumerWidget {
               title: Text(strings.text(AppText.shareDiagnosticLog)),
               onTap: () {
                 final diagnostics = ref.read(diagnosticsLogProvider);
-                DiagnosticLogExporter.shareOrCopy(context, diagnostics);
+                DiagnosticLogExporter.shareOrCopy(context, diagnostics,
+                    store: ref.read(savedFilesStoreProvider));
               },
             ),
             ListTile(
@@ -86,9 +91,14 @@ class SettingsScreen extends ConsumerWidget {
               onTap: () async {
                 try {
                   final dump = await ParameterDumpIo.pickAndParse();
-                  if (dump == null || !context.mounted) return;
+                  if (dump == null) return;
+                  // Keep a permanent copy in Saved files → Parameter dumps.
+                  final saved = await ParameterDumpIo.keepCopy(
+                      ref.read(savedFilesStoreProvider), dump);
+                  if (!context.mounted) return;
                   Navigator.of(context).push(MaterialPageRoute<void>(
-                      builder: (_) => ParameterDumpScreen(dump: dump)));
+                      builder: (_) =>
+                          ParameterDumpScreen(dump: dump, savedFile: saved)));
                 } catch (e) {
                   if (!context.mounted) return;
                   ScaffoldMessenger.of(context).showSnackBar(SnackBar(
@@ -114,6 +124,15 @@ class SettingsScreen extends ConsumerWidget {
             ),
             const SizedBox(height: 20),
             _SectionTitle(strings.text(AppText.dataManagement)),
+            ListTile(
+              key: const ValueKey('saved-files-tile'),
+              leading: const Icon(Icons.folder_outlined),
+              title: Text(strings.text(AppText.savedFiles)),
+              subtitle: Text(strings.text(AppText.savedFilesHint)),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(
+                  builder: (_) => const SavedFilesScreen())),
+            ),
             ListTile(
               leading: const Icon(Icons.dashboard_customize_outlined),
               title: Text(strings.text(AppText.resetDashboard)),

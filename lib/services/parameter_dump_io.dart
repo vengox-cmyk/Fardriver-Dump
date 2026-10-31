@@ -13,6 +13,7 @@ import 'package:arcdash/services/parameter_capture.dart';
 import 'package:arcdash/services/parameter_csv.dart';
 import 'package:arcdash/services/parameter_dump.dart';
 import 'package:arcdash/services/parameter_snapshot_repository.dart';
+import 'package:arcdash/services/saved_files.dart';
 
 /// Loading and sharing of parameter dumps. Everything here is read-only with
 /// respect to the controller: files are only read from disk and written to the
@@ -72,22 +73,75 @@ class ParameterDumpIo {
   static String safeFileName(String value) =>
       value.replaceAll(RegExp(r'[^A-Za-z0-9._-]+'), '_');
 
+  /// Permanent file name of a dump in `farsure/dumps/`.
+  static String dumpFileName(ParameterDump dump, {DateTime? now}) {
+    final id = dump.controllerId.isEmpty ? 'unknown' : dump.controllerId;
+    final at = dump.capturedAt ?? now ?? DateTime.now();
+    return SavedFilesStore.safeName(
+        'dump_${id}_${dump.source.name}_${SavedFilesStore.stamp(at)}.csv');
+  }
+
+  /// Writes [dump] permanently (same CSV as the export) to
+  /// `farsure/dumps/`. Incomplete dumps are saved too (marked
+  /// `# complete,no`), so nothing captured is lost.
+  static Future<File> saveDump(SavedFilesStore store, ParameterDump dump,
+      {required String appVersion, DateTime? now}) {
+    final csv = ParameterCsvCodec.encode(dump,
+        allowIncomplete: true, appVersion: appVersion);
+    return store.write(SavedFileKind.dump, dumpFileName(dump, now: now), csv);
+  }
+
+  /// Best-effort permanent copy (e.g. of a dump opened from a file); never
+  /// throws, returns null when saving was impossible.
+  static Future<File?> keepCopy(
+      SavedFilesStore store, ParameterDump dump) async {
+    try {
+      return await saveDump(store, dump, appVersion: await appVersion());
+    } catch (e) {
+      debugPrint('Keeping a copy of the dump failed: $e');
+      return null;
+    }
+  }
+
+  /// Shares an already saved [file] (falls back to copying its text).
+  static Future<void> shareSavedFile(
+    BuildContext context,
+    File file, {
+    required String subject,
+    required String copiedMessage,
+  }) async {
+    final text = await file.readAsString();
+    if (!context.mounted) return;
+    await shareOrCopy(context,
+        text: text,
+        fileName: file.uri.pathSegments.last,
+        subject: subject,
+        copiedMessage: copiedMessage,
+        file: file);
+  }
+
   /// Shares [text] as a CSV file through the Android share sheet and falls
-  /// back to the clipboard if sharing fails or is dismissed.
+  /// back to the clipboard if sharing fails or is dismissed. With [file]
+  /// (a permanently saved copy of [text]) that file is shared directly.
   static Future<void> shareOrCopy(
     BuildContext context, {
     required String text,
     required String fileName,
     required String subject,
     required String copiedMessage,
+    File? file,
   }) async {
     var shared = false;
     try {
-      final dir = await getTemporaryDirectory();
-      final file = File('${dir.path}/$fileName');
-      await file.writeAsString(text);
+      var shareFile = file;
+      if (shareFile == null) {
+        final dir = await getTemporaryDirectory();
+        shareFile = File('${dir.path}/$fileName');
+        await shareFile.writeAsString(text);
+      }
+      final mime = fileName.endsWith('.txt') ? 'text/plain' : 'text/csv';
       final result = await SharePlus.instance.share(ShareParams(
-        files: [XFile(file.path, mimeType: 'text/csv', name: fileName)],
+        files: [XFile(shareFile.path, mimeType: mime, name: fileName)],
         subject: subject,
         text: subject,
       ));

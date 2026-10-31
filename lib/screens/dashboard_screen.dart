@@ -11,6 +11,8 @@ import 'package:arcdash/providers/controller_provider.dart';
 import 'package:arcdash/l10n/app_strings.dart';
 import 'package:arcdash/services/storage_service.dart';
 import 'package:arcdash/widgets/brand_version_label.dart';
+import 'package:arcdash/providers/units_provider.dart';
+import 'package:arcdash/utils/speed_units.dart';
 
 class DashboardScreen extends ConsumerStatefulWidget {
   const DashboardScreen({super.key});
@@ -278,6 +280,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   Widget build(BuildContext context) {
     final strings = AppStrings.of(context);
     final state = ref.watch(controllerProvider);
+    final speedUnit = ref.watch(speedUnitProvider);
     final connected = ref.watch(isConnectedProvider);
     final orientation = _activeOrientation;
     final layout = _dashboard.layoutFor(orientation);
@@ -332,6 +335,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 state: state,
                 connected: connected,
                 now: _now,
+                speedUnit: speedUnit,
                 editing: _editing,
                 onRemove: _removeTile,
                 onMove: _moveTile,
@@ -450,12 +454,16 @@ class DashboardRenderer extends StatelessWidget {
   final void Function(DashboardTile, DashboardTileKind)? onKindChanged;
   final void Function(DashboardTile, DashboardUnit)? onUnitChanged;
 
+  /// km/h or mph (Settings → Display). Tiles set to "metric" stay km/h.
+  final SpeedUnit speedUnit;
+
   const DashboardRenderer({
     super.key,
     required this.layout,
     required this.state,
     required this.connected,
     required this.now,
+    this.speedUnit = SpeedUnit.kmh,
     this.editing = false,
     this.onRemove,
     this.onMove,
@@ -505,6 +513,9 @@ class DashboardRenderer extends StatelessWidget {
                       state: state,
                       connected: connected,
                       now: now,
+                      unit: tile.unit == DashboardUnit.metric
+                          ? SpeedUnit.kmh
+                          : speedUnit,
                     ),
                   ),
                 ),
@@ -720,11 +731,14 @@ class _MetricView extends StatelessWidget {
   final bool connected;
   final DateTime now;
 
+  final SpeedUnit unit;
+
   const _MetricView({
     required this.tile,
     required this.state,
     required this.connected,
     required this.now,
+    this.unit = SpeedUnit.kmh,
   });
 
   @override
@@ -738,6 +752,7 @@ class _MetricView extends StatelessWidget {
       return _SpeedDial(
         speedKph: state.speedKph,
         quality: quality,
+        unit: unit,
       );
     }
     if (tile.metric == DashboardMetric.power &&
@@ -861,7 +876,7 @@ class _MetricView extends StatelessWidget {
       };
     }
     return switch (metric) {
-      DashboardMetric.speed => '${state.speedKph.toStringAsFixed(0)} km/h',
+      DashboardMetric.speed => unit.speed(state.speedKph),
       DashboardMetric.power => '${state.powerKw.toStringAsFixed(1)} kW',
       DashboardMetric.regeneration =>
         '${math.max(-state.powerKw, 0).toStringAsFixed(1)} kW',
@@ -869,8 +884,8 @@ class _MetricView extends StatelessWidget {
       DashboardMetric.current => '${state.currentA.toStringAsFixed(1)} A',
       DashboardMetric.soc => '${state.battCapPercent} %',
       DashboardMetric.range => state.rangeKm == 0
-          ? '65 ± 8 km'
-          : '${state.rangeKm.toStringAsFixed(0)} ± ${state.rangeUncertaintyKm.toStringAsFixed(0)} km',
+          ? '${unit.fromKm(65).toStringAsFixed(0)} ± ${unit.fromKm(8).toStringAsFixed(0)} ${unit.distanceLabel}'
+          : '${unit.fromKm(state.rangeKm).toStringAsFixed(0)} ± ${unit.fromKm(state.rangeUncertaintyKm).toStringAsFixed(0)} ${unit.distanceLabel}',
       DashboardMetric.profile => state.rideMode.displayName,
       DashboardMetric.gear => !state.isForward
           ? 'R'
@@ -893,9 +908,7 @@ class _MetricView extends StatelessWidget {
       DashboardMetric.connection => connected
           ? AppStrings.of(context).text(AppText.connected)
           : AppStrings.of(context).text(AppText.disconnected),
-      DashboardMetric.trip => state.tripDistanceKm == null
-          ? '0.0 km'
-          : '${state.tripDistanceKm!.toStringAsFixed(1)} km',
+      DashboardMetric.trip => unit.distance(state.tripDistanceKm ?? 0),
     };
   }
 }
@@ -943,10 +956,12 @@ class _ConnectionPill extends StatelessWidget {
 class _SpeedDial extends StatelessWidget {
   final double speedKph;
   final TelemetryFreshness? quality;
+  final SpeedUnit unit;
 
   const _SpeedDial({
     required this.speedKph,
     required this.quality,
+    this.unit = SpeedUnit.kmh,
   });
 
   @override
@@ -954,7 +969,7 @@ class _SpeedDial extends StatelessWidget {
     return Semantics(
       key: const Key('speed-dial'),
       label: quality == TelemetryFreshness.fresh
-          ? '${AppStrings.of(context).metric('speed')} ${speedKph.round()} km/h'
+          ? '${AppStrings.of(context).metric('speed')} ${unit.speed(speedKph)}'
           : 'Geschwindigkeit ${_qualityLabel(context, quality)}',
       child: LayoutBuilder(
         builder: (context, constraints) => Stack(
@@ -971,7 +986,7 @@ class _SpeedDial extends StatelessWidget {
               children: [
                 Text(
                     quality == TelemetryFreshness.fresh
-                        ? speedKph.round().toString()
+                        ? unit.fromKph(speedKph).round().toString()
                         : '–',
                     style: TextStyle(
                         fontSize: math.min(constraints.maxHeight * 0.29, 82),
@@ -979,8 +994,8 @@ class _SpeedDial extends StatelessWidget {
                         fontWeight: FontWeight.w900,
                         letterSpacing: -3)),
                 const SizedBox(height: 8),
-                const Text('km/h',
-                    style: TextStyle(
+                Text(unit.speedLabel,
+                    style: const TextStyle(
                         color: Colors.white54,
                         fontSize: 13,
                         fontWeight: FontWeight.w700,

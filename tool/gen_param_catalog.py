@@ -93,6 +93,9 @@ for _n in range(20):
 
 # Extra provenance notes appended to the header comment.
 NOTE_OVERRIDES = {
+    'AVGPower': 'low confidence: x4 Wh/km matches fardriver.hpp and the official app '
+                '(raw 171 shown as 684Wh/Km), but that is ~10x real consumption; '
+                'possibly 0.1 Wh/km (68.4); rolling value; not rescaled',
     'WheelRatio': 'confirmed vs official app (byte 4 = 70 on a 120/70-12 tyre); '
                   'live telemetry parser fixed in v1.1 to read this byte',
     'WheelRadius': 'confirmed vs official app (byte 5 = 12 inch rim)',
