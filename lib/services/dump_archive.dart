@@ -84,8 +84,7 @@ class LiveDumpArchiver {
     final entries = await store.list(kind: SavedFileKind.dump);
     for (final e in entries) {
       try {
-        final dump =
-            ParameterCsvCodec.decode(await e.file.readAsString());
+        final dump = ParameterCsvCodec.decode(await e.file.readAsString());
         return (e.file, configSignature(dump.blocks));
       } on Object {
         continue; // unreadable file: try the next newest

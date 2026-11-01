@@ -36,8 +36,10 @@ void main() {
     test('above ~112 km/h the limit grows to 8 % of speed', () {
       const config = CalibrationFilterConfig();
       expect(config.speedAccuracyLimitMps(50), 2.5);
-      expect(config.speedAccuracyLimitMps(150), closeTo(150 * 0.08 / 3.6, 1e-9));
-      final a = analyzer.analyze(ride([const Leg(10, 150, speedAccuracy: 3.0)]));
+      expect(
+          config.speedAccuracyLimitMps(150), closeTo(150 * 0.08 / 3.6, 1e-9));
+      final a =
+          analyzer.analyze(ride([const Leg(10, 150, speedAccuracy: 3.0)]));
       expect(a.verdicts.sublist(1, 9), everyElement(SampleVerdict.kept));
     });
 

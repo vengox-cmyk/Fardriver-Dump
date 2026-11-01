@@ -7,6 +7,7 @@ import 'package:arcdash/screens/parameter_dump_screen.dart';
 import 'package:arcdash/screens/saved_calibration_screen.dart';
 import 'package:arcdash/services/parameter_dump_io.dart';
 import 'package:arcdash/services/saved_files.dart';
+import 'package:arcdash/services/saved_files_dedupe.dart';
 
 /// Settings → Data management → Saved files.
 ///
@@ -35,11 +36,71 @@ class _SavedFilesScreenState extends ConsumerState<SavedFilesScreen> {
     return _Listing(entries, location);
   }
 
+  /// Paths selected for deletion; non-null while in selection mode.
+  Set<String>? _selected;
+
   void _reload() {
     final next = _load();
     setState(() {
       _listing = next;
+      _selected = null;
     });
+  }
+
+  void _toggle(SavedFileEntry e) {
+    final sel = {...?_selected};
+    if (!sel.remove(e.path)) sel.add(e.path);
+    setState(() => _selected = sel);
+  }
+
+  Future<void> _deleteSelected(List<SavedFileEntry> entries) async {
+    final strings = AppStrings.of(context);
+    final chosen =
+        entries.where((e) => _selected?.contains(e.path) ?? false).toList();
+    if (chosen.isEmpty) return;
+    final names = chosen.take(8).map((e) => e.name).join('\n');
+    final more = chosen.length > 8 ? '\n… +${chosen.length - 8}' : '';
+    if (!await _confirm(
+        '${strings.text(AppText.savedDeleteSelected)} (${chosen.length})',
+        '$names$more\n\n${strings.text(AppText.savedDeleteSelectedBody)}')) {
+      return;
+    }
+    final store = ref.read(savedFilesStoreProvider);
+    for (final e in chosen) {
+      await store.delete(e);
+    }
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content:
+            Text('${strings.text(AppText.savedDeleted)} (${chosen.length})')));
+    _reload();
+  }
+
+  Future<void> _removeDuplicates(List<SavedFileEntry> entries) async {
+    final strings = AppStrings.of(context);
+    final dupes = await SavedFilesDedupe.findDuplicates(entries);
+    if (!mounted) return;
+    if (dupes.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(strings.text(AppText.savedNoDuplicates))));
+      return;
+    }
+    final names = dupes.take(8).map((e) => e.name).join('\n');
+    final more = dupes.length > 8 ? '\n… +${dupes.length - 8}' : '';
+    if (!await _confirm(
+        '${strings.text(AppText.savedRemoveDuplicates)} (${dupes.length})',
+        '${strings.text(AppText.savedDuplicatesBody)}\n\n$names$more')) {
+      return;
+    }
+    final store = ref.read(savedFilesStoreProvider);
+    for (final e in dupes) {
+      await store.delete(e);
+    }
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content:
+            Text('${strings.text(AppText.savedDeleted)} (${dupes.length})')));
+    _reload();
   }
 
   String _kindTitle(AppStrings strings, SavedFileKind kind) =>
@@ -48,6 +109,7 @@ class _SavedFilesScreenState extends ConsumerState<SavedFilesScreen> {
         SavedFileKind.dump => AppText.savedDumps,
         SavedFileKind.diagnosticLog => AppText.savedLogs,
         SavedFileKind.rideCsv => AppText.savedRides,
+        SavedFileKind.dashCheck => AppText.savedDashChecks,
       });
 
   IconData _icon(SavedFileKind kind) => switch (kind) {
@@ -55,6 +117,7 @@ class _SavedFilesScreenState extends ConsumerState<SavedFilesScreen> {
         SavedFileKind.dump => Icons.table_chart_outlined,
         SavedFileKind.diagnosticLog => Icons.receipt_long_outlined,
         SavedFileKind.rideCsv => Icons.route_outlined,
+        SavedFileKind.dashCheck => Icons.speed_outlined,
       };
 
   Future<bool> _confirm(String title, String body) async {
@@ -124,6 +187,7 @@ class _SavedFilesScreenState extends ConsumerState<SavedFilesScreen> {
           page = ParameterDumpScreen(dump: dump, savedFile: entry.file);
         case SavedFileKind.diagnosticLog:
         case SavedFileKind.rideCsv:
+        case SavedFileKind.dashCheck:
           page = _TextFileScreen(
               title: entry.name, text: await entry.file.readAsString());
       }
@@ -164,6 +228,13 @@ class _SavedFilesScreenState extends ConsumerState<SavedFilesScreen> {
         if (source != null && source.isNotEmpty) {
           parts.add('${strings.text(AppText.savedSource)} $source');
         }
+      case SavedFileKind.dashCheck:
+        final points = info['points'];
+        if (points != null && points.isNotEmpty) parts.add('$points points');
+        final err = info['dash_error_pct'];
+        if (err != null && err.isNotEmpty) parts.add('dash $err %');
+        final spn = info['suggested_SpdPulseNum'];
+        if (spn != null && spn.isNotEmpty) parts.add('SpdPulseNum → $spn');
       case SavedFileKind.diagnosticLog:
       case SavedFileKind.rideCsv:
         break;
@@ -182,14 +253,51 @@ class _SavedFilesScreenState extends ConsumerState<SavedFilesScreen> {
         final entries = listing?.entries ?? const <SavedFileEntry>[];
         return Scaffold(
           appBar: AppBar(
-            title: Text(strings.text(AppText.savedFiles).toUpperCase()),
+            title: Text(_selected == null
+                ? strings.text(AppText.savedFiles).toUpperCase()
+                : '${_selected!.length} ${strings.text(AppText.savedSelectedCount)}'),
+            leading: _selected == null
+                ? null
+                : IconButton(
+                    key: const ValueKey('saved-select-cancel'),
+                    icon: const Icon(Icons.close),
+                    onPressed: () => setState(() => _selected = null),
+                  ),
             actions: [
-              IconButton(
-                key: const ValueKey('saved-delete-all'),
-                tooltip: strings.text(AppText.savedDeleteAll),
-                onPressed: entries.isEmpty ? null : _deleteAll,
-                icon: const Icon(Icons.delete_sweep_outlined),
-              ),
+              if (_selected != null)
+                IconButton(
+                  key: const ValueKey('saved-delete-selected'),
+                  tooltip: strings.text(AppText.savedDelete),
+                  onPressed: _selected!.isEmpty
+                      ? null
+                      : () => _deleteSelected(entries),
+                  icon: const Icon(Icons.delete_outline),
+                )
+              else ...[
+                IconButton(
+                  key: const ValueKey('saved-select'),
+                  tooltip: strings.text(AppText.savedSelect),
+                  onPressed: entries.isEmpty
+                      ? null
+                      : () => setState(() => _selected = <String>{}),
+                  icon: const Icon(Icons.checklist),
+                ),
+                IconButton(
+                  key: const ValueKey('saved-remove-duplicates'),
+                  tooltip: strings.text(AppText.savedRemoveDuplicates),
+                  onPressed: entries.length < 2
+                      ? null
+                      : () => _removeDuplicates(entries),
+                  icon: const Icon(Icons.filter_none),
+                ),
+              ],
+              if (_selected == null)
+                IconButton(
+                  key: const ValueKey('saved-delete-all'),
+                  tooltip: strings.text(AppText.savedDeleteAll),
+                  onPressed: entries.isEmpty ? null : _deleteAll,
+                  icon: const Icon(Icons.delete_sweep_outlined),
+                ),
             ],
           ),
           body: SafeArea(
@@ -259,36 +367,76 @@ class _SavedFilesScreenState extends ConsumerState<SavedFilesScreen> {
               color: Colors.white70),
         ),
       ),
-      for (final e in entries)
-        Card(
-          child: ListTile(
-            key: ValueKey('saved-file-${e.name}'),
-            leading: Icon(_icon(e.kind)),
-            title: Text(e.name, maxLines: 1, overflow: TextOverflow.ellipsis),
-            subtitle: Text(_subtitle(strings, e)),
-            onTap: () => _open(e),
-            trailing: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                IconButton(
-                  key: ValueKey('saved-share-${e.name}'),
-                  tooltip: strings.text(AppText.savedShare),
-                  icon: const Icon(Icons.ios_share),
-                  onPressed: () => _share(e),
-                ),
-                IconButton(
-                  key: ValueKey('saved-delete-${e.name}'),
-                  tooltip: strings.text(AppText.savedDelete),
-                  icon: const Icon(Icons.delete_outline),
-                  onPressed: () => _delete(e),
-                ),
-              ],
-            ),
+      for (final (i, e) in entries.indexed) ...[
+        if (i == 0 || !_sameDay(entries[i - 1].time, e.time))
+          Padding(
+            padding: const EdgeInsets.fromLTRB(8, 6, 4, 2),
+            child: Text(_dayLabel(strings, e.time),
+                key: ValueKey('saved-day-${kind.name}-${_formatDay(e.time)}'),
+                style: const TextStyle(fontSize: 12, color: Colors.white54)),
           ),
-        ),
+        _tile(strings, e),
+      ],
     ];
   }
+
+  Widget _tile(AppStrings strings, SavedFileEntry e) {
+    final selected = _selected;
+    if (selected != null) {
+      return Card(
+        child: CheckboxListTile(
+          key: ValueKey('saved-file-${e.name}'),
+          value: selected.contains(e.path),
+          onChanged: (_) => _toggle(e),
+          secondary: Icon(_icon(e.kind)),
+          title: Text(e.name, maxLines: 1, overflow: TextOverflow.ellipsis),
+          subtitle: Text(_subtitle(strings, e)),
+        ),
+      );
+    }
+    return Card(
+      child: ListTile(
+        key: ValueKey('saved-file-${e.name}'),
+        leading: Icon(_icon(e.kind)),
+        title: Text(e.name, maxLines: 1, overflow: TextOverflow.ellipsis),
+        subtitle: Text(_subtitle(strings, e)),
+        onTap: () => _open(e),
+        onLongPress: () => setState(() => _selected = {e.path}),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            IconButton(
+              key: ValueKey('saved-share-${e.name}'),
+              tooltip: strings.text(AppText.savedShare),
+              icon: const Icon(Icons.ios_share),
+              onPressed: () => _share(e),
+            ),
+            IconButton(
+              key: ValueKey('saved-delete-${e.name}'),
+              tooltip: strings.text(AppText.savedDelete),
+              icon: const Icon(Icons.delete_outline),
+              onPressed: () => _delete(e),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
+
+bool _sameDay(DateTime a, DateTime b) {
+  final x = a.toLocal(), y = b.toLocal();
+  return x.year == y.year && x.month == y.month && x.day == y.day;
+}
+
+String _formatDay(DateTime t) {
+  final l = t.toLocal();
+  return '${l.year}-${_two(l.month)}-${_two(l.day)}';
+}
+
+String _dayLabel(AppStrings strings, DateTime t) => _sameDay(t, DateTime.now())
+    ? strings.text(AppText.savedToday)
+    : _formatDay(t);
 
 class _Listing {
   const _Listing(this.entries, this.location);

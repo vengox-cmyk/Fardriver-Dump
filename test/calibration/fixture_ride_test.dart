@@ -14,7 +14,7 @@ void main() {
   final saved = CalibrationCsv.parse(
       File('test/fixtures/calibration/blu_view2_ride.csv').readAsStringSync());
   final session = saved.toSessionState();
-  final analysis = session.analysis!;
+  final analysis = session.analysis;
   final fit = session.fit;
 
   int count(SampleVerdict v) => analysis.verdicts.where((x) => x == v).length;

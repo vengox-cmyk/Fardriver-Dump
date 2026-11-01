@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:arcdash/models/dash_speed.dart';
 import 'package:arcdash/models/speed_suggestions.dart';
 import 'package:arcdash/services/calibration_csv.dart';
 import 'package:arcdash/services/calibration_settings.dart';
@@ -18,8 +19,10 @@ class CalibrationArchive {
     required Future<CalibrationSettings> Function() settings,
     required String Function() controllerId,
     required Future<String> Function() appVersion,
+    Future<DashAnchor?> Function()? dashAnchor,
     DateTime Function()? clock,
   })  : _store = store,
+        _dashAnchor = dashAnchor,
         _settings = settings,
         _controllerId = controllerId,
         _appVersion = appVersion,
@@ -30,11 +33,14 @@ class CalibrationArchive {
   final String Function() _controllerId;
   final Future<String> Function() _appVersion;
   final DateTime Function() _clock;
+  final Future<DashAnchor?> Function()? _dashAnchor;
 
   // Per ride: keep what was known while connected after a disconnect.
   DateTime? _rideStart;
   String _rideControllerId = '';
   CalibrationSettings? _rideSettings;
+  DashAnchor? _rideAnchor;
+  bool _anchorLoaded = false;
 
   static String fileNameFor(DateTime startedAt) =>
       'calibration_${SavedFilesStore.stamp(startedAt)}.csv';
@@ -47,6 +53,16 @@ class CalibrationArchive {
       _rideStart = startedAt;
       _rideControllerId = '';
       _rideSettings = null;
+      _rideAnchor = null;
+      _anchorLoaded = false;
+    }
+    if (!_anchorLoaded && _dashAnchor != null) {
+      _anchorLoaded = true; // once per ride; never blocks a save
+      try {
+        _rideAnchor = await _dashAnchor();
+      } on Object {
+        _rideAnchor = null;
+      }
     }
     final id = _controllerId().trim();
     if (id.isNotEmpty) _rideControllerId = id;
@@ -70,6 +86,7 @@ class CalibrationArchive {
       fit: state.fit,
       dkdSnapshots: state.dkdSnapshots,
       settings: settings,
+      dashAnchor: rideDashAnchor(state.dkdSnapshots, settings) ?? _rideAnchor,
       appVersion: await _appVersion(),
       exportedAt: _clock(),
       startedAt: startedAt,
@@ -83,6 +100,14 @@ class CalibrationArchive {
         SavedFileKind.calibration, fileNameFor(startedAt), csv);
     return file.path;
   }
+
+  /// Anchor from DKD readings stored with the ride itself (older rides).
+  static DashAnchor? rideDashAnchor(
+          List<DkdSnapshot> readings, CalibrationSettings settings) =>
+      DashAnchor.fromReadings(readings,
+          speedPulses: settings.speedPulses,
+          spdPulseNum: settings.spdPulseNum,
+          source: 'DKD readings in this ride');
 
   /// Rewrites a ride opened from Saved files with new DKD readings, keeping
   /// its original settings snapshot and metadata.
@@ -100,6 +125,7 @@ class CalibrationArchive {
       fit: session.fit,
       dkdSnapshots: dkdSnapshots,
       settings: saved.settings,
+      dashAnchor: rideDashAnchor(dkdSnapshots, saved.settings),
       appVersion: appVersion,
       exportedAt: now ?? DateTime.now(),
       startedAt: saved.startedAt,

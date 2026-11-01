@@ -278,7 +278,7 @@ void main() {
       await gps.controller.close();
     });
 
-    test('saves while recording, on stop and after DKD edits', () async {
+    test('saves while recording and on stop', () async {
       await notifier.start();
       await Future<void>.delayed(const Duration(milliseconds: 100));
       expect(saves, isEmpty, reason: 'nothing recorded yet');
@@ -287,7 +287,6 @@ void main() {
       rpm.add(RpmReading(rpm: 2244, at: now));
       await Future<void>.delayed(Duration.zero);
       notifier.onFix(fix(now, 50));
-      expect(notifier.tapDkd(), isTrue);
       await Future<void>.delayed(const Duration(milliseconds: 120));
       expect(saves, isNotEmpty);
       expect(saves.last.isRecording, isTrue);
@@ -298,11 +297,6 @@ void main() {
       final afterStop = saves.length;
       await Future<void>.delayed(const Duration(milliseconds: 100));
       expect(saves.length, afterStop, reason: 'timer stops with the ride');
-
-      notifier.setDkdReading(0, 52);
-      await Future<void>.delayed(const Duration(milliseconds: 800));
-      expect(saves.length, afterStop + 1);
-      expect(saves.last.dkdSnapshots.single.dkdKph, 52);
     });
 
     test('a failing saver never breaks the ride', () async {
@@ -373,7 +367,8 @@ void main() {
       expect(await store.list(kind: SavedFileKind.dump), hasLength(2));
     });
 
-    test('dump dedupe: controller clock, save counter, BLE id and restarts '
+    test(
+        'dump dedupe: controller clock, save counter, BLE id and restarts '
         'never create a new file', () async {
       var now = DateTime(2026, 11, 1, 16, 18, 44);
       PersistedParameterSnapshot snap(Map<int, List<int>> blocks, String id) =>
@@ -406,13 +401,13 @@ void main() {
       archiver = LiveDumpArchiver(
           store: store, appVersion: () async => '1.2.3', clock: () => now);
       blocks[0x00]![10] = (blocks[0x00]![10] + 1) & 0xFF;
-      expect(await archiver.onSnapshot(snap(blocks, 'E0:07:D3:FD:00:5A')),
-          isNull);
+      expect(
+          await archiver.onSnapshot(snap(blocks, 'E0:07:D3:FD:00:5A')), isNull);
       expect(await store.list(kind: SavedFileKind.dump), hasLength(1));
 
       // Opening / sharing an identical dump reuses the saved file.
-      final dump = ParameterCaptureService.toDump(
-          snap(blocks, 'E0:07:D3:FD:00:5A'));
+      final dump =
+          ParameterCaptureService.toDump(snap(blocks, 'E0:07:D3:FD:00:5A'));
       final kept = await LiveDumpArchiver.saveUnlessDuplicate(store, dump,
           appVersion: '1.2.3');
       expect(kept.duplicate, isTrue);
@@ -425,9 +420,9 @@ void main() {
     });
 
     test('values signature masks the clock fields of a real dump', () {
-      final real = ParameterCsvCodec.decode(File(
-              'test/fixtures/param_dump/farsure_live_20261101.csv')
-          .readAsStringSync());
+      final real = ParameterCsvCodec.decode(
+          File('test/fixtures/param_dump/farsure_live_20261101.csv')
+              .readAsStringSync());
       final moved = {
         for (final e in real.blocks.entries) e.key: [...e.value]
       };

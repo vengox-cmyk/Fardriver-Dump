@@ -1,6 +1,7 @@
 import 'package:arcdash/models/gps_calibration.dart';
 import 'package:arcdash/models/speed_source.dart';
 import 'package:arcdash/models/speed_suggestions.dart';
+import 'package:arcdash/models/dash_speed.dart';
 import 'package:arcdash/services/calibration_settings.dart';
 import 'package:arcdash/services/gps_calibration_session.dart';
 import 'package:arcdash/services/parameter_csv.dart';
@@ -31,6 +32,7 @@ class CalibrationCsv {
     required CalibrationSettings settings,
     required String appVersion,
     required DateTime exportedAt,
+    DashAnchor? dashAnchor,
     DateTime? startedAt,
     DateTime? stoppedAt,
     String? controllerId,
@@ -160,6 +162,36 @@ class CalibrationCsv {
         ],
     ]);
 
+    // Estimated dash speed (never used in any fit): see DashAnchor.
+    final sp = settings.speedPulses, spn = settings.spdPulseNum;
+    final dashK = dashAnchor?.kFor(sp: sp, spn: spn);
+    section([
+      ['section', 'key', 'value'],
+      ['dash_est', 'status', dashEstimateLabel],
+      ['dash_est', 'used_in_fit', 'no'],
+      [
+        'dash_est',
+        'anchor',
+        dashAnchor == null
+            ? 'none (run a Dash speed check to fill dash_kmh_est)'
+            : '${dashAnchor.source}, ${dashAnchor.points} point(s)'
+      ],
+      if (dashAnchor != null) ...[
+        ['dash_est', 'anchor_SpeedPulse', _int(dashAnchor.speedPulses)],
+        ['dash_est', 'anchor_SpdPulseNum', _int(dashAnchor.spdPulseNum)],
+        [
+          'dash_est',
+          'scaling',
+          dashAnchor.sameSettings(sp: sp, spn: spn)
+              ? 'same settings as anchor (measured)'
+              : dashK == null
+                  ? 'settings unknown: no estimate'
+                  : 'scaled by SpeedPulse/SpdPulseNum (unverified)'
+        ],
+        if (dashK != null) ['dash_est', 'k_dash_kmh_per_rpm', _f(dashK, 6)],
+      ],
+    ]);
+
     final segmentOf = <CalibrationSample, int>{};
     for (var s = 0; s < analysis.segments.length; s++) {
       for (final sample in analysis.segments[s].samples) {
@@ -181,9 +213,18 @@ class CalibrationCsv {
         'segment',
         'gps_mph',
         'controller_mph',
+        'dash_kmh_est',
       ],
       for (var i = 0; i < samples.length; i++)
-        _sampleRow(samples[i], analysis.verdicts[i], segmentOf[samples[i]]),
+        [
+          ..._sampleRow(
+              samples[i], analysis.verdicts[i], segmentOf[samples[i]]),
+          _opt(
+              dashK == null || (samples[i].rpm ?? 0) <= 0
+                  ? null
+                  : samples[i].rpm! * dashK,
+              2),
+        ],
     ]);
     return out.toString();
   }

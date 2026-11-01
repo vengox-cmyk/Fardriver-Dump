@@ -146,8 +146,8 @@ class CalibrationFilterConfig {
   });
 
   /// Speed-accuracy limit (m/s) at [speedKph].
-  double speedAccuracyLimitMps(double speedKph) => math.max(
-      maxSpeedAccuracyMps, maxRelativeSpeedAccuracy * speedKph / 3.6);
+  double speedAccuracyLimitMps(double speedKph) =>
+      math.max(maxSpeedAccuracyMps, maxRelativeSpeedAccuracy * speedKph / 3.6);
 
   /// Whether a single fix is precise enough to be used (same rule as the
   /// filter; also drives the live GPS lock colour).
