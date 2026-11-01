@@ -9,6 +9,7 @@ import 'package:arcdash/services/calibration_settings.dart';
 import 'package:arcdash/services/disclaimer.dart';
 import 'package:arcdash/services/storage_service.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -42,12 +43,16 @@ class _FakeDongleService extends DongleService {
 void main() {
   setUp(() => SharedPreferences.setMockInitialValues({Disclaimer.prefKey: 1}));
 
-  Widget app(FakeGps gps, {bool connected = true}) => ProviderScope(
+  Widget app(FakeGps gps,
+          {bool connected = true, Widget? home, bool autoSave = true}) =>
+      ProviderScope(
         overrides: [
           bluetoothServiceProvider.overrideWithValue(_FakeDongleService()),
           storageServiceProvider.overrideWithValue(StorageService()),
           isConnectedProvider.overrideWithValue(connected),
           gpsSourceProvider.overrideWithValue(gps),
+          // No real file IO inside fake async.
+          if (!autoSave) calibrationArchiveProvider.overrideWithValue(null),
           calibrationSettingsProvider
               .overrideWith((ref) async => const CalibrationSettings(
                     ble: BleSpeedSettings(
@@ -60,14 +65,14 @@ void main() {
                     source: 'test snapshot',
                   )),
         ],
-        child: const MaterialApp(
-          locale: Locale('en'),
+        child: MaterialApp(
+          locale: const Locale('en'),
           supportedLocales: AppStrings.supportedLocales,
-          localizationsDelegates: [
+          localizationsDelegates: const [
             AppStrings.delegate,
             ...GlobalMaterialLocalizations.delegates,
           ],
-          home: SpeedCalibrationScreen(),
+          home: home ?? const SpeedCalibrationScreen(),
         ),
       );
 
@@ -119,5 +124,56 @@ void main() {
     expect(find.text('GPS reference'), findsOneWidget);
     expect(find.text('Current settings from: test snapshot'), findsOneWidget);
     expect(await Disclaimer.calibrationNeedsAcceptance(), isFalse);
+  });
+
+  testWidgets('back key during a ride asks first, then pops the screen',
+      (tester) async {
+    tester.view.physicalSize = const Size(1080, 2400);
+    tester.view.devicePixelRatio = 2.5;
+    addTearDown(tester.view.reset);
+    SharedPreferences.setMockInitialValues(
+        {Disclaimer.prefKey: 1, Disclaimer.calibrationPrefKey: true});
+    // Answer the keep-screen-on channel like the Android activity does.
+    tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        const MethodChannel('com.arcdash.arcdash/service'), (_) async => null);
+    addTearDown(() => tester.binding.defaultBinaryMessenger
+        .setMockMethodCallHandler(
+            const MethodChannel('com.arcdash.arcdash/service'), null));
+    final gps = FakeGps();
+    await tester.pumpWidget(app(gps,
+        autoSave: false,
+        home: Builder(
+          builder: (context) => Scaffold(
+            body: TextButton(
+              onPressed: () => Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                      builder: (_) => const SpeedCalibrationScreen())),
+              child: const Text('open calibration'),
+            ),
+          ),
+        )));
+    await tester.tap(find.text('open calibration'));
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(
+        find.byKey(const ValueKey('calibration-start')), 200);
+    await tester.tap(find.byKey(const ValueKey('calibration-start')));
+    await tester.pumpAndSettle();
+    expect(find.text('GPS SPEED'), findsOneWidget);
+
+    // Hardware/system back while recording → confirm, "Keep riding" stays.
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+    expect(find.text('Stop calibration?'), findsOneWidget);
+    await tester.tap(find.text('Keep riding'));
+    await tester.pumpAndSettle();
+    expect(find.text('GPS SPEED'), findsOneWidget);
+
+    // Back again → Stop → the screen pops back to where it was opened.
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(FilledButton, 'Stop'));
+    await tester.pumpAndSettle();
+    expect(find.byType(SpeedCalibrationScreen), findsNothing);
+    expect(find.text('open calibration'), findsOneWidget);
   });
 }

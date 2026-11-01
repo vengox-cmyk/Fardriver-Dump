@@ -147,6 +147,12 @@ class StatsNotifier extends StateNotifier<StatsState> {
     _startSampling();
   }
 
+  /// Ends and saves the running ride now (e.g. before the app exits).
+  Future<void> finishSession() async {
+    _disconnectGraceTimer?.cancel();
+    await _finalizeSession();
+  }
+
   Future<void> _finalizeSession() async {
     _sampleTimer?.cancel();
     _sampleTimer = null;
