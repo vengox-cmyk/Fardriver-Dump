@@ -5,6 +5,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:arcdash/services/saved_files.dart';
 
 import 'package:arcdash/l10n/app_strings.dart';
+import 'package:arcdash/services/dump_archive.dart';
 import 'package:arcdash/services/parameter_csv.dart';
 import 'package:arcdash/services/parameter_dump.dart';
 import 'package:arcdash/services/parameter_dump_io.dart';
@@ -53,11 +54,13 @@ class _ParameterDumpScreenState extends State<ParameterDumpScreen> {
     var file = widget.savedFile;
     if (file == null) {
       try {
-        file = await ParameterDumpIo.saveDump(
-            widget.store ??
-                SavedFilesStore(documentsDir: getApplicationDocumentsDirectory),
-            dump,
-            appVersion: await ParameterDumpIo.appVersion());
+        file = (await LiveDumpArchiver.saveUnlessDuplicate(
+                widget.store ??
+                    SavedFilesStore(
+                        documentsDir: getApplicationDocumentsDirectory),
+                dump,
+                appVersion: await ParameterDumpIo.appVersion()))
+            .file;
       } catch (e) {
         debugPrint('Saving parameter dump failed: $e');
       }

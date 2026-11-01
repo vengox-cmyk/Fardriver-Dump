@@ -1,5 +1,6 @@
 import 'package:arcdash/models/controller_identity.dart';
 import 'package:arcdash/models/fardriver_param_catalog.dart';
+import 'package:arcdash/services/dump_archive.dart';
 import 'package:arcdash/services/parameter_dump.dart';
 import 'package:arcdash/services/parameter_snapshot_repository.dart';
 import 'package:arcdash/services/snapshot_builder.dart';
@@ -131,10 +132,11 @@ class ParameterCaptureService {
     _started = false;
   }
 
-  static String _signature(Map<int, List<int>> blocks) {
-    final keys = blocks.keys.toList()..sort();
-    return keys.map((k) => '$k:${blocks[k]!.join(',')}').join(';');
-  }
+  /// Values-only signature: the controller's clock and riding counters
+  /// change every cycle and must not count as a new snapshot (they caused a
+  /// save on every streaming cycle in v1.2.2).
+  static String _signature(Map<int, List<int>> blocks) =>
+      LiveDumpArchiver.configSignature(blocks);
 
   /// Controller identity derived from the streamed blocks. Fields that the
   /// controller leaves blank fall back to placeholders so the persisted

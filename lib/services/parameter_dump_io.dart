@@ -8,6 +8,7 @@ import 'package:package_info_plus/package_info_plus.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 
+import 'package:arcdash/services/dump_archive.dart';
 import 'package:arcdash/services/heb_file_parser.dart';
 import 'package:arcdash/services/parameter_capture.dart';
 import 'package:arcdash/services/parameter_csv.dart';
@@ -92,11 +93,14 @@ class ParameterDumpIo {
   }
 
   /// Best-effort permanent copy (e.g. of a dump opened from a file); never
-  /// throws, returns null when saving was impossible.
+  /// throws, returns null when saving was impossible. When the values equal
+  /// the newest saved dump that file is returned instead of a duplicate.
   static Future<File?> keepCopy(
       SavedFilesStore store, ParameterDump dump) async {
     try {
-      return await saveDump(store, dump, appVersion: await appVersion());
+      return (await LiveDumpArchiver.saveUnlessDuplicate(store, dump,
+              appVersion: await appVersion()))
+          .file;
     } catch (e) {
       debugPrint('Keeping a copy of the dump failed: $e');
       return null;
