@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:arcdash/models/calibration_guidance.dart';
 import 'package:arcdash/models/gps_calibration.dart';
 import 'package:arcdash/models/speed_source.dart';
 import 'package:arcdash/providers/bluetooth_provider.dart';
@@ -10,11 +11,17 @@ import 'package:arcdash/providers/calibration_provider.dart';
 import 'package:arcdash/providers/controller_provider.dart';
 import 'package:arcdash/providers/units_provider.dart';
 import 'package:arcdash/l10n/app_strings.dart';
+import 'package:arcdash/providers/saved_files_provider.dart';
+import 'package:arcdash/screens/dash_speed_check_screen.dart';
+import 'package:arcdash/screens/saved_calibration_screen.dart';
+import 'package:arcdash/screens/saved_files_screen.dart';
 import 'package:arcdash/screens/speed_calibration_results.dart';
 import 'package:arcdash/services/disclaimer.dart';
 import 'package:arcdash/services/gps_calibration_session.dart';
 import 'package:arcdash/services/gps_location_service.dart';
+import 'package:arcdash/services/saved_files.dart';
 import 'package:arcdash/services/screen_awake.dart';
+import 'package:arcdash/widgets/calibration_panels.dart';
 import 'package:arcdash/widgets/disclaimer_gate.dart';
 
 const _green = Color(0xFF54E39E);
@@ -22,6 +29,8 @@ const _amber = Color(0xFFFFB45C);
 const _red = Color(0xFFFF6B6B);
 
 /// GPS speed calibration (v1.2): intro → live ride view → results.
+/// v1.2.3: never blocks on "connect first" (saved rides work offline), no
+/// in-ride taps, smaller GPS number, live capture checklist.
 /// A temporary calibration tool, not a dashboard. Read-only: nothing is
 /// written to the controller.
 class SpeedCalibrationScreen extends ConsumerStatefulWidget {
@@ -121,8 +130,11 @@ class _SpeedCalibrationScreenState extends ConsumerState<SpeedCalibrationScreen>
               _LiveView(session: session, onStop: _stop),
             CalibrationStatus.starting =>
               const Center(child: CircularProgressIndicator()),
-            CalibrationStatus.stopped =>
-              SpeedCalibrationResults(session: session, onNewRide: _start),
+            CalibrationStatus.stopped => SpeedCalibrationResults(
+                session: session,
+                onNewRide: _start,
+                header: CalibrationLivePanel(
+                    session: session, showChecklist: false)),
             _ => _IntroView(session: session, onStart: _start),
           },
         ),
@@ -144,12 +156,12 @@ class _IntroView extends ConsumerWidget {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
+        if (!connected) const ConnectBanner(),
         const Text(
           'Compares the phone GPS with the motor RPM from the controller and '
-          'suggests corrected speed settings for the FarSure/BLE speed '
-          '(RateRatio) and for a one-wire DKD display (Speed Pulses / '
-          'SpdPulseNum). FarSure only reads; you apply any change yourself in '
-          'the official FarDriver app.',
+          'suggests a corrected RateRatio for the FarSure/BLE speed. FarSure '
+          'only reads; you apply any change yourself in the official '
+          'FarDriver app.',
         ),
         const SizedBox(height: 16),
         const Text('How to ride',
@@ -159,9 +171,9 @@ class _IntroView extends ConsumerWidget {
           'Take a parameter snapshot first (Settings → Live parameters) so the current RateRatio, Speed Pulses and SpdPulseNum are known.',
           'Mount the phone with a clear view of the sky. Start here while standing still.',
           'Ride a flat, straight road. Hold steady speeds for 10+ seconds at a time, above 20 km/h, in at least two bands (20–40, 40–60, 60–80, 80+ km/h). No braking, no hard throttle, no turns.',
-          'Aim for 60–120 clean seconds. The bar fills only with clean seconds.',
-          'DKD display: while holding a steady speed, tap "DKD reads…" once. Remember the number the DKD showed; type it in only after you stop.',
-          'Stop somewhere safe, tap Stop, enter your DKD numbers and read the suggestions.',
+          'Nothing to tap while riding. The checklist shows what is still missing; glance at it only when it is safe.',
+          'Stop somewhere safe, then tap Stop and read the result.',
+          'One-wire dash (DKD): use "Dash speed check" below, standing still with the drive wheel lifted.',
         ].indexed)
           Padding(
             padding: const EdgeInsets.only(bottom: 6),
@@ -177,18 +189,255 @@ class _IntroView extends ConsumerWidget {
             child: const Text('Open settings'),
           ),
         ],
-        if (!connected)
-          const Padding(
-            padding: EdgeInsets.only(bottom: 8),
-            child: Text(
-                'Connect to the controller first (Settings → Connection).',
-                style: TextStyle(color: _amber)),
-          ),
         FilledButton.icon(
           key: const ValueKey('calibration-start'),
-          onPressed: connected ? onStart : null,
+          onPressed: () async {
+            if (ref.read(isConnectedProvider)) {
+              onStart();
+            } else {
+              await showConnectNeeded(context,
+                  'Recording a calibration ride needs live motor RPM from the controller.');
+            }
+          },
           icon: const Icon(Icons.play_arrow),
           label: const Text('Start calibration ride'),
+        ),
+        const SizedBox(height: 8),
+        OutlinedButton.icon(
+          key: const ValueKey('open-dash-check'),
+          onPressed: () => Navigator.of(context).push(MaterialPageRoute<void>(
+              builder: (_) => const DashSpeedCheckScreen())),
+          icon: const Icon(Icons.speed_outlined),
+          label: const Text('Dash speed check (standing still)'),
+        ),
+        const SizedBox(height: 16),
+        const _RecentCalibrations(),
+      ],
+    );
+  }
+}
+
+/// Saved calibration rides, viewable offline.
+class _RecentCalibrations extends ConsumerStatefulWidget {
+  const _RecentCalibrations();
+
+  @override
+  ConsumerState<_RecentCalibrations> createState() =>
+      _RecentCalibrationsState();
+}
+
+class _RecentCalibrationsState extends ConsumerState<_RecentCalibrations> {
+  late Future<List<SavedFileEntry>> _recent = _load();
+
+  Future<List<SavedFileEntry>> _load() async {
+    try {
+      return await ref
+          .read(savedFilesStoreProvider)
+          .list(kind: SavedFileKind.calibration);
+    } on Object {
+      return const [];
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) => FutureBuilder<List<SavedFileEntry>>(
+        future: _recent,
+        builder: (context, snap) {
+          final entries = snap.data ?? const <SavedFileEntry>[];
+          return Column(
+            key: const ValueKey('calibration-recent'),
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text('Saved calibration rides (${entries.length})',
+                  style: const TextStyle(fontWeight: FontWeight.w800)),
+              const SizedBox(height: 4),
+              if (entries.isEmpty)
+                const Text(
+                    'None yet. Everything you record is kept here, also offline.',
+                    style: TextStyle(color: Colors.white60)),
+              for (final e in entries.take(3))
+                Card(
+                  child: ListTile(
+                    dense: true,
+                    leading: const Icon(Icons.speed),
+                    title: Text(e.name,
+                        maxLines: 1, overflow: TextOverflow.ellipsis),
+                    subtitle: Text([
+                      if ((e.info['confidence'] ?? '').isNotEmpty)
+                        'confidence ${e.info['confidence']}'
+                      else
+                        'no result',
+                      if ((e.info['clean_seconds'] ?? '').isNotEmpty)
+                        '${e.info['clean_seconds']} clean s',
+                    ].join(' · ')),
+                    onTap: () async {
+                      await Navigator.of(context).push(MaterialPageRoute<void>(
+                          builder: (_) =>
+                              SavedCalibrationScreen(file: e.file)));
+                      if (mounted) setState(() => _recent = _load());
+                    },
+                  ),
+                ),
+              if (entries.length > 3)
+                TextButton(
+                  onPressed: () => Navigator.of(context).push(
+                      MaterialPageRoute<void>(
+                          builder: (_) => const SavedFilesScreen())),
+                  child: const Text('All saved files'),
+                ),
+            ],
+          );
+        },
+      );
+}
+
+/// Non-blocking "not connected" banner with a Connect action.
+class ConnectBanner extends StatelessWidget {
+  const ConnectBanner({super.key, this.message});
+
+  final String? message;
+
+  @override
+  Widget build(BuildContext context) => Card(
+        key: const ValueKey('calibration-connect-banner'),
+        color: const Color(0x33FFB45C),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(12, 8, 8, 8),
+          child: Row(children: [
+            const Icon(Icons.bluetooth_disabled, color: _amber),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(message ??
+                  'Not connected. Saved results work offline; connect only to record.'),
+            ),
+            TextButton(
+              key: const ValueKey('calibration-connect'),
+              onPressed: () => Navigator.of(context).pushNamed('/'),
+              child: const Text('Connect'),
+            ),
+          ]),
+        ),
+      );
+}
+
+/// Popup when an action needs the controller. Returns after it closes.
+Future<void> showConnectNeeded(BuildContext context, String why) async {
+  final go = await showDialog<bool>(
+    context: context,
+    builder: (context) => AlertDialog(
+      key: const ValueKey('connect-needed-dialog'),
+      title: const Text('Connect to the controller'),
+      content: Text(why),
+      actions: [
+        TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Not now')),
+        FilledButton(
+            key: const ValueKey('connect-needed-connect'),
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Connect')),
+      ],
+    ),
+  );
+  if (go == true && context.mounted) {
+    await Navigator.of(context).pushNamed('/');
+  }
+}
+
+/// Live numbers + checklist, shared by the recording and stopped views.
+/// Display only: nothing here needs a tap.
+class CalibrationLivePanel extends ConsumerWidget {
+  const CalibrationLivePanel(
+      {super.key, required this.session, this.showChecklist = true});
+
+  final CalibrationSessionState session;
+  final bool showChecklist;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final controller = ref.watch(controllerProvider);
+    final unit = ref.watch(speedUnitProvider);
+    final gps = session.latestGps;
+    final gpsFresh = session.isRecording &&
+        gps != null &&
+        DateTime.now().difference(gps.capturedAt) < const Duration(seconds: 3);
+    final gpsKph = gpsFresh ? gps.speedKph : null;
+    final controllerKph = controller.speedKph;
+    final diff = gpsKph != null && gpsKph >= 10
+        ? (controllerKph / gpsKph - 1) * 100
+        : null;
+    final lastVerdict = session.analysis.verdicts.isEmpty
+        ? null
+        : session.analysis.verdicts.last;
+    return Column(
+      key: const ValueKey('calibration-live-panel'),
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _GpsLock(gps: gpsFresh ? gps : null),
+        const SizedBox(height: 6),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            Expanded(
+              child: Column(children: [
+                Text(SpeedSource.gps.label.toUpperCase(),
+                    style: const TextStyle(
+                        fontSize: 12, color: Colors.white70, letterSpacing: 2)),
+                Text(
+                  gpsKph == null
+                      ? '--'
+                      : unit.fromKph(gpsKph).toStringAsFixed(0),
+                  key: const ValueKey('calibration-gps-speed'),
+                  style: const TextStyle(
+                      fontSize: 56, fontWeight: FontWeight.w900, height: 1),
+                ),
+                Text(unit.speedLabel,
+                    style:
+                        const TextStyle(fontSize: 12, color: Colors.white70)),
+              ]),
+            ),
+            Expanded(
+              child: Column(children: [
+                _Metric(
+                  label: SpeedSource.controller.label,
+                  value: unit.speed(controllerKph, digits: 1),
+                  valueKey: const ValueKey('calibration-controller-speed'),
+                ),
+                const SizedBox(height: 6),
+                _Metric(
+                  label: 'Controller vs GPS',
+                  value: diff == null
+                      ? '--'
+                      : '${diff >= 0 ? '+' : ''}${diff.toStringAsFixed(1)} %',
+                  color: diff == null
+                      ? null
+                      : diff.abs() <= 1
+                          ? _green
+                          : diff.abs() <= 3
+                              ? _amber
+                              : _red,
+                ),
+                const SizedBox(height: 6),
+                _Metric(
+                  label: 'Motor RPM',
+                  value: '${controller.motorRpm}',
+                ),
+              ]),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+        if (showChecklist)
+          CaptureChecklist(
+              analysis: session.analysis, fit: session.fit, dense: true),
+        Text(
+          lastVerdict == null
+              ? (session.isRecording ? 'Waiting for GPS…' : '')
+              : lastVerdict == SampleVerdict.kept
+                  ? 'Last second: used'
+                  : 'Last second: not used (${adviceFor(lastVerdict).what})',
+          key: const ValueKey('calibration-last-verdict'),
+          style: const TextStyle(fontSize: 12, color: Colors.white60),
         ),
       ],
     );
@@ -203,131 +452,25 @@ class _LiveView extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final controller = ref.watch(controllerProvider);
-    final unit = ref.watch(speedUnitProvider);
     final strings = AppStrings.of(context);
-    final gps = session.latestGps;
-    final gpsFresh = gps != null &&
-        DateTime.now().difference(gps.capturedAt) < const Duration(seconds: 3);
-    final gpsKph = gpsFresh ? gps.speedKph : null;
-    final controllerKph = controller.speedKph;
-    final diff = gpsKph != null && gpsKph >= 10
-        ? (controllerKph / gpsKph - 1) * 100
-        : null;
-    const target = CalibrationSessionState.targetCleanSeconds;
-    final clean = session.cleanSeconds;
-    final bands = session.analysis.bands.toList()
-      ..sort((a, b) => a.index - b.index);
-    final lastVerdict = session.analysis.verdicts.isEmpty
-        ? null
-        : session.analysis.verdicts.last;
-
     return Padding(
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _GpsLock(gps: gpsFresh ? gps : null),
+          Expanded(
+            child: SingleChildScrollView(
+              child: CalibrationLivePanel(session: session),
+            ),
+          ),
           const SizedBox(height: 8),
-          Text(SpeedSource.gps.label.toUpperCase(),
-              textAlign: TextAlign.center,
-              style: const TextStyle(color: Colors.white70, letterSpacing: 2)),
-          FittedBox(
-            child: Text(
-              gpsKph == null ? '--' : unit.fromKph(gpsKph).toStringAsFixed(0),
-              key: const ValueKey('calibration-gps-speed'),
-              style: const TextStyle(
-                  fontSize: 120, fontWeight: FontWeight.w900, height: 1),
-            ),
-          ),
-          Text(unit.speedLabel,
-              textAlign: TextAlign.center,
-              style: const TextStyle(color: Colors.white70)),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                child: _Metric(
-                  label: SpeedSource.controller.label,
-                  value: unit.speed(controllerKph, digits: 1),
-                  valueKey: const ValueKey('calibration-controller-speed'),
-                ),
-              ),
-              Expanded(
-                child: _Metric(
-                  label: 'Controller vs GPS',
-                  value: diff == null
-                      ? '--'
-                      : '${diff >= 0 ? '+' : ''}${diff.toStringAsFixed(1)} %',
-                  color: diff == null
-                      ? null
-                      : diff.abs() <= 1
-                          ? _green
-                          : diff.abs() <= 3
-                              ? _amber
-                              : _red,
-                ),
-              ),
-              Expanded(
-                child: _Metric(
-                  label: 'Motor RPM',
-                  value: '${controller.motorRpm}',
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'Clean seconds $clean / $target'
-            '${bands.isEmpty ? '' : '  ·  ${bands.map((b) => b.label).join(', ')}'}',
-            style: const TextStyle(fontWeight: FontWeight.w700),
-          ),
-          const SizedBox(height: 6),
-          LinearProgressIndicator(
-            value: (clean / target).clamp(0, 1).toDouble(),
-            minHeight: 10,
-            color: clean >= target ? _green : _amber,
-          ),
-          const SizedBox(height: 4),
-          Text(
-            lastVerdict == null
-                ? 'Waiting for GPS…'
-                : lastVerdict == SampleVerdict.kept
-                    ? 'Last second: kept'
-                    : 'Last second: ${lastVerdict.label}',
-            style: const TextStyle(color: Colors.white60),
-          ),
-          const Spacer(),
-          SizedBox(
-            height: 96,
-            child: FilledButton(
-              key: const ValueKey('calibration-dkd-tap'),
-              onPressed: () {
-                final ok = ref.read(gpsCalibrationProvider.notifier).tapDkd();
-                final messenger = ScaffoldMessenger.of(context)
-                  ..hideCurrentSnackBar();
-                messenger.showSnackBar(SnackBar(
-                  duration: const Duration(seconds: 2),
-                  content: Text(ok
-                      ? 'DKD snapshot ${ref.read(gpsCalibrationProvider).dkdSnapshots.length} saved. Remember the DKD number; enter it after you stop.'
-                      : 'No motor RPM right now; snapshot not saved.'),
-                ));
-              },
-              child: Text(
-                'DKD reads…  (${session.dkdSnapshots.length})',
-                style:
-                    const TextStyle(fontSize: 26, fontWeight: FontWeight.w800),
-              ),
-            ),
-          ),
-          const SizedBox(height: 12),
           OutlinedButton.icon(
             key: const ValueKey('calibration-stop'),
             onPressed: onStop,
             icon: const Icon(Icons.stop),
-            label: const Text('Stop & see results'),
+            label: const Text('Stop & see results (when stopped)'),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 6),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -370,9 +513,7 @@ class _GpsLock extends StatelessWidget {
       text = 'No GPS fix';
     } else {
       final sa = fix.speedAccuracyMps;
-      final good = sa != null
-          ? sa <= config.maxSpeedAccuracyMps
-          : fix.accuracyMeters <= config.maxHorizontalAccuracyM;
+      final good = config.fixIsPrecise(fix);
       color = good ? _green : _amber;
       text = 'GPS lock  ±${fix.accuracyMeters.toStringAsFixed(0)} m'
           '${sa == null ? '' : '  ·  speed ±${sa.toStringAsFixed(1)} m/s'}';

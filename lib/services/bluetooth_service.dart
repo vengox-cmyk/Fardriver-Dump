@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart' hide BluetoothService;
+import 'package:arcdash/models/remembered_device.dart';
 import 'package:arcdash/services/ble_transport.dart';
 import 'package:arcdash/services/diagnostic_log.dart';
 import 'package:arcdash/utils/packet_parser.dart';
@@ -29,11 +30,18 @@ class DiscoveredDongle {
   final String name;
   final int rssi;
 
+  /// Stable advertisement details (v1.2.3) used to recognise a controller
+  /// whose address changed.
+  final AdvertFingerprint fingerprint;
+
   const DiscoveredDongle({
     required this.device,
     required this.name,
     required this.rssi,
+    this.fingerprint = AdvertFingerprint.empty,
   });
+
+  String get address => device.remoteId.str;
 }
 
 class DongleService implements BleTransport {
@@ -116,6 +124,12 @@ class DongleService implements BleTransport {
             device: r.device,
             name: displayName,
             rssi: r.rssi,
+            fingerprint: AdvertFingerprint.of(
+              name: advName.isNotEmpty ? advName : name,
+              serviceUuids:
+                  r.advertisementData.serviceUuids.map((u) => u.str128),
+              manufacturerIds: r.advertisementData.manufacturerData.keys,
+            ),
           );
           if (isNew) {
             diagnostics?.add(DiagnosticEventType.scan, details: {

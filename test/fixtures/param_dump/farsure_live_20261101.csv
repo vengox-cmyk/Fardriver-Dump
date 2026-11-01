@@ -1,0 +1,332 @@
+# ArcDash FarDriver parameter dump,arcdash-param-csv-v1
+# notice,Informational only - verify before use. Not affiliated with FarDriver.
+# controller_id,C0:02:4D:BA:00:16
+# capture_time,2026-11-01T21:19:47.829315Z
+# app_version,FarSure 1.2.200+9
+# source,live
+# complete,yes
+# missing_blocks,
+# missing_optional_blocks,
+block,word_address,byte_offset,bits,name,raw_value,scaled_value,unit,enum_label,raw_block_hex,status,note
+0x00,0x00,0,0-15,VolCoeff,256,256,,,00 01 00 01 27 01 80 02 27 01 6D 00,unverified,
+0x00,0x01,2,0-15,Voltage2Coeff,256,256,,,00 01 00 01 27 01 80 02 27 01 6D 00,unverified,
+0x00,0x02,4,0-15,PhaseACoeff,295,295,,,00 01 00 01 27 01 80 02 27 01 6D 00,unverified,
+0x00,0x03,6,0-15,LineCurrCoeff,640,640,,,00 01 00 01 27 01 80 02 27 01 6D 00,unverified,fardriver.hpp name: LineCoeff
+0x00,0x04,8,0-15,PhaseCCoeff,295,295,,,00 01 00 01 27 01 80 02 27 01 6D 00,unverified,
+0x00,0x05,10,0-15,SaveNum,109,109,,,00 01 00 01 27 01 80 02 27 01 6D 00,unverified,
+0x06,0x06,0,0-0,Arg2,0,0,,,00 00 09 0A 16 49 80 00 31 00 E0 C1,unverified,
+0x06,0x06,0,1-2,AntiTheftPulse,0,0,,Invalid,00 00 09 0A 16 49 80 00 31 00 E0 C1,unverified,PulseFD
+0x06,0x06,0,4-7,Protocol485,0,0,,,00 00 09 0A 16 49 80 00 31 00 E0 C1,unverified,
+0x06,0x06,1,0-6,MorseCode,0,0,,,00 00 09 0A 16 49 80 00 31 00 E0 C1,unverified,
+0x06,0x07,2,0-7,SpeedKI,9,9,,,00 00 09 0A 16 49 80 00 31 00 E0 C1,unverified,
+0x06,0x07,3,0-7,SpeedKP,10,10,,,00 00 09 0A 16 49 80 00 31 00 E0 C1,unverified,fardriver.hpp name: SppedKP
+0x06,0x08,4,0-7,ThrottleLow,22,1.1,V,,00 00 09 0A 16 49 80 00 31 00 E0 C1,unverified,/ 20
+0x06,0x08,5,0-7,ThrottleHigh,73,3.65,V,,00 00 09 0A 16 49 80 00 31 00 E0 C1,unverified,/ 20
+0x06,0x09,6,0-15,FAIF,128,128,,,00 00 09 0A 16 49 80 00 31 00 E0 C1,unverified,
+0x06,0x0A,8,0-15,CurveTime,49,49,,,00 00 09 0A 16 49 80 00 31 00 E0 C1,unverified,low confidence: official app scale unclear; not changed
+0x06,0x0B,10,0-3,BrakeConfig,0,0,,StopWhenGround,00 00 09 0A 16 49 80 00 31 00 E0 C1,unverified,
+0x06,0x0B,10,4-6,TempSensor,6,6,,NTC10K,00 00 09 0A 16 49 80 00 31 00 E0 C1,unverified,"NTC_PTC, Send(0x11, 0x01)"
+0x06,0x0B,10,7-7,PhaseExchange,1,1,,,00 00 09 0A 16 49 80 00 31 00 E0 C1,unverified,
+0x06,0x0B,11,0-2,SlowDown,1,1,,,00 00 09 0A 16 49 80 00 31 00 E0 C1,unverified,0x07
+0x06,0x0B,11,3-3,PC13Config,0,0,,,00 00 09 0A 16 49 80 00 31 00 E0 C1,unverified,RaceResponse 0x08
+0x06,0x0B,11,4-4,CurrAntiTheft,0,0,,,00 00 09 0A 16 49 80 00 31 00 E0 C1,unverified,0x10
+0x06,0x0B,11,5-6,Park,2,2,,Disabled,00 00 09 0A 16 49 80 00 31 00 E0 C1,unverified,"0x60; fardriver.hpp name: ParkConfig; raw 2 = Disabled per official app (fardriver.hpp: SlowDownPark); labels 0/1/3 from header, unconfirmed"
+0x06,0x0B,11,7-7,Direction,1,1,,,00 00 09 0A 16 49 80 00 31 00 E0 C1,unverified,"Send(0x12, 0x07) 0x80"
+0x0C,0x0C,0,0-15,PhaseOffset,190,19,,,BE 00 20 03 1A 04 04 04 06 00 50 78,unverified,"/ 10.0, Send(0x0A, 0x07)"
+0x0C,0x0D,2,0-15,ZeroBattCoeff,800,800,,,BE 00 20 03 1A 04 04 04 06 00 50 78,unverified,
+0x0C,0x0E,4,0-15,FullBattCoeff,1050,1050,,,BE 00 20 03 1A 04 04 04 06 00 50 78,unverified,
+0x0C,0x0F,6,0-7,StartKI,4,4,,,BE 00 20 03 1A 04 04 04 06 00 50 78,unverified,
+0x0C,0x0F,7,0-7,MidKI,4,4,,,BE 00 20 03 1A 04 04 04 06 00 50 78,unverified,
+0x0C,0x10,8,0-7,MaxKI,6,6,,,BE 00 20 03 1A 04 04 04 06 00 50 78,unverified,
+0x0C,0x10,9,0-7,StartKC,0,0,,,BE 00 20 03 1A 04 04 04 06 00 50 78,unverified,fardriver.hpp name: StartKP
+0x0C,0x11,10,0-7,MidKC,80,80,,,BE 00 20 03 1A 04 04 04 06 00 50 78,unverified,fardriver.hpp name: MidKP
+0x0C,0x11,11,0-7,MaxKP,120,120,,,BE 00 20 03 1A 04 04 04 06 00 50 78,unverified,low confidence: official app MaxKC showed 169 vs 120 here; not changed
+0x12,0x12,0,0-15,LD,900,900,,,84 03 F4 01 05 00 10 27 98 3A C0 03,unverified,
+0x12,0x13,2,0-15,AlarmDelay,500,500,,,84 03 F4 01 05 00 10 27 98 3A C0 03,unverified,0x13
+0x12,0x14,4,0-7,PolePairs,5,5,,,84 03 F4 01 05 00 10 27 98 3A C0 03,unverified,"0x14, Send(0x12, 0x01)"
+0x12,0x15,6,0-15,MaxSpeed,10000,10000,rpm,,84 03 F4 01 05 00 10 27 98 3A C0 03,unverified,"0x15, Send(0x12, 0x02)"
+0x12,0x16,8,0-15,RatedPower,15000,15000,W,,84 03 F4 01 05 00 10 27 98 3A C0 03,unverified,"0x16, Send(0x12, 0x03)"
+0x12,0x17,10,0-15,RatedVoltage,960,96,V,,84 03 F4 01 05 00 10 27 98 3A C0 03,unverified,"0x17 / 10, Send(0x12, 0x04)"
+0x18,0x18,0,0-15,RatedSpeed,6160,6160,rpm,,10 18 E8 03 01 2B 49 01 2D 00 20 00,unverified,"Send(0x12, 0x05)"
+0x18,0x19,2,0-15,MaxLineCurr,1000,250,A,,10 18 E8 03 01 2B 49 01 2D 00 20 00,unverified,"/ 4, Send(0x12, 0x1B)"
+0x18,0x1A,4,0-1,FollowConfig,1,1,,FollowDisabled,10 18 E8 03 01 2B 49 01 2D 00 20 00,unverified,
+0x18,0x1A,4,2-3,ThrottleResponse,0,0,,Line,10 18 E8 03 01 2B 49 01 2D 00 20 00,unverified,ECOConfig
+0x18,0x1A,4,4-5,WeakA,0,0,,,10 18 E8 03 01 2B 49 01 2D 00 20 00,unverified,"low confidence: maybe official ""Weak Character""; not renamed"
+0x18,0x1A,4,6-7,RXD,0,0,,AF,10 18 E8 03 01 2B 49 01 2D 00 20 00,unverified,"B10 GPIO config, == 3 affects A12 & USART2"
+0x18,0x1A,5,0-4,SpeedPulse,11,11,,,10 18 E8 03 01 2B 49 01 2D 00 20 00,unverified,
+0x18,0x1A,5,5-7,GearConfig,1,1,,DefaultD,10 18 E8 03 01 2B 49 01 2D 00 20 00,unverified,
+0x18,0x1B,6,0-15,LQ,329,329,,,10 18 E8 03 01 2B 49 01 2D 00 20 00,unverified,
+0x18,0x1C,8,0-15,BattRatedCap,45,45,,,10 18 E8 03 01 2B 49 01 2D 00 20 00,unverified,
+0x18,0x1D,10,0-15,IntRes,32,32,,,10 18 E8 03 01 2B 49 01 2D 00 20 00,unverified,"Send(0x0F, 0x08)"
+0x1E,0x1E,0,0-7,FwReRatio,64,64,,,40 00 76 02 4E 44 00 50 1A 0B 01 10,unverified,
+0x1E,0x1E,1,0-0,ReverseSideStandSignal,0,0,,,40 00 76 02 4E 44 00 50 1A 0B 01 10,unverified,
+0x1E,0x1E,1,1-1,AllowSmallCurrentSwitching,0,0,,,40 00 76 02 4E 44 00 50 1A 0B 01 10,unverified,
+0x1E,0x1E,1,2-2,NeutralAntiSkidParking,0,0,,,40 00 76 02 4E 44 00 50 1A 0B 01 10,unverified,
+0x1E,0x1E,1,3-3,RecordMileage,0,0,,,40 00 76 02 4E 44 00 50 1A 0B 01 10,unverified,
+0x1E,0x1E,1,4-4,LowerMagneticBrake,0,0,,,40 00 76 02 4E 44 00 50 1A 0B 01 10,unverified,Extension code Y
+0x1E,0x1E,1,5-5,DownhillReverseOvervoltageCutoff,0,0,,,40 00 76 02 4E 44 00 50 1A 0B 01 10,unverified,
+0x1E,0x1E,1,6-6,ShieldedGearSpeedLimit2,0,0,,,40 00 76 02 4E 44 00 50 1A 0B 01 10,unverified,
+0x1E,0x1E,1,7-7,PD1Input,0,0,,,40 00 76 02 4E 44 00 50 1A 0B 01 10,unverified,
+0x1E,0x1F,2,0-15,LowVolProtect,630,63,V,,40 00 76 02 4E 44 00 50 1A 0B 01 10,unverified,"/ 10; official app also shows LowVolRestore = LowVolProtect + 2 V (derived, not stored)"
+0x1E,0x20,4,0-15,CustomCode,4E44,ND,,,40 00 76 02 4E 44 00 50 1A 0B 01 10,unverified,
+0x1E,0x21,6,0-15,RelayDelay,20480,20480,ms,,40 00 76 02 4E 44 00 50 1A 0B 01 10,unverified,ms; overlay: same word as the BCEnable..RelayDelay1S flag bits (official app shows both views; medium confidence)
+0x1E,0x21,6,0-0,BCEnable,0,0,,,40 00 76 02 4E 44 00 50 1A 0B 01 10,unverified,"Edge support, Side stand?; fardriver.hpp name: BCState"
+0x1E,0x21,6,1-1,SeatEnable,0,0,,,40 00 76 02 4E 44 00 50 1A 0B 01 10,unverified,"Zuotong, ""bucket"""
+0x1E,0x21,6,2-2,PEnable,0,0,,,40 00 76 02 4E 44 00 50 1A 0B 01 10,unverified,"PGear, ""P file"""
+0x1E,0x21,6,3-3,AutoBackPEnable,0,0,,,40 00 76 02 4E 44 00 50 1A 0B 01 10,unverified,AutoBackPStat
+0x1E,0x21,6,4-4,CruiseEnable,0,0,,,40 00 76 02 4E 44 00 50 1A 0B 01 10,unverified,XHStat
+0x1E,0x21,6,5-5,EABSEnable,0,0,,,40 00 76 02 4E 44 00 50 1A 0B 01 10,unverified,
+0x1E,0x21,6,6-6,PushEnable,0,0,,,40 00 76 02 4E 44 00 50 1A 0B 01 10,unverified,"TuixingS, ""Power implementation function"", enabling cancels PEnable"
+0x1E,0x21,6,7-7,ForceAntiTheft,0,0,,,40 00 76 02 4E 44 00 50 1A 0B 01 10,unverified,
+0x1E,0x21,7,0-0,OverSpeedAlarm,0,0,,,40 00 76 02 4E 44 00 50 1A 0B 01 10,unverified,
+0x1E,0x21,7,1-1,BrakeStillPark,0,0,,,40 00 76 02 4E 44 00 50 1A 0B 01 10,unverified,ParkDisableBrake
+0x1E,0x21,7,2-2,RememberGear,0,0,,,40 00 76 02 4E 44 00 50 1A 0B 01 10,unverified,GearRememberS
+0x1E,0x21,7,6-6,BackEnable,1,1,,,40 00 76 02 4E 44 00 50 1A 0B 01 10,unverified,REGear
+0x1E,0x21,7,7-7,RelayDelay1S,0,0,,,40 00 76 02 4E 44 00 50 1A 0B 01 10,unverified,
+0x1E,0x22,8,0-7,ModelYear,26,2026,,,40 00 76 02 4E 44 00 50 1A 0B 01 10,unverified,+ 2000
+0x1E,0x22,9,0-7,ModelMonth,11,11,,,40 00 76 02 4E 44 00 50 1A 0B 01 10,unverified,
+0x1E,0x23,10,0-7,ModelDay,1,1,,,40 00 76 02 4E 44 00 50 1A 0B 01 10,unverified,
+0x1E,0x23,11,0-7,TimeHour,16,16,,,40 00 76 02 4E 44 00 50 1A 0B 01 10,unverified,
+0x24,0x24,0,0-7,TimeMin,18,18,,,12 2C BF 04 B0 04 B8 0B AC 0D FA 00,unverified,
+0x24,0x24,1,0-7,TimeSecond,44,44,,,12 2C BF 04 B0 04 B8 0B AC 0D FA 00,unverified,
+0x24,0x25,2,0-15,OverVolProtect,1215,121.5,V,,12 2C BF 04 B0 04 B8 0B AC 0D FA 00,unverified,/ 10; fardriver.hpp name: HighVolProtect
+0x24,0x26,4,0-15,BoostLineCurr,1200,300,A,,12 2C BF 04 B0 04 B8 0B AC 0D FA 00,unverified,/ 4; fardriver.hpp name: CustomMaxLineCurr
+0x24,0x27,6,0-15,BoostPhaseCurr,3000,750,A,,12 2C BF 04 B0 04 B8 0B AC 0D FA 00,unverified,/ 4; fardriver.hpp name: CustomMaxPhaseCurr
+0x24,0x28,8,0-15,LowSpeed,3500,3500,rpm,,12 2C BF 04 B0 04 B8 0B AC 0D FA 00,unverified,swapped vs fardriver.hpp (checked against official app)
+0x24,0x29,10,0-15,BackSpeed,250,250,rpm,,12 2C BF 04 B0 04 B8 0B AC 0D FA 00,unverified,swapped vs fardriver.hpp (checked against official app)
+0x2A,0x2A,0,0-15,MidSpeed,4500,4500,,,94 11 C8 00 00 00 60 09 10 27 E0 00,unverified,
+0x2A,0x2B,2,0-15,ThrottleDecStep,200,200,,,94 11 C8 00 00 00 60 09 10 27 E0 00,unverified,fardriver.hpp name: Max_Dec
+0x2A,0x2C,4,0-7,FreeThrottle,0,0,,,94 11 C8 00 00 00 60 09 10 27 E0 00,unverified,
+0x2A,0x2D,6,0-15,MaxPhaseCurr,2400,600,A,,94 11 C8 00 00 00 60 09 10 27 E0 00,unverified,"/ 4, Send(0x12, 0x1A)"
+0x2A,0x2E,8,0-15,AnalogSpeedCoeff,10000,10000,rpm,,94 11 C8 00 00 00 60 09 10 27 E0 00,unverified,fardriver.hpp name: SpeedAnalog
+0x2A,0x2F,10,0-15,ThrottleAccStep,224,224,,,94 11 C8 00 00 00 60 09 10 27 E0 00,unverified,fardriver.hpp name: Max_Acc
+0x30,0x30,0,0-15,StopBackCurr,2,2,,,02 00 04 00 20 40 40 60 32 00 A2 94,unverified,"Send(0x12, 0x18)"
+0x30,0x31,2,0-15,MaxBackCurr,4,4,,,02 00 04 00 20 40 40 60 32 00 A2 94,unverified,"Send(0x12, 0x19)"
+0x30,0x32,4,0-7,LowSpeedLineCurr,32,25,%,,02 00 04 00 20 40 40 60 32 00 A2 94,unverified,
+0x30,0x32,5,0-7,MidSpeedLineCurr,64,50,%,,02 00 04 00 20 40 40 60 32 00 A2 94,unverified,
+0x30,0x33,6,0-7,LowSpeedPhaseCurr,64,50,%,,02 00 04 00 20 40 40 60 32 00 A2 94,unverified,
+0x30,0x33,7,0-7,MidSpeedPhaseCurr,96,75,%,,02 00 04 00 20 40 40 60 32 00 A2 94,unverified,fardriver.hpp name: MidSppedPhaseCurr
+0x30,0x34,8,0-15,BlockTime,50,50,,,02 00 04 00 20 40 40 60 32 00 A2 94,unverified,
+0x30,0x35,10,0-15,SpdPulseNum,38050,38050,,,02 00 04 00 20 40 40 60 32 00 A2 94,unverified,
+0x63,0x63,0,0-15,MaxLineCurr2,1800,1800,,,08 07 A0 0F 04 20 2C 01 C0 03 4E 47,unverified,
+0x63,0x64,2,0-15,MaxPhaseCurr2,4000,4000,,,08 07 A0 0F 04 20 2C 01 C0 03 4E 47,unverified,0x64
+0x63,0x65,4,0-7,MotorDia,4,4,,,08 07 A0 0F 04 20 2C 01 C0 03 4E 47,unverified,"0x65,  maybe not MotorDia - values include 4. prolly Application type"
+0x63,0x66,6,0-15,TempCoeff,300,300,,,08 07 A0 0F 04 20 2C 01 C0 03 4E 47,unverified,0x66
+0x63,0x67,8,0-15,ProdMaxVol,960,96,V,,08 07 A0 0F 04 20 2C 01 C0 03 4E 47,unverified,"/ 10.0 67, paracnt_0"
+0x63,0x68,10,0-15,ISMax,18254,18254,,,08 07 A0 0F 04 20 2C 01 C0 03 4E 47,unverified,"0x68, paracnt_1"
+0x69,0x69,0,0-3,PausePin,4,4,,PIN17,F4 F4 6A F7 FF F5 AC 0D E8 00 41 4B,unverified,"PPin, park? NC disables this feature"
+0x69,0x69,0,4-7,SideStandPin,15,15,,PINInvalid3,F4 F4 6A F7 FF F5 AC 0D E8 00 41 4B,unverified,BCPin
+0x69,0x69,1,0-3,CruisePin,4,4,,PIN17,F4 F4 6A F7 FF F5 AC 0D E8 00 41 4B,unverified,XHPin
+0x69,0x69,1,4-7,BoostPin,15,15,,PINInvalid3,F4 F4 6A F7 FF F5 AC 0D E8 00 41 4B,unverified,Boost Pin
+0x69,0x6A,2,0-3,LowSpeedPin,10,10,,PIN2,F4 F4 6A F7 FF F5 AC 0D E8 00 41 4B,unverified,SDLPin
+0x69,0x6A,2,4-7,HighSpeedPin,6,6,,PIN3,F4 F4 6A F7 FF F5 AC 0D E8 00 41 4B,unverified,SDHPin
+0x69,0x6A,3,0-3,ReversePin,7,7,,PIN8,F4 F4 6A F7 FF F5 AC 0D E8 00 41 4B,unverified,REPin
+0x69,0x6A,3,4-7,ForwardPin,15,15,,PINInvalid3,F4 F4 6A F7 FF F5 AC 0D E8 00 41 4B,unverified,FWPin
+0x69,0x6B,4,0-3,SwitchVolPin,15,15,,PINInvalid3,F4 F4 6A F7 FF F5 AC 0D E8 00 41 4B,unverified,Switch Voltage Pin 7 -> C15
+0x69,0x6B,4,4-7,SeatPin,15,15,,PINInvalid3,F4 F4 6A F7 FF F5 AC 0D E8 00 41 4B,unverified,ZuotongPin
+0x69,0x6B,5,0-3,AntiTheftPin,5,5,,PIN14,F4 F4 6A F7 FF F5 AC 0D E8 00 41 4B,unverified,"FDPin, ""Steel"" Pin"
+0x69,0x6B,5,4-7,ChargePin,15,15,,PINInvalid3,F4 F4 6A F7 FF F5 AC 0D E8 00 41 4B,unverified,CHGPin
+0x69,0x6C,6,0-15,LmtSpeed,3500,3500,,,F4 F4 6A F7 FF F5 AC 0D E8 00 41 4B,unverified,LmtSpeed 6C
+0x69,0x6D,8,0-15,DistanceLSB,232,23.2,km,,F4 F4 6A F7 FF F5 AC 0D E8 00 41 4B,unverified,/ 10 6D
+0x69,0x6E,10,0-7,ParaIndex,65,65,,,F4 F4 6A F7 FF F5 AC 0D E8 00 41 4B,unverified,"ParaIndex 6E, prolly Function Code"
+0x69,0x6E,11,0-7,SpecialCode,4B,K,,,F4 F4 6A F7 FF F5 AC 0D E8 00 41 4B,unverified,Y makes A11 output. X may be needed for CAN??
+0x7C,0x7C,0,1-3,WeakTime,1,1,,,03 01 39 00 00 00 E6 81 AD 52 00 00,unverified,"maybe official ""WeakResponse"" (medium confidence); not renamed"
+0x7C,0x7C,0,5-7,QuickDown,0,0,,,03 01 39 00 00 00 E6 81 AD 52 00 00,unverified,"low confidence: maybe official ""Release Throttle""; not renamed"
+0x7C,0x7C,1,0-0,SpeedMeterConfig1,1,1,,,03 01 39 00 00 00 E6 81 AD 52 00 00,unverified,Pulse
+0x7C,0x7C,1,1-1,SpeedMeterConfig2,0,0,,,03 01 39 00 00 00 E6 81 AD 52 00 00,unverified,IsolatedPulse
+0x7C,0x7C,1,2-2,FastRE,0,0,,,03 01 39 00 00 00 E6 81 AD 52 00 00,unverified,
+0x7C,0x7C,1,3-3,DeepWeak,0,0,,,03 01 39 00 00 00 E6 81 AD 52 00 00,unverified,DeepWeak Special; fardriver.hpp name: SpecialWeak
+0x7C,0x7C,1,4-4,ZeroSwitch,0,0,,,03 01 39 00 00 00 E6 81 AD 52 00 00,unverified,"SpeedSwitch Valid, marked when Control_ID recevied via CAN"
+0x7C,0x7C,1,6-6,MOE,0,0,,,03 01 39 00 00 00 E6 81 AD 52 00 00,unverified,
+0x7C,0x7C,1,7-7,SpeedMeterConfig3,0,0,,,03 01 39 00 00 00 E6 81 AD 52 00 00,unverified,Analog
+0x7C,0x7D,2,0-31,TotalTime,57,57,min,,03 01 39 00 00 00 E6 81 AD 52 00 00,unverified,"minutes, infoc0, wktime"
+0x7C,0x81,10,0-15,DistanceMSB,0,0,,,03 01 39 00 00 00 E6 81 AD 52 00 00,unverified,"this << 16 / 10, km; total km = ((DistanceMSB << 16) | DistanceLSB) / 10 (per header)"
+0x82,0x82,0,0-15,ThrottleVoltage,82,0.82,V,,52 00 AB 04 A0 8C 64 50 00 48 3B 21,unverified,"* 0.01, 0x82"
+0x82,0x83,2,0-15,OverVolRestore,1195,119.5,V,,52 00 AB 04 A0 8C 64 50 00 48 3B 21,unverified,"/ 10.0, 0x83; fardriver.hpp name: HighVolRestore"
+0x82,0x84,4,0-7,MotorTempProtect,160,160,°C,,52 00 AB 04 A0 8C 64 50 00 48 3B 21,unverified,0x84
+0x82,0x84,5,0-7,MotorTempRestore,140,140,°C,,52 00 AB 04 A0 8C 64 50 00 48 3B 21,unverified,
+0x82,0x85,6,0-7,ControllerTempProtect,100,100,°C,,52 00 AB 04 A0 8C 64 50 00 48 3B 21,unverified,0x85; fardriver.hpp name: MosTempProtect
+0x82,0x85,7,0-7,ControllerTempRestore,80,80,°C,,52 00 AB 04 A0 8C 64 50 00 48 3B 21,unverified,fardriver.hpp name: MosTempRestore
+0x82,0x86,8,0-5,CANConfig,0,0,,,52 00 AB 04 A0 8C 64 50 00 48 3B 21,unverified,!= 0 -> A12 = AF_PP
+0x82,0x86,9,0-7,HardwareVersion,48,H,,,52 00 AB 04 A0 8C 64 50 00 48 3B 21,unverified,Version0
+0x82,0x87,10,0-7,SoftwareVersionMajor,3B,;,,,52 00 AB 04 A0 8C 64 50 00 48 3B 21,unverified,Version1
+0x82,0x87,11,0-7,SoftwareVersionMinor,33,33,,,52 00 AB 04 A0 8C 64 50 00 48 3B 21,unverified,
+0x88,0x88,0,0-7,RatioMin,100,100,%,,64 64 64 64 64 64 64 64 64 64 64 64,unverified,
+0x88,0x88,1,0-7,Ratio500,100,100,%,,64 64 64 64 64 64 64 64 64 64 64 64,unverified,
+0x88,0x89,2,0-7,Ratio1000,100,100,%,,64 64 64 64 64 64 64 64 64 64 64 64,unverified,
+0x88,0x89,3,0-7,Ratio1500,100,100,%,,64 64 64 64 64 64 64 64 64 64 64 64,unverified,
+0x88,0x8A,4,0-7,Ratio2000,100,100,%,,64 64 64 64 64 64 64 64 64 64 64 64,unverified,
+0x88,0x8A,5,0-7,Ratio2500,100,100,%,,64 64 64 64 64 64 64 64 64 64 64 64,unverified,
+0x88,0x8B,6,0-7,Ratio3000,100,100,%,,64 64 64 64 64 64 64 64 64 64 64 64,unverified,
+0x88,0x8B,7,0-7,Ratio3500,100,100,%,,64 64 64 64 64 64 64 64 64 64 64 64,unverified,
+0x88,0x8C,8,0-7,Ratio4000,100,100,%,,64 64 64 64 64 64 64 64 64 64 64 64,unverified,
+0x88,0x8C,9,0-7,Ratio4500,100,100,%,,64 64 64 64 64 64 64 64 64 64 64 64,unverified,
+0x88,0x8D,10,0-7,Ratio5000,100,100,%,,64 64 64 64 64 64 64 64 64 64 64 64,unverified,
+0x88,0x8D,11,0-7,Ratio5500,100,100,%,,64 64 64 64 64 64 64 64 64 64 64 64,unverified,
+0x8E,0x8E,0,0-7,Ratio6000,100,100,%,,64 64 64 64 50 3C 28 28 00 00 00 00,unverified,
+0x8E,0x8E,1,0-7,Ratio6500,100,100,%,,64 64 64 64 50 3C 28 28 00 00 00 00,unverified,
+0x8E,0x8F,2,0-7,Ratio7000,100,100,%,,64 64 64 64 50 3C 28 28 00 00 00 00,unverified,
+0x8E,0x8F,3,0-7,Ratio7500,100,100,%,,64 64 64 64 50 3C 28 28 00 00 00 00,unverified,
+0x8E,0x90,4,0-7,Ratio8000,80,80,%,,64 64 64 64 50 3C 28 28 00 00 00 00,unverified,
+0x8E,0x90,5,0-7,Ratio8500,60,60,%,,64 64 64 64 50 3C 28 28 00 00 00 00,unverified,
+0x8E,0x91,6,0-7,Ratio9000,40,40,%,,64 64 64 64 50 3C 28 28 00 00 00 00,unverified,
+0x8E,0x91,7,0-7,RatioMax,40,40,%,,64 64 64 64 50 3C 28 28 00 00 00 00,unverified,
+0x8E,0x92,8,0-7,nratio_0,0,0,%,,64 64 64 64 50 3C 28 28 00 00 00 00,unverified,
+0x8E,0x92,9,0-7,nratio_1,0,0,%,,64 64 64 64 50 3C 28 28 00 00 00 00,unverified,
+0x8E,0x93,10,0-7,nratio_2,0,0,%,,64 64 64 64 50 3C 28 28 00 00 00 00,unverified,
+0x8E,0x93,11,0-7,nratio_3,0,0,%,,64 64 64 64 50 3C 28 28 00 00 00 00,unverified,
+0x94,0x94,0,0-7,nratio_4,0,0,%,,00 00 00 00 00 00 00 00 00 00 00 00,unverified,
+0x94,0x94,1,0-7,nratio_5,0,0,%,,00 00 00 00 00 00 00 00 00 00 00 00,unverified,
+0x94,0x95,2,0-7,nratio_6,0,0,%,,00 00 00 00 00 00 00 00 00 00 00 00,unverified,
+0x94,0x95,3,0-7,nratio_7,0,0,%,,00 00 00 00 00 00 00 00 00 00 00 00,unverified,
+0x94,0x96,4,0-7,nratio_8,0,0,%,,00 00 00 00 00 00 00 00 00 00 00 00,unverified,
+0x94,0x96,5,0-7,nratio_9,0,0,%,,00 00 00 00 00 00 00 00 00 00 00 00,unverified,
+0x94,0x97,6,0-7,nratio_10,0,0,%,,00 00 00 00 00 00 00 00 00 00 00 00,unverified,
+0x94,0x97,7,0-7,nratio_11,0,0,%,,00 00 00 00 00 00 00 00 00 00 00 00,unverified,
+0x94,0x98,8,0-7,nratio_12,0,0,%,,00 00 00 00 00 00 00 00 00 00 00 00,unverified,
+0x94,0x98,9,0-7,nratio_13,0,0,%,,00 00 00 00 00 00 00 00 00 00 00 00,unverified,
+0x94,0x99,10,0-7,nratio_14,0,0,%,,00 00 00 00 00 00 00 00 00 00 00 00,unverified,
+0x94,0x99,11,0-7,nratio_15,0,0,%,,00 00 00 00 00 00 00 00 00 00 00 00,unverified,
+0x9A,0x9A,0,0-7,nratio_16,0,0,%,,00 00 00 00 10 16 F8 00 35 00 6A 00,unverified,9A
+0x9A,0x9A,1,0-7,nratio_17,0,0,%,,00 00 00 00 10 16 F8 00 35 00 6A 00,unverified,
+0x9A,0x9B,2,0-7,nratio_18,0,0,%,,00 00 00 00 10 16 F8 00 35 00 6A 00,unverified,9B
+0x9A,0x9B,3,0-7,nratio_19,0,0,%,,00 00 00 00 10 16 F8 00 35 00 6A 00,unverified,
+0x9A,0x9C,4,0-4,AN,16,16,,,00 00 00 00 10 16 F8 00 35 00 6A 00,unverified,5 bits (0-16) per official app; fardriver.hpp had 4 bits + AlarmRecord_1
+0x9A,0x9C,4,5-5,RelayOut,0,0,,,00 00 00 00 10 16 F8 00 35 00 6A 00,unverified,
+0x9A,0x9C,4,6-7,EmptySpeed,0,0,,,00 00 00 00 10 16 F8 00 35 00 6A 00,unverified,
+0x9A,0x9C,5,0-4,LM,22,22,,,00 00 00 00 10 16 F8 00 35 00 6A 00,unverified,
+0x9A,0x9D,6,0-15,InitVol,248,248,,,00 00 00 00 10 16 F8 00 35 00 6A 00,unverified,9D
+0x9A,0x9E,8,0-15,TurtleSpeedCurrCoeff,53,53,,,00 00 00 00 10 16 F8 00 35 00 6A 00,unverified,TurtleSpeedCurrCoeff; fardriver.hpp name: Stage1Curr
+0x9A,0x9F,10,0-7,VolSelectRatio,106,106,,,00 00 00 00 10 16 F8 00 35 00 6A 00,unverified,9F
+0xA0,0xA0,1,0-7,SysCmd,4,4,,,88 04 4A 53 57 58 30 56 32 35 30 32,unverified,
+0xA0,0xA1,2,0-79,ProductCode,4A535758305632353032,JSWX0V2502,,,88 04 4A 53 57 58 30 56 32 35 30 32,unverified,fardriver.hpp name: ModelName
+0xA6,0xA6,0,0-79,ProductCode,31344B494D4F34333039,14KIMO4309,,,31 34 4B 49 4D 4F 34 33 30 39 00 00,unverified,fardriver.hpp name: ModelName
+0xB2,0xB4,4,0-7,OneCommSec_0,0,0,,,00 00 00 00 00 00 00 00 00 00 00 00,unverified,SEC0 B4
+0xB2,0xB4,5,0-7,OneCommSec_1,0,0,,,00 00 00 00 00 00 00 00 00 00 00 00,unverified,SEC1
+0xB2,0xB5,6,0-7,OneCommSec_2,0,0,,,00 00 00 00 00 00 00 00 00 00 00 00,unverified,SEC2 B5
+0xB2,0xB5,7,0-7,OneCommSec_3,0,0,,,00 00 00 00 00 00 00 00 00 00 00 00,unverified,SEC3
+0xB2,0xB6,8,0-7,OneCommSec_4,0,0,,,00 00 00 00 00 00 00 00 00 00 00 00,unverified,SEC4
+0xB2,0xB6,9,0-7,OneCommSec_5,0,0,,,00 00 00 00 00 00 00 00 00 00 00 00,unverified,SEC5
+0xB2,0xB7,10,0-7,OneCommSec_6,0,0,,,00 00 00 00 00 00 00 00 00 00 00 00,unverified,SEC6
+0xB2,0xB7,11,0-7,OneCommSec_7,0,0,,,00 00 00 00 00 00 00 00 00 00 00 00,unverified,SEC7
+0xB8,0xB8,0,0-3,PausePosition,1,1,,,01 80 69 0A 00 00 40 00 52 A8 19 40,unverified,PPosition
+0xB8,0xB8,0,4-7,SideStandPosition,0,0,,,01 80 69 0A 00 00 40 00 52 A8 19 40,unverified,BCPosition
+0xB8,0xB8,1,0-3,HBarPosition,0,0,,,01 80 69 0A 00 00 40 00 52 A8 19 40,unverified,
+0xB8,0xB8,1,4-7,AntiTheftPosition,8,8,,,01 80 69 0A 00 00 40 00 52 A8 19 40,unverified,FDPosition
+0xB8,0xBA,4,0-7,Pulse,0,0,,,01 80 69 0A 00 00 40 00 52 A8 19 40,unverified,
+0xB8,0xBA,5,0-7,SQH,0,0,,,01 80 69 0A 00 00 40 00 52 A8 19 40,unverified,
+0xB8,0xBB,6,0-15,OnelineCurrCoeff,64,64,,,01 80 69 0A 00 00 40 00 52 A8 19 40,unverified,CurrentCoeff
+0xB8,0xBC,8,0-4,BackP_Time,18,18,,240s,01 80 69 0A 00 00 40 00 52 A8 19 40,unverified,"ReleasePTime, ReleaseToPTime, * 10, seconds; fardriver.hpp name: BackPTime; dropdown index, not seconds (official app shows 18-240s); other indexes unknown"
+0xB8,0xBC,8,5-7,ReleaseToSeat,2,2,s,,01 80 69 0A 00 00 40 00 52 A8 19 40,unverified,"SeatDelay, seconds"
+0xB8,0xBC,9,0-1,CANBaud,0,0,,Baud250K,01 80 69 0A 00 00 40 00 52 A8 19 40,unverified,CanSel
+0xB8,0xBC,9,4-5,PasswordStatus,2,2,,NoPassword,01 80 69 0A 00 00 40 00 52 A8 19 40,unverified,
+0xB8,0xBD,10,0-7,Stage1Soc,25,25,%,,01 80 69 0A 00 00 40 00 52 A8 19 40,unverified,
+0xB8,0xBD,11,0-7,Stage2Soc,64,64,%,,01 80 69 0A 00 00 40 00 52 A8 19 40,unverified,"paracnt_3 : 4, LINECURR?; low confidence: maybe official ""WeakCurrCoeff""; not renamed"
+0xBE,0xBE,0,0-7,LowVolWay,0,0,,Vol2V,00 83 E4 57 C8 AF 88 13 24 00 EC 02,unverified,"cfg190l, CurrLimitWay"
+0xBE,0xBE,1,4-7,ECOAccCoeff,8,8,,,00 83 E4 57 C8 AF 88 13 24 00 EC 02,unverified,fardriver.hpp name: AccCoeff
+0xBE,0xBF,2,0-15,BstTime,22500,45,s,,00 83 E4 57 C8 AF 88 13 24 00 EC 02,unverified,"/ 500, seconds"
+0xBE,0xC0,4,0-15,BstRelease,45000,90,s,,00 83 E4 57 C8 AF 88 13 24 00 EC 02,unverified,"/ 500, seconds"
+0xBE,0xC1,6,0-15,ParkTime,5000,10,s,,00 83 E4 57 C8 AF 88 13 24 00 EC 02,unverified,"/ 500, seconds"
+0xBE,0xC2,8,0-5,InverseTime,36,36,,,00 83 E4 57 C8 AF 88 13 24 00 EC 02,unverified,InverseTime; fardriver.hpp name: ReverseTime
+0xBE,0xC2,8,6-6,JLNationalStandardStatus,0,0,,,00 83 E4 57 C8 AF 88 13 24 00 EC 02,unverified,
+0xBE,0xC2,8,7-7,Press2ForP,0,0,,,00 83 E4 57 C8 AF 88 13 24 00 EC 02,unverified,doesn't use D1 maybe?
+0xBE,0xC2,9,0-0,LowMediumToHighSpeed,0,0,,,00 83 E4 57 C8 AF 88 13 24 00 EC 02,unverified,
+0xBE,0xC2,9,1-1,NoSoundPrompt,0,0,,,00 83 E4 57 C8 AF 88 13 24 00 EC 02,unverified,
+0xBE,0xC2,9,3-3,SilenceBuzzer,0,0,,,00 83 E4 57 C8 AF 88 13 24 00 EC 02,unverified,
+0xBE,0xC2,9,4-4,EnableBackupBuzzer,0,0,,,00 83 E4 57 C8 AF 88 13 24 00 EC 02,unverified,
+0xBE,0xC2,9,5-5,DisableMotorAngleSensorRepair,0,0,,,00 83 E4 57 C8 AF 88 13 24 00 EC 02,unverified,
+0xBE,0xC2,9,6-6,AllowBrakeFaultRepair,0,0,,,00 83 E4 57 C8 AF 88 13 24 00 EC 02,unverified,
+0xBE,0xC2,9,7-7,ReverseOneLine,0,0,,,00 83 E4 57 C8 AF 88 13 24 00 EC 02,unverified,
+0xBE,0xC3,10,0-15,TorqueCoeff,748,748,,,00 83 E4 57 C8 AF 88 13 24 00 EC 02,unverified,C3
+0xC4,0xC4,0,0-0,IdleClutchFunction,0,0,,,00 48 00 5F 00 02 00 02 00 01 00 80,unverified,H67; overlay: shares bits with LearnVol u16 (H72 firmware flag)
+0xC4,0xC4,0,1-1,AutomaticVoltageSwitching,0,0,,,00 48 00 5F 00 02 00 02 00 01 00 80,unverified,H72; overlay: shares bits with LearnVol u16 (H72 firmware flag)
+0xC4,0xC4,0,2-2,ReverseNeutralForIgnition,0,0,,,00 48 00 5F 00 02 00 02 00 01 00 80,unverified,H72; overlay: shares bits with LearnVol u16 (H72 firmware flag)
+0xC4,0xC4,0,3-3,KnobToAdjustMaximumBusBar,0,0,,,00 48 00 5F 00 02 00 02 00 01 00 80,unverified,H72; overlay: shares bits with LearnVol u16 (H72 firmware flag)
+0xC4,0xC4,0,4-4,OneTouchRepairSwitching,0,0,,,00 48 00 5F 00 02 00 02 00 01 00 80,unverified,H72; overlay: shares bits with LearnVol u16 (H72 firmware flag)
+0xC4,0xC4,0,5-5,SqueezeBrake2xForPark,0,0,,,00 48 00 5F 00 02 00 02 00 01 00 80,unverified,H72; overlay: shares bits with LearnVol u16 (H72 firmware flag)
+0xC4,0xC4,0,6-6,SqueezeBrakeToReleasePark,0,0,,,00 48 00 5F 00 02 00 02 00 01 00 80,unverified,H72; overlay: shares bits with LearnVol u16 (H72 firmware flag)
+0xC4,0xC4,0,7-7,SingleCellNoBoost,0,0,,,00 48 00 5F 00 02 00 02 00 01 00 80,unverified,H72; overlay: shares bits with LearnVol u16 (H72 firmware flag)
+0xC4,0xC4,0,0-15,LearnVolLow,18432,18432,,,00 48 00 5F 00 02 00 02 00 01 00 80,unverified,"LearnVol, VQL; u16 per official app (fardriver.hpp read only the high byte)"
+0xC4,0xC5,2,0-0,TapForwardAndBack,0,0,,,00 48 00 5F 00 02 00 02 00 01 00 80,unverified,H67; overlay: shares bits with LearnVol u16 (H72 firmware flag)
+0xC4,0xC5,2,1-1,DualThrottleVoltage,0,0,,,00 48 00 5F 00 02 00 02 00 01 00 80,unverified,H72; overlay: shares bits with LearnVol u16 (H72 firmware flag)
+0xC4,0xC5,2,2-2,CenterThrottleNeutral,0,0,,,00 48 00 5F 00 02 00 02 00 01 00 80,unverified,H74; overlay: shares bits with LearnVol u16 (H72 firmware flag)
+0xC4,0xC5,2,3-3,EnableOneClickRepair,0,0,,,00 48 00 5F 00 02 00 02 00 01 00 80,unverified,H72; overlay: shares bits with LearnVol u16 (H72 firmware flag)
+0xC4,0xC5,2,4-4,EnhancedInpuSignalFiltering,0,0,,,00 48 00 5F 00 02 00 02 00 01 00 80,unverified,H72; overlay: shares bits with LearnVol u16 (H72 firmware flag)
+0xC4,0xC5,2,5-5,UnlimitedCruiseSpeed,0,0,,,00 48 00 5F 00 02 00 02 00 01 00 80,unverified,H72; overlay: shares bits with LearnVol u16 (H72 firmware flag)
+0xC4,0xC5,2,6-6,HallDetectionX6,0,0,,,00 48 00 5F 00 02 00 02 00 01 00 80,unverified,H72; overlay: shares bits with LearnVol u16 (H72 firmware flag)
+0xC4,0xC5,2,7-7,NewMTPAVector,0,0,,,00 48 00 5F 00 02 00 02 00 01 00 80,unverified,H72; overlay: shares bits with LearnVol u16 (H72 firmware flag)
+0xC4,0xC5,2,0-15,LearnVolHigh,24320,24320,,,00 48 00 5F 00 02 00 02 00 01 00 80,unverified,"LearnVoh, VQH, related to A11; u16 per official app (fardriver.hpp read only the high byte)"
+0xC4,0xC6,4,0-15,SlowDownRpm,512,512,,,00 48 00 5F 00 02 00 02 00 01 00 80,unverified,ParkDiff
+0xC4,0xC7,6,0-15,StartIs,512,512,,,00 48 00 5F 00 02 00 02 00 01 00 80,unverified,IsInStart
+0xC4,0xC8,8,0-15,ThrottleInsert,256,256,,,00 48 00 5F 00 02 00 02 00 01 00 80,unverified,& 0x20 TCS
+0xC4,0xC9,10,0-7,ExitFollowSpeed,0,0,,,00 48 00 5F 00 02 00 02 00 01 00 80,unverified,
+0xC4,0xC9,11,0-7,ReCurrRatio,128,128,,,00 48 00 5F 00 02 00 02 00 01 00 80,unverified,
+0xCA,0xCA,0,0-7,AngleLearn,85,85,,,55 00 4B 0B 18 00 00 1A 80 3A 40 00,unverified,
+0xCA,0xCA,1,0-3,SpeedLimitPin,0,0,,NC,55 00 4B 0B 18 00 00 1A 80 3A 40 00,unverified,"4 -> A15, 5 -> C13"
+0xCA,0xCA,1,4-7,RepairPin,0,0,,NC,55 00 4B 0B 18 00 00 1A 80 3A 40 00,unverified,OneKeyPin
+0xCA,0xCB,2,0-7,CANDetect,75,150,ms,,55 00 4B 0B 18 00 00 1A 80 3A 40 00,unverified,"CAN Detect, ms, if >= 6 then * 2 else * 500; official app: raw 75 = 150 ms (x2); header says raw < 6 is x500 ms (not applied); fardriver.hpp name: NoCanCnt"
+0xCA,0xCB,3,0-3,SPModeConfig,11,11,,Line3Speed,55 00 4B 0B 18 00 00 1A 80 3A 40 00,unverified,"HighLowSpeed, SDHDs/SDLDs"
+0xCA,0xCB,3,4-5,Temp70,0,0,,,55 00 4B 0B 18 00 00 1A 80 3A 40 00,unverified,
+0xCA,0xCB,3,6-6,LongBack,0,0,,,55 00 4B 0B 18 00 00 1A 80 3A 40 00,unverified,"Push RE, toggle vs momentary?"
+0xCA,0xCB,3,7-7,ThrottleLost,0,0,,,55 00 4B 0B 18 00 00 1A 80 3A 40 00,unverified,
+0xCA,0xCC,4,0-7,LearnThrottle,24,24,,,55 00 4B 0B 18 00 00 1A 80 3A 40 00,unverified,
+0xCA,0xCC,5,0-7,SpeedLowCap,0,0,,,55 00 4B 0B 18 00 00 1A 80 3A 40 00,unverified,LmtSpdMinCap
+0xCA,0xCD,6,0-7,MidSpeedCap,0,0,,,55 00 4B 0B 18 00 00 1A 80 3A 40 00,unverified,LmtSpdStartCap
+0xCA,0xCD,7,0-7,SpeedLimitByCap,26,26,,,55 00 4B 0B 18 00 00 1A 80 3A 40 00,unverified,
+0xCA,0xCE,8,0-7,LmtSpdMaxCoeff,128,128,,,55 00 4B 0B 18 00 00 1A 80 3A 40 00,unverified,LmtSpdMaxCoeff; fardriver.hpp name: MinSpeedCapCoeff
+0xCA,0xCE,9,0-3,SlowDownCoeff,10,10,,,55 00 4B 0B 18 00 00 1A 80 3A 40 00,unverified,SlowDownCoeff; fardriver.hpp name: ParkCoeff
+0xCA,0xCE,9,4-7,BattSignal,3,3,,LithiumBattery,55 00 4B 0B 18 00 00 1A 80 3A 40 00,unverified,BatSel
+0xCA,0xCF,10,0-15,ReIsinAcc,64,64,,,55 00 4B 0B 18 00 00 1A 80 3A 40 00,unverified,"maybe official ""Re Acc"" (medium confidence); not renamed"
+0xD0,0xD0,0,0-7,DATA0,8,8,,,08 61 00 AB 46 0C 1E 78 A0 0F 29 15,unverified,fardriver.hpp name: Data0
+0xD0,0xD0,1,0-7,DATA1,97,97,,,08 61 00 AB 46 0C 1E 78 A0 0F 29 15,unverified,fardriver.hpp name: Data1
+0xD0,0xD1,2,0-7,BMQHALL,0,0,,,08 61 00 AB 46 0C 1E 78 A0 0F 29 15,unverified,
+0xD0,0xD1,3,0-7,AVGPower,171,684,Wh/km,,08 61 00 AB 46 0C 1E 78 A0 0F 29 15,unverified,"* 4, Wh/km, DataVoltage1; low confidence: x4 Wh/km matches fardriver.hpp and the official app (raw 171 shown as 684Wh/Km), but that is ~10x real consumption; possibly 0.1 Wh/km (68.4); rolling value; not rescaled"
+0xD0,0xD2,4,0-7,WheelRatio,70,70,,,08 61 00 AB 46 0C 1E 78 A0 0F 29 15,unverified,confirmed vs official app (byte 4 = 70 on a 120/70-12 tyre); live telemetry parser fixed in v1.1 to read this byte
+0xD0,0xD2,5,0-7,WheelRadius,12,12,,,08 61 00 AB 46 0C 1E 78 A0 0F 29 15,unverified,confirmed vs official app (byte 5 = 12 inch rim)
+0xD0,0xD3,6,0-7,AVGSpeed,30,30,km/h,,08 61 00 AB 46 0C 1E 78 A0 0F 29 15,unverified,"km/h, DataVoltage4"
+0xD0,0xD3,7,0-7,WheelWidth,120,120,,,08 61 00 AB 46 0C 1E 78 A0 0F 29 15,unverified,
+0xD0,0xD4,8,0-15,RateRatio,4000,4000,,,08 61 00 AB 46 0C 1E 78 A0 0F 29 15,unverified,SpeedRatio; official app shows GearRatio = RateRatio / 1000 (4000 -> 4)
+0xD0,0xD4,8,0-15,GearRatio,4000,4,,,08 61 00 AB 46 0C 1E 78 A0 0F 29 15,unverified,overlay: RateRatio / 1000 as shown by the official app
+0xD0,0xD5,10,0-1,Step,1,1,,Idle0_9ms,08 61 00 AB 46 0C 1E 78 A0 0F 29 15,unverified,fardriver.hpp name: Idle
+0xD0,0xD5,10,2-3,Stop,2,2,,Stop124ms,08 61 00 AB 46 0C 1E 78 A0 0F 29 15,unverified,
+0xD0,0xD5,10,4-7,ByteOption,2,2,,,08 61 00 AB 46 0C 1E 78 A0 0F 29 15,unverified,Byte89Sel
+0xD0,0xD5,11,0-7,SpecialFrame,21,21,,?,08 61 00 AB 46 0C 1E 78 A0 0F 29 15,unverified,ESQH
+# unidentified
+0x06,0x06,0,3-3,unk02a,0,0,,,00 00 09 0A 16 49 80 00 31 00 E0 C1,unknown,
+0x06,0x06,1,7-7,unk06b,0,0,,,00 00 09 0A 16 49 80 00 31 00 E0 C1,unknown,
+0x12,0x14,5,0-7,unk14b,0,0,,,84 03 F4 01 05 00 10 27 98 3A C0 03,unknown,alway_s sent 0x59?
+0x1E,0x21,7,3-3,unk21a,0,0,,,40 00 76 02 4E 44 00 50 1A 0B 01 10,unknown,default 1
+0x1E,0x21,7,4-4,unk21b,1,1,,,40 00 76 02 4E 44 00 50 1A 0B 01 10,unknown,default 1
+0x1E,0x21,7,5-5,unk21c,0,0,,,40 00 76 02 4E 44 00 50 1A 0B 01 10,unknown,default 0
+0x2A,0x2C,5,0-7,unk2Cb,0,0,,,94 11 C8 00 00 00 60 09 10 27 E0 00,unknown,
+0x5D,0x5D,0,0-15,unk5D,0,0,,,00 00 00 00 00 00 00 00 00 00 00 00,unknown,
+0x5D,0x5E,2,0-15,unk5E,0,0,,,00 00 00 00 00 00 00 00 00 00 00 00,unknown,RPM index?
+0x5D,0x5F,4,0-15,unk5F,0,0,,,00 00 00 00 00 00 00 00 00 00 00 00,unknown,
+0x5D,0x60,6,0-7,unk60,0,0,,,00 00 00 00 00 00 00 00 00 00 00 00,unknown,
+0x5D,0x60,7,0-7,unk60b,0,0,,,00 00 00 00 00 00 00 00 00 00 00 00,unknown,"counter of some sort? assigned 'a', 'b', 'c'"
+0x5D,0x61,8,0-15,unk61,0,0,,,00 00 00 00 00 00 00 00 00 00 00 00,unknown,
+0x5D,0x62,10,0-7,unk62,0,0,,,00 00 00 00 00 00 00 00 00 00 00 00,unknown,set to 0xCC when reading ADC1?
+0x5D,0x62,11,0-7,unk62b,0,0,,,00 00 00 00 00 00 00 00 00 00 00 00,unknown,
+0x63,0x65,5,0-7,unk65b,32,32,,,08 07 A0 0F 04 20 2C 01 C0 03 4E 47,unknown,"33, 35, 36 - MaxPhaseCurr2 multipler?"
+0x7C,0x7C,0,0-0,unk7Ca,1,1,,,03 01 39 00 00 00 E6 81 AD 52 00 00,unknown,
+0x7C,0x7C,0,4-4,unk7Cb,0,0,,,03 01 39 00 00 00 E6 81 AD 52 00 00,unknown,
+0x7C,0x7C,1,5-5,unk7Cc,0,0,,,03 01 39 00 00 00 E6 81 AD 52 00 00,unknown,
+0x7C,0x7F,6,0-31,infoc1,1387102694,1387102694,,,03 01 39 00 00 00 E6 81 AD 52 00 00,unknown,
+0x82,0x86,8,6-7,unk86b,0,0,,,52 00 AB 04 A0 8C 64 50 00 48 3B 21,unknown,
+0x9A,0x9C,5,5-7,unk9Db,0,0,,,00 00 00 00 10 16 F8 00 35 00 6A 00,unknown,
+0x9A,0x9F,11,0-7,unk9Fb,0,0,,,00 00 00 00 10 16 F8 00 35 00 6A 00,unknown,
+0xA0,0xA0,0,0-7,unkA0,136,136,,,88 04 4A 53 57 58 30 56 32 35 30 32,unknown,0x88 usually?
+0xA6,0xAB,10,0-15,unkAB,0,0,,,31 34 4B 49 4D 4F 34 33 30 39 00 00,unknown,where password is stored?
+0xAC,0xAC,0,0-15,unkAC,0,0,,,00 00 B0 00 00 00 00 00 00 00 00 00,unknown,"more password, pin states?"
+0xAC,0xAD,2,0-15,unkAD,176,176,,,00 00 B0 00 00 00 00 00 00 00 00 00,unknown,phone number start1[14]
+0xAC,0xAE,4,0-15,unkAE,0,0,,,00 00 B0 00 00 00 00 00 00 00 00 00,unknown,phone number start0[14]
+0xAC,0xAF,6,0-15,unkAF,0,0,,,00 00 B0 00 00 00 00 00 00 00 00 00,unknown,
+0xAC,0xB0,8,0-15,unkB0,0,0,,,00 00 B0 00 00 00 00 00 00 00 00 00,unknown,
+0xAC,0xB1,10,0-15,unkB1,0,0,,,00 00 B0 00 00 00 00 00 00 00 00 00,unknown,
+0xB2,0xB2,0,0-15,unkB2,0,0,,,00 00 00 00 00 00 00 00 00 00 00 00,unknown,
+0xB2,0xB3,2,0-15,unkB3,0,0,,,00 00 00 00 00 00 00 00 00 00 00 00,unknown,
+0xB8,0xB9,2,0-15,unkB9,2665,2665,,,01 80 69 0A 00 00 40 00 52 A8 19 40,unknown,
+0xB8,0xBC,9,2-3,unkBC,2,2,,,01 80 69 0A 00 00 40 00 52 A8 19 40,unknown,set by CAN processing? resets baud to 250K as well
+0xB8,0xBC,9,6-7,unkBCb,2,2,,,01 80 69 0A 00 00 40 00 52 A8 19 40,unknown,
+0xBE,0xBE,1,0-3,unkBEb,3,3,,,00 83 E4 57 C8 AF 88 13 24 00 EC 02,unknown,"< 8 with (SpecialCode - A < 7) makes GPIOB_9 output, affects Sensor/Application type. prolly Current sensor type; maybe official ""SensorAppTypeTens"" (medium confidence)"
+0xBE,0xC2,9,2-2,Reserved,0,0,,,00 83 E4 57 C8 AF 88 13 24 00 EC 02,unknown,

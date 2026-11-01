@@ -1,7 +1,10 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart'
     show FlutterBluePlus, BluetoothAdapterState;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:arcdash/models/remembered_device.dart';
 import 'package:arcdash/providers/saved_files_provider.dart';
 import 'package:arcdash/providers/bluetooth_provider.dart';
 import 'package:arcdash/services/bluetooth_service.dart';
@@ -10,8 +13,21 @@ import 'package:arcdash/l10n/app_strings.dart';
 import 'package:arcdash/services/android_permission_service.dart';
 import 'package:arcdash/services/diagnostic_log_exporter.dart';
 
+/// Scan + connect. v1.2.3: controllers connected before are listed first
+/// under "Previously connected" (recognised by advertised name + service
+/// UUIDs + manufacturer IDs, since the address changes) and FarSure
+/// connects automatically when exactly one of them is broadcasting.
 class ConnectionScreen extends ConsumerStatefulWidget {
-  const ConnectionScreen({super.key});
+  const ConnectionScreen(
+      {super.key,
+      this.repository = const RememberedDeviceRepository(),
+      this.autoConnectDelay = const Duration(seconds: 3)});
+
+  final RememberedDeviceRepository repository;
+
+  /// How long to listen before deciding that exactly one remembered
+  /// controller is around (checked again when the scan ends).
+  final Duration autoConnectDelay;
 
   @override
   ConsumerState<ConnectionScreen> createState() => _ConnectionScreenState();
@@ -20,11 +36,76 @@ class ConnectionScreen extends ConsumerStatefulWidget {
 class _ConnectionScreenState extends ConsumerState<ConnectionScreen> {
   bool _isScanning = false;
   String? _connectingId;
+  List<RememberedDevice> _remembered = const [];
+  bool _autoTried = false;
+  bool _autoCancelled = false;
+  Timer? _autoTimer;
 
   @override
   void initState() {
     super.initState();
+    unawaited(_loadRemembered());
     _startScan();
+    _autoTimer = Timer(widget.autoConnectDelay, _maybeAutoConnect);
+  }
+
+  @override
+  void dispose() {
+    _autoTimer?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _loadRemembered() async {
+    final list = await widget.repository.load();
+    if (mounted) setState(() => _remembered = list);
+  }
+
+  static SeenDevice _seen(DiscoveredDongle d) =>
+      (address: d.address, fingerprint: d.fingerprint);
+
+  /// Connects once, on its own, when exactly one remembered controller is
+  /// broadcasting and nothing else is going on.
+  void _maybeAutoConnect() {
+    if (!mounted || _autoTried || _autoCancelled || _connectingId != null) {
+      return;
+    }
+    if (ref.read(isConnectedProvider) || _remembered.isEmpty) return;
+    final scan = ref.read(scanResultsProvider).valueOrNull ?? const [];
+    final candidate =
+        RememberedDeviceMatcher(_remembered).autoConnectCandidate(scan, _seen);
+    if (candidate == null) return;
+    _autoTried = true;
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      key: const ValueKey('auto-connect-snack'),
+      content: Text('Connecting to ${candidate.name} (previously connected)'),
+      behavior: SnackBarBehavior.floating,
+    ));
+    unawaited(_connect(candidate));
+  }
+
+  Future<void> _forget(RememberedDevice device) async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (c) => AlertDialog(
+        key: const ValueKey('forget-device-dialog'),
+        title: const Text('Forget this controller?'),
+        content: Text(
+            '${device.fingerprint.name.isEmpty ? device.lastAddress : device.fingerprint.name}\n\n'
+            'FarSure will no longer connect to it automatically. You can connect again any time.'),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.of(c).pop(false),
+              child: Text(AppStrings.of(c).text(AppText.cancel))),
+          FilledButton(
+              key: const ValueKey('forget-device-confirm'),
+              onPressed: () => Navigator.of(c).pop(true),
+              child: const Text('Forget')),
+        ],
+      ),
+    );
+    if (ok != true) return;
+    final list = await widget.repository.forget(device);
+    if (mounted) setState(() => _remembered = list);
   }
 
   Future<void> _startScan() async {
@@ -59,12 +140,21 @@ class _ConnectionScreenState extends ConsumerState<ConnectionScreen> {
     final service = ref.read(bluetoothServiceProvider);
     await service.startScan(timeout: const Duration(seconds: 10));
     if (mounted) setState(() => _isScanning = false);
+    _maybeAutoConnect();
   }
 
   Future<void> _connect(DiscoveredDongle dongle) async {
     setState(() => _connectingId = dongle.device.remoteId.str);
     final service = ref.read(bluetoothServiceProvider);
     final success = await service.connect(dongle);
+    if (success) {
+      try {
+        await widget.repository
+            .remember(address: dongle.address, fingerprint: dongle.fingerprint);
+      } on Object catch (e) {
+        debugPrint('Remembering controller failed: $e');
+      }
+    }
     if (mounted) {
       setState(() => _connectingId = null);
       if (success) {
@@ -80,6 +170,77 @@ class _ConnectionScreenState extends ConsumerState<ConnectionScreen> {
         _showError(AppStrings.of(context).text(AppText.connectionFailed));
       }
     }
+  }
+
+  Widget _buildList(List<DiscoveredDongle> scanResults) {
+    final matcher = RememberedDeviceMatcher(_remembered);
+    final split = matcher.split(scanResults, _seen);
+    final seenRemembered = {
+      for (final d in split.previous) matcher.rememberedFor(_seen(d)),
+    };
+    final absent =
+        _remembered.where((r) => !seenRemembered.contains(r)).toList();
+    if (scanResults.isEmpty && _remembered.isEmpty) {
+      return _EmptyState(isScanning: _isScanning);
+    }
+    Widget header(String text, Key key) => Padding(
+          padding: const EdgeInsets.fromLTRB(2, 8, 2, 6),
+          child: Text(text,
+              key: key,
+              style: const TextStyle(
+                  color: Color(0xFF00E5FF),
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 2)),
+        );
+    Widget card(DiscoveredDongle d, {RememberedDevice? remembered}) => Padding(
+          padding: const EdgeInsets.only(bottom: 10),
+          child: _DongleCard(
+            key: ValueKey('dongle-${d.address}'),
+            dongle: d,
+            isConnecting: _connectingId == d.device.remoteId.str,
+            onTap: () {
+              _autoCancelled = true; // the user chose
+              _connect(d);
+            },
+            onForget: remembered == null ? null : () => _forget(remembered),
+          ),
+        );
+    return ListView(
+      key: const ValueKey('dongle-list'),
+      children: [
+        if (_remembered.isNotEmpty) ...[
+          header('PREVIOUSLY CONNECTED', const ValueKey('section-previous')),
+          for (final d in split.previous)
+            card(d, remembered: matcher.rememberedFor(_seen(d))),
+          for (final r in absent)
+            ListTile(
+              key: ValueKey('remembered-absent-${r.lastAddress}'),
+              dense: true,
+              leading: const Icon(Icons.bluetooth_disabled,
+                  color: Color(0xFF4A5568)),
+              title: Text(
+                  r.fingerprint.name.isEmpty
+                      ? r.lastAddress
+                      : r.fingerprint.name,
+                  style: const TextStyle(color: Colors.white70)),
+              subtitle: Text('Not in range · last ${r.lastAddress}',
+                  style: const TextStyle(color: Color(0xFF4A5568))),
+              trailing: IconButton(
+                key: ValueKey('forget-${r.lastAddress}'),
+                tooltip: 'Forget',
+                icon:
+                    const Icon(Icons.delete_outline, color: Color(0xFF4A5568)),
+                onPressed: () => _forget(r),
+              ),
+            ),
+          if (split.others.isNotEmpty)
+            header('OTHER DEVICES', const ValueKey('section-others')),
+        ],
+        for (final d in split.others) card(d),
+        if (scanResults.isEmpty) _EmptyState(isScanning: _isScanning),
+      ],
+    );
   }
 
   void _showError(String msg) {
@@ -199,22 +360,7 @@ class _ConnectionScreenState extends ConsumerState<ConnectionScreen> {
               const SizedBox(height: 12),
               // Device list
               Expanded(
-                child: scanResults.isEmpty
-                    ? _EmptyState(isScanning: _isScanning)
-                    : ListView.separated(
-                        itemCount: scanResults.length,
-                        separatorBuilder: (_, __) => const SizedBox(height: 10),
-                        itemBuilder: (_, i) {
-                          final dongle = scanResults[i];
-                          final isConnecting =
-                              _connectingId == dongle.device.remoteId.str;
-                          return _DongleCard(
-                            dongle: dongle,
-                            isConnecting: isConnecting,
-                            onTap: () => _connect(dongle),
-                          );
-                        },
-                      ),
+                child: _buildList(scanResults),
               ),
               // Info footer
               Container(
@@ -283,11 +429,14 @@ class _DongleCard extends StatelessWidget {
   final DiscoveredDongle dongle;
   final bool isConnecting;
   final VoidCallback onTap;
+  final VoidCallback? onForget;
 
   const _DongleCard({
+    super.key,
     required this.dongle,
     required this.isConnecting,
     required this.onTap,
+    this.onForget,
   });
 
   @override
@@ -349,7 +498,16 @@ class _DongleCard extends StatelessWidget {
                     fontSize: 11,
                   ),
                 ),
-                const SizedBox(width: 12),
+                if (onForget != null)
+                  IconButton(
+                    key: ValueKey('forget-${dongle.address}'),
+                    tooltip: 'Forget',
+                    onPressed: onForget,
+                    icon: const Icon(Icons.delete_outline,
+                        color: Color(0xFF4A5568), size: 20),
+                  )
+                else
+                  const SizedBox(width: 12),
                 isConnecting
                     ? const SizedBox(
                         width: 20,

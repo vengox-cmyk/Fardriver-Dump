@@ -278,7 +278,7 @@ void main() {
       await gps.controller.close();
     });
 
-    test('saves while recording, on stop and after DKD edits', () async {
+    test('saves while recording and on stop', () async {
       await notifier.start();
       await Future<void>.delayed(const Duration(milliseconds: 100));
       expect(saves, isEmpty, reason: 'nothing recorded yet');
@@ -287,7 +287,6 @@ void main() {
       rpm.add(RpmReading(rpm: 2244, at: now));
       await Future<void>.delayed(Duration.zero);
       notifier.onFix(fix(now, 50));
-      expect(notifier.tapDkd(), isTrue);
       await Future<void>.delayed(const Duration(milliseconds: 120));
       expect(saves, isNotEmpty);
       expect(saves.last.isRecording, isTrue);
@@ -298,11 +297,6 @@ void main() {
       final afterStop = saves.length;
       await Future<void>.delayed(const Duration(milliseconds: 100));
       expect(saves.length, afterStop, reason: 'timer stops with the ride');
-
-      notifier.setDkdReading(0, 52);
-      await Future<void>.delayed(const Duration(milliseconds: 800));
-      expect(saves.length, afterStop + 1);
-      expect(saves.last.dkdSnapshots.single.dkdKph, 52);
     });
 
     test('a failing saver never breaks the ride', () async {
@@ -342,13 +336,13 @@ void main() {
       var now = DateTime(2026, 10, 31, 9);
       final archiver = LiveDumpArchiver(
           store: store, appVersion: () async => '1.2.1', clock: () => now);
-      PersistedParameterSnapshot snap(Map<int, List<int>> blocks) =>
+      PersistedParameterSnapshot snap(Map<int, List<int>> blocks,
+              {String id = 'AA:BB'}) =>
           PersistedParameterSnapshot(
-            controller:
-                ParameterCaptureService.identityFromBlocks(blocks, 'AA:BB'),
+            controller: ParameterCaptureService.identityFromBlocks(blocks, id),
             requiredAddresses: blocks.keys.toSet(),
             rawBlocks: blocks,
-            metadata: const {'controllerId': 'AA:BB', 'appVersion': '1.2.1'},
+            metadata: {'controllerId': id, 'appVersion': '1.2.1'},
             source: 'live',
             capturedAt: now,
             complete: true,
@@ -367,10 +361,78 @@ void main() {
       now = now.add(const Duration(seconds: 2));
       blocks[0x30]![10] = (blocks[0x30]![10] + 1) & 0xFF;
       expect(await archiver.onSnapshot(snap(blocks)), isNotNull);
-      // Unchanged config is still refreshed every 30 minutes.
-      now = now.add(const Duration(minutes: 31));
-      expect(await archiver.onSnapshot(snap(blocks)), isNotNull);
-      expect(await store.list(kind: SavedFileKind.dump), hasLength(3));
+      // No periodic re-save of unchanged values.
+      now = now.add(const Duration(hours: 3));
+      expect(await archiver.onSnapshot(snap(blocks)), isNull);
+      expect(await store.list(kind: SavedFileKind.dump), hasLength(2));
+    });
+
+    test(
+        'dump dedupe: controller clock, save counter, BLE id and restarts '
+        'never create a new file', () async {
+      var now = DateTime(2026, 11, 1, 16, 18, 44);
+      PersistedParameterSnapshot snap(Map<int, List<int>> blocks, String id) =>
+          PersistedParameterSnapshot(
+            controller: ParameterCaptureService.identityFromBlocks(blocks, id),
+            requiredAddresses: blocks.keys.toSet(),
+            rawBlocks: blocks,
+            metadata: {'controllerId': id, 'appVersion': '1.2.3'},
+            source: 'live',
+            capturedAt: now,
+            complete: true,
+          );
+      final blocks = {
+        for (final e in _hebDump().blocks.entries) e.key: [...e.value]
+      };
+      var archiver = LiveDumpArchiver(
+          store: store, appVersion: () async => '1.2.3', clock: () => now);
+      expect(await archiver.onSnapshot(snap(blocks, 'C0:02:4D:BA:00:16')),
+          isNotNull);
+      // The controller clock ticks every cycle (v1.2.2 saved each one).
+      for (var s = 1; s <= 30; s++) {
+        now = now.add(const Duration(seconds: 1));
+        blocks[0x24]![1] = (blocks[0x24]![1] + 1) % 60; // TimeSecond
+        blocks[0x24]![0] = (blocks[0x24]![0] + (s % 7 == 0 ? 1 : 0)) % 60;
+        blocks[0x1E]![11] = (blocks[0x1E]![11] + (s % 13 == 0 ? 1 : 0)) % 24;
+        expect(await archiver.onSnapshot(snap(blocks, 'C0:02:4D:BA:00:16')),
+            isNull);
+      }
+      // App restart + reconnect under a new BLE address, SaveNum bumped.
+      archiver = LiveDumpArchiver(
+          store: store, appVersion: () async => '1.2.3', clock: () => now);
+      blocks[0x00]![10] = (blocks[0x00]![10] + 1) & 0xFF;
+      expect(
+          await archiver.onSnapshot(snap(blocks, 'E0:07:D3:FD:00:5A')), isNull);
+      expect(await store.list(kind: SavedFileKind.dump), hasLength(1));
+
+      // Opening / sharing an identical dump reuses the saved file.
+      final dump =
+          ParameterCaptureService.toDump(snap(blocks, 'E0:07:D3:FD:00:5A'));
+      final kept = await LiveDumpArchiver.saveUnlessDuplicate(store, dump,
+          appVersion: '1.2.3');
+      expect(kept.duplicate, isTrue);
+      // A changed value (SpdPulseNum) is a new dump.
+      blocks[0x30]![10] = (blocks[0x30]![10] + 1) & 0xFF;
+      now = now.add(const Duration(seconds: 5));
+      expect(await archiver.onSnapshot(snap(blocks, 'E0:07:D3:FD:00:5A')),
+          isNotNull);
+      expect(await store.list(kind: SavedFileKind.dump), hasLength(2));
+    });
+
+    test('values signature masks the clock fields of a real dump', () {
+      final real = ParameterCsvCodec.decode(
+          File('test/fixtures/param_dump/farsure_live_20261101.csv')
+              .readAsStringSync());
+      final moved = {
+        for (final e in real.blocks.entries) e.key: [...e.value]
+      };
+      moved[0x24]![1] = 59;
+      moved[0x1E]![11] = 3;
+      expect(LiveDumpArchiver.configSignature(moved),
+          LiveDumpArchiver.configSignature(real.blocks));
+      moved[0x18]![5] = moved[0x18]![5] ^ 0x01; // SpeedPulse
+      expect(LiveDumpArchiver.configSignature(moved),
+          isNot(LiveDumpArchiver.configSignature(real.blocks)));
     });
   });
 

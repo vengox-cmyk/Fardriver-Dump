@@ -89,13 +89,27 @@ enum SpeedBand {
   }
 }
 
-/// Thresholds of the sample filter (defaults = issue #2 spec).
+/// Thresholds of the sample filter.
+///
+/// v1.2.3: tuned for ordinary phones. The v1.2 spec gate (speed accuracy
+/// ≤ 0.5 m/s, 1-second acceleration ≤ 0.3 m/s²) rejected every second of a
+/// real ride on a BLU View 2 (reported speed accuracy 1.2–1.9 m/s). The
+/// accuracy a phone reports is a per-second 1-sigma bound; that noise
+/// averages out over a ≥5 s steady run and the fit weights each second by
+/// 1/accuracy², so the gate only has to drop *bad* fixes, not average ones.
 class CalibrationFilterConfig {
   final double minSpeedKph;
+
+  /// A second is accepted when its reported speed accuracy is at most
+  /// max([maxSpeedAccuracyMps], [maxRelativeSpeedAccuracy] × speed).
   final double maxSpeedAccuracyMps;
+
+  /// Relative part of the accuracy gate (0.08 = 8 % of the GPS speed).
+  final double maxRelativeSpeedAccuracy;
   final double maxHorizontalAccuracyM;
 
-  /// |accel| limit for GPS speed and for rpm-derived speed (m/s²).
+  /// |accel| limit for GPS speed and for rpm-derived speed (m/s²), measured
+  /// across the 3 s window (next second vs previous second).
   final double maxAccelMps2;
 
   /// Max coefficient of variation of rpm over the 3 s window.
@@ -118,10 +132,11 @@ class CalibrationFilterConfig {
 
   const CalibrationFilterConfig({
     this.minSpeedKph = 20,
-    this.maxSpeedAccuracyMps = 0.5,
+    this.maxSpeedAccuracyMps = 2.5,
+    this.maxRelativeSpeedAccuracy = 0.08,
     this.maxHorizontalAccuracyM = 10,
-    this.maxAccelMps2 = 0.3,
-    this.maxRpmVariation = 0.02,
+    this.maxAccelMps2 = 0.35,
+    this.maxRpmVariation = 0.03,
     this.maxHeadingRateDegPerS = 5,
     this.outlierMads = 3,
     this.minRelativeMad = 0.003,
@@ -129,6 +144,21 @@ class CalibrationFilterConfig {
     this.minSegmentSeconds = 5,
     this.maxGapSeconds = 1.5,
   });
+
+  /// Speed-accuracy limit (m/s) at [speedKph].
+  double speedAccuracyLimitMps(double speedKph) =>
+      math.max(maxSpeedAccuracyMps, maxRelativeSpeedAccuracy * speedKph / 3.6);
+
+  /// Whether a single fix is precise enough to be used (same rule as the
+  /// filter; also drives the live GPS lock colour).
+  bool fixIsPrecise(GpsSpeedSample gps) {
+    final speedAcc = gps.speedAccuracyMps;
+    if (speedAcc != null && speedAcc > 0) {
+      return speedAcc <= speedAccuracyLimitMps(gps.speedKph);
+    }
+    return gps.accuracyMeters.isFinite &&
+        gps.accuracyMeters <= maxHorizontalAccuracyM;
+  }
 }
 
 /// A run of consecutive kept seconds (>= 5 s); one independent estimate.
@@ -156,8 +186,9 @@ class CalibrationSegment {
   double get k => sumVR / sumRR;
 
   static double _weight(CalibrationSample s) {
-    // Seconds without a reported speed accuracy get the filter limit.
-    final sigmaMps = math.max(s.gps?.speedAccuracyMps ?? 0.5, 0.1);
+    // Seconds without a reported speed accuracy (old Android) count as a
+    // typical phone fix.
+    final sigmaMps = math.max(s.gps?.speedAccuracyMps ?? 1.0, 0.1);
     final sigmaKph = sigmaMps * 3.6;
     return 1 / (sigmaKph * sigmaKph);
   }
@@ -225,15 +256,7 @@ class CalibrationAnalyzer {
     }
     if (s.braking) return SampleVerdict.braking;
     if (gps.speedKph <= config.minSpeedKph) return SampleVerdict.tooSlow;
-    final speedAcc = gps.speedAccuracyMps;
-    if (speedAcc != null && speedAcc > 0) {
-      if (speedAcc > config.maxSpeedAccuracyMps) {
-        return SampleVerdict.poorAccuracy;
-      }
-    } else if (!gps.accuracyMeters.isFinite ||
-        gps.accuracyMeters > config.maxHorizontalAccuracyM) {
-      return SampleVerdict.poorAccuracy;
-    }
+    if (!config.fixIsPrecise(gps)) return SampleVerdict.poorAccuracy;
     return SampleVerdict.kept;
   }
 
@@ -259,17 +282,15 @@ class CalibrationAnalyzer {
       return SampleVerdict.noWindow;
     }
 
-    // GPS acceleration (km/h -> m/s).
-    final gpsAccel = math.max(
-      (cur.gpsKph! - prev.gpsKph!).abs() / 3.6 / dt1,
-      (next.gpsKph! - cur.gpsKph!).abs() / 3.6 / dt2,
-    );
+    // Acceleration over the whole 3 s window (central difference: next vs
+    // previous second). One-second differences of a ±1.3 m/s phone GPS are
+    // mostly noise; the two-second span halves that noise while still
+    // catching real throttle/brake changes.
+    final span = dt1 + dt2;
+    final gpsAccel = (next.gpsKph! - prev.gpsKph!).abs() / 3.6 / span;
     // RPM acceleration expressed as speed using this second's own v/rpm.
     final kLocal = cur.ratio!;
-    final rpmAccel = math.max(
-      (cur.rpm! - prev.rpm!).abs() * kLocal / 3.6 / dt1,
-      (next.rpm! - cur.rpm!).abs() * kLocal / 3.6 / dt2,
-    );
+    final rpmAccel = (next.rpm! - prev.rpm!).abs() * kLocal / 3.6 / span;
     if (gpsAccel >= config.maxAccelMps2 || rpmAccel >= config.maxAccelMps2) {
       return SampleVerdict.accelerating;
     }

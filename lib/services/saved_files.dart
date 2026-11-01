@@ -9,7 +9,8 @@ enum SavedFileKind {
   calibration('calibrations'),
   dump('dumps'),
   diagnosticLog('logs'),
-  rideCsv('rides');
+  rideCsv('rides'),
+  dashCheck('dash_checks');
 
   const SavedFileKind(this.folder);
   final String folder;
@@ -128,6 +129,7 @@ class SavedFilesStore {
       final info = switch (kind) {
         SavedFileKind.calibration => calibrationInfo(head),
         SavedFileKind.dump => dumpInfo(head),
+        SavedFileKind.dashCheck => dashCheckInfo(head),
         _ => const <String, String>{},
       };
       final recorded = DateTime.tryParse(info['time'] ?? '');
@@ -193,6 +195,28 @@ class SavedFilesStore {
           info['suggested_GearRatio'] = value;
         case 'settings.GearRatio':
           info['GearRatio'] = value;
+      }
+    }
+    return info;
+  }
+
+  /// Key facts of a saved dash speed check (same `section,key,value` rows).
+  static Map<String, String> dashCheckInfo(String head) {
+    final info = <String, String>{};
+    for (final row in FlatCsv.decode(_completeLines(head))) {
+      if (row.length < 3) continue;
+      final value = row[2];
+      switch ('${row[0]}.${row[1]}') {
+        case 'summary.started_at':
+          info['time'] = value;
+        case 'summary.points':
+          info['points'] = value;
+        case 'result.dash_error_pct':
+          info['dash_error_pct'] = value;
+        case 'result.suggested_SpdPulseNum':
+          info['suggested_SpdPulseNum'] = value;
+        case 'summary.controller_id':
+          info['controller_id'] = value;
       }
     }
     return info;

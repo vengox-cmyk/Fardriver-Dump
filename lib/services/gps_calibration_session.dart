@@ -269,30 +269,9 @@ class GpsCalibrationNotifier extends StateNotifier<CalibrationSessionState> {
     );
   }
 
-  /// "DKD reads…" tap: snapshot GPS speed and rpm now; the DKD number is
-  /// entered later, after stopping. Returns false if there is no rpm.
-  bool tapDkd() {
-    if (!state.isRecording) return false;
-    final now = _clock();
-    final rpm = _pairer.lastRpm;
-    if (rpm == null || now.difference(rpm.at) > const Duration(seconds: 2)) {
-      return false;
-    }
-    final gps = state.latestGps;
-    final gpsFresh =
-        gps != null && now.difference(gps.capturedAt) <= _gpsTimeout;
-    state = state.copyWith(dkdSnapshots: [
-      ...state.dkdSnapshots,
-      DkdSnapshot(
-        at: now,
-        rpm: rpm.rpm,
-        gpsKph: gpsFresh ? gps.speedKph : null,
-        controllerKph: _controller().speedKph,
-      ),
-    ]);
-    _scheduleSave();
-    return true;
-  }
+  // v1.2.3: no in-ride DKD tap (nothing may need a tap while riding). DKD
+  // readings come from the stationary Dash speed check; readings saved with
+  // older rides stay editable (setDkdReading / removeDkdSnapshot).
 
   void setDkdReading(int index, double? kph) {
     if (index < 0 || index >= state.dkdSnapshots.length) return;

@@ -12,6 +12,7 @@ import 'package:arcdash/screens/stats_screen.dart';
 import 'package:arcdash/services/bluetooth_service.dart'
     show DongleConnectionState;
 import 'package:arcdash/l10n/app_strings.dart';
+import 'package:arcdash/services/remembered_auto_connect.dart';
 
 /// The root of the app: Cockpit / Rides / Settings tabs.
 ///
@@ -45,6 +46,19 @@ class _AppShellState extends ConsumerState<AppShell> {
     StatsScreen(),
     SettingsScreen(),
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    // v1.2.3: reconnect on its own when exactly one previously connected
+    // controller is around. No-op when none is remembered.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      unawaited(
+          RememberedAutoConnect(service: ref.read(bluetoothServiceProvider))
+              .run());
+    });
+  }
 
   @override
   void dispose() {

@@ -23,9 +23,24 @@ void main() {
       expect(a.segments, isEmpty);
     });
 
-    test('speed accuracy above 0.5 m/s is rejected', () {
-      final a = analyzer.analyze(ride([const Leg(10, 50, speedAccuracy: 0.8)]));
+    test('speed accuracy above 2.5 m/s is rejected', () {
+      final a = analyzer.analyze(ride([const Leg(10, 50, speedAccuracy: 2.8)]));
       expect(a.verdicts, everyElement(SampleVerdict.poorAccuracy));
+    });
+
+    test('a typical low-end phone fix (±1.3–1.9 m/s) is accepted', () {
+      final a = analyzer.analyze(ride([const Leg(10, 50, speedAccuracy: 1.9)]));
+      expect(a.verdicts.sublist(1, 9), everyElement(SampleVerdict.kept));
+    });
+
+    test('above ~112 km/h the limit grows to 8 % of speed', () {
+      const config = CalibrationFilterConfig();
+      expect(config.speedAccuracyLimitMps(50), 2.5);
+      expect(
+          config.speedAccuracyLimitMps(150), closeTo(150 * 0.08 / 3.6, 1e-9));
+      final a =
+          analyzer.analyze(ride([const Leg(10, 150, speedAccuracy: 3.0)]));
+      expect(a.verdicts.sublist(1, 9), everyElement(SampleVerdict.kept));
     });
 
     test('without speed accuracy, horizontal accuracy ≤10 m decides', () {
@@ -48,27 +63,27 @@ void main() {
       expect(a.verdicts.sublist(6, 9), everyElement(SampleVerdict.noRpm));
     });
 
-    test('acceleration of 0.3 m/s² or more is rejected', () {
-      // +1.5 km/h per second ≈ 0.42 m/s².
+    test('acceleration of 0.35 m/s² or more is rejected', () {
+      // +1.5 km/h per second ≈ 0.42 m/s² (measured next vs previous second).
       final legs = [for (var i = 0; i < 10; i++) Leg(1, 40 + 1.5 * i)];
       final a = analyzer.analyze(ride(legs, noiseKph: 0));
       expect(
           a.verdicts.sublist(1, 9), everyElement(SampleVerdict.accelerating));
     });
 
-    test('gentle speed change below 0.3 m/s² is accepted', () {
+    test('gentle speed change below 0.35 m/s² is accepted', () {
       // +0.7 km/h per second ≈ 0.19 m/s².
       final legs = [for (var i = 0; i < 10; i++) Leg(1, 40 + 0.7 * i)];
       final a = analyzer.analyze(ride(legs, noiseKph: 0));
       expect(a.verdicts.sublist(1, 9), everyElement(SampleVerdict.kept));
     });
 
-    test('rpm jitter (CV ≥ 2 %) with steady GPS is rejected', () {
-      // At 22 km/h a 4.5 % rpm wobble stays under the 0.3 m/s² limit but
-      // its coefficient of variation is ~2.3 %.
+    test('rpm jitter (CV ≥ 3 %) with steady GPS is rejected', () {
+      // An alternating 7 % rpm wobble has no net acceleration across the
+      // window but its coefficient of variation is ~3.1 %.
       final legs = [
         for (var i = 0; i < 10; i++)
-          Leg(1, 22, ratioScale: i.isEven ? 1.0 : 1 / 1.045),
+          Leg(1, 22, ratioScale: i.isEven ? 1.0 : 1 / 1.07),
       ];
       final a = analyzer.analyze(ride(legs, noiseKph: 0));
       expect(a.verdicts.sublist(1, 9), everyElement(SampleVerdict.rpmUnsteady));

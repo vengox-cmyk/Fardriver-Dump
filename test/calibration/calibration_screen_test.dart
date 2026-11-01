@@ -76,16 +76,31 @@ void main() {
         ),
       );
 
-  testWidgets('start is disabled until the controller is connected',
-      (tester) async {
+  testWidgets(
+      'not connected: nothing blocks, banner + dash check + saved rides '
+      'visible, start asks to connect', (tester) async {
+    tester.view.physicalSize = const Size(1080, 2400);
+    tester.view.devicePixelRatio = 2.5;
+    addTearDown(tester.view.reset);
     await tester.pumpWidget(app(FakeGps(), connected: false));
+    await tester.pump();
+    expect(find.byKey(const ValueKey('calibration-connect-banner')),
+        findsOneWidget);
+    expect(find.textContaining('Connect to the controller first'),
+        findsNothing);
     await tester.scrollUntilVisible(
-        find.byKey(const ValueKey('calibration-start')), 200);
+        find.byKey(const ValueKey('calibration-recent')), 200);
+    expect(find.byKey(const ValueKey('open-dash-check')), findsOneWidget);
     final button = tester
         .widget<FilledButton>(find.byKey(const ValueKey('calibration-start')));
-    expect(button.onPressed, isNull);
-    expect(
-        find.textContaining('Connect to the controller first'), findsOneWidget);
+    expect(button.onPressed, isNotNull);
+    await tester.tap(find.byKey(const ValueKey('calibration-start')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('connect-needed-dialog')), findsOneWidget);
+    await tester.tap(find.text('Not now'));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('connect-needed-dialog')), findsNothing);
+    expect(find.text('GPS SPEED'), findsNothing); // did not start
   });
 
   testWidgets(
@@ -109,7 +124,9 @@ void main() {
 
     expect(find.text('GPS SPEED'), findsOneWidget);
     expect(find.text('Controller speed'), findsOneWidget);
-    expect(find.byKey(const ValueKey('calibration-dkd-tap')), findsOneWidget);
+    // No in-ride tap targets besides Stop; the checklist is display only.
+    expect(find.byKey(const ValueKey('calibration-dkd-tap')), findsNothing);
+    expect(find.byKey(const ValueKey('capture-checklist')), findsOneWidget);
     expect(find.text('No GPS fix'), findsOneWidget);
 
     gps.controller.add(fix(DateTime.now(), 47.6));
@@ -121,7 +138,24 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('calibration-stop')));
     await tester.pumpAndSettle();
     expect(find.byKey(const ValueKey('calibration-results')), findsOneWidget);
+    // Same details after stopping: live panel on top of the results.
+    expect(find.byKey(const ValueKey('calibration-live-panel')), findsOneWidget);
+    expect(find.byKey(const ValueKey('calibration-plain-result')),
+        findsOneWidget);
+    await tester.scrollUntilVisible(find.text('GPS reference'), 200,
+        scrollable: find
+            .descendant(
+                of: find.byKey(const ValueKey('calibration-results')),
+                matching: find.byType(Scrollable))
+            .first);
     expect(find.text('GPS reference'), findsOneWidget);
+    await tester.scrollUntilVisible(
+        find.text('Current settings from: test snapshot'), 200,
+        scrollable: find
+            .descendant(
+                of: find.byKey(const ValueKey('calibration-results')),
+                matching: find.byType(Scrollable))
+            .first);
     expect(find.text('Current settings from: test snapshot'), findsOneWidget);
     expect(await Disclaimer.calibrationNeedsAcceptance(), isFalse);
   });

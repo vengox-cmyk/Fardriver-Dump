@@ -14,6 +14,7 @@ import 'package:arcdash/services/calibration_settings.dart';
 import 'package:arcdash/services/gps_calibration_session.dart';
 import 'package:arcdash/services/parameter_dump_io.dart';
 import 'package:arcdash/utils/speed_units.dart';
+import 'package:arcdash/widgets/calibration_panels.dart';
 import 'package:arcdash/widgets/disclaimer_gate.dart';
 
 const _green = Color(0xFF54E39E);
@@ -38,7 +39,11 @@ class SpeedCalibrationResults extends ConsumerWidget {
     this.interrupted = false,
     this.onDkdChanged,
     this.onDkdRemove,
+    this.header,
   });
+
+  /// Shown above the results (the live panel after a ride just stopped).
+  final Widget? header;
 
   final CalibrationSessionState session;
   final VoidCallback? onNewRide;
@@ -67,6 +72,7 @@ class SpeedCalibrationResults extends ConsumerWidget {
       key: const ValueKey('calibration-results'),
       padding: const EdgeInsets.all(16),
       children: [
+        if (header != null) ...[header!, const SizedBox(height: 8)],
         if (_fromSavedFiles)
           _InfoCard(
             key: const ValueKey('saved-calibration-banner'),
@@ -100,6 +106,14 @@ class SpeedCalibrationResults extends ConsumerWidget {
           child: Padding(
             padding: EdgeInsets.all(12),
             child: CalibrationSafetyLines(),
+          ),
+        ),
+        PlainResultCard(
+            analysis: session.analysis, fit: fit, ble: settings.ble),
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: CaptureChecklist(analysis: session.analysis, fit: fit),
           ),
         ),
         _GpsFitCard(session: session),
@@ -330,10 +344,6 @@ class _GpsFitCard extends StatelessWidget {
     final analysis = session.analysis;
     final fit = session.fit;
     final bands = analysis.bands.toList()..sort((a, b) => a.index - b.index);
-    final rejected = analysis.verdictCounts.entries
-        .where((e) => e.key != SampleVerdict.kept)
-        .toList()
-      ..sort((a, b) => b.value - a.value);
     return _Section(
       title: 'GPS reference',
       badge: fit == null ? null : ConfidenceBadge(fit.confidence),
@@ -351,13 +361,6 @@ class _GpsFitCard extends StatelessWidget {
               fit.ciRelative == null
                   ? 'needs ≥2 segments'
                   : '±${(fit.ciRelative! * 100).toStringAsFixed(2)} %'),
-        ],
-        if (rejected.isNotEmpty) ...[
-          const SizedBox(height: 6),
-          Text(
-            'Rejected: ${rejected.take(4).map((e) => '${e.key.label} ${e.value}').join(', ')}',
-            style: const TextStyle(color: Colors.white60, fontSize: 12),
-          ),
         ],
         if (fit == null || fit.confidence == CalibrationConfidence.red)
           const Padding(
@@ -458,10 +461,9 @@ class _DkdCard extends ConsumerWidget {
     final children = <Widget>[];
     if (snapshots.isEmpty) {
       children.add(const Text(
-          'No "DKD reads…" taps in this ride. Only needed if you use a one-wire DKD display.'));
+          'No DKD readings in this ride. For a one-wire DKD display use Calibration → "Dash speed check" (standing still, wheel lifted) — nothing to tap while riding.'));
     } else {
-      children.add(const Text(
-          'Enter what the DKD showed at each tap (you are stopped now):',
+      children.add(const Text('DKD readings saved with this ride (editable):',
           style: TextStyle(color: Colors.white70)));
       for (var i = 0; i < snapshots.length; i++) {
         children.add(_DkdEntry(
@@ -504,9 +506,8 @@ class _DkdCard extends ConsumerWidget {
                 style: TextStyle(color: _red)),
           const SizedBox(height: 6),
           const Text(
-            'Larger SpdPulseNum = slower DKD reading. The exact SpdPulseNum ↔ DKD '
-            'relationship is to be verified with ride data: re-ride after changing.',
-            style: TextStyle(fontSize: 12, color: _amber),
+            'Higher SpdPulseNum = higher DKD reading (fine steps); Speed Pulses is the coarse step.',
+            style: TextStyle(fontSize: 12, color: Colors.white70),
           ),
           const SizedBox(height: 4),
           const Text(

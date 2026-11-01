@@ -91,21 +91,14 @@ void main() {
       expect(s.fit!.kGps, closeTo(kTrue, 1e-9));
     });
 
-    test('DKD tap snapshots rpm and GPS; reading entered after stop', () async {
+    test('no in-ride DKD tap: DKD edits without readings are no-ops', () async {
       await notifier.start();
-      expect(notifier.tapDkd(), isFalse, reason: 'no rpm yet');
       rpm.add(RpmReading(rpm: 2244, at: now));
       await Future<void>.delayed(Duration.zero);
       notifier.onFix(fix(now, 50));
-      expect(notifier.tapDkd(), isTrue);
       await notifier.stop();
-      expect(notifier.state.status, CalibrationStatus.stopped);
-      expect(notifier.tapDkd(), isFalse);
+      expect(notifier.state.dkdSnapshots, isEmpty);
       notifier.setDkdReading(0, 52);
-      final snap = notifier.state.dkdSnapshots.single;
-      expect(snap.rpm, 2244);
-      expect(snap.gpsKph, 50);
-      expect(snap.dkdKph, 52);
       notifier.removeDkdSnapshot(0);
       expect(notifier.state.dkdSnapshots, isEmpty);
     });

@@ -168,8 +168,13 @@ class DkdFit {
 }
 
 /// One-wire DKD display trim via Speed Pulses (coarse) and SpdPulseNum
-/// (fine). Confirmed in the field: larger SpdPulseNum = slower display.
-/// Assumed shape (to be verified with ride data): display ∝ SP / SPN.
+/// (fine). Shape: display ∝ SP × SPN.
+/// SpdPulseNum direction VERIFIED by the owner's hands-on calibration
+/// (1 Nov 2026): a HIGHER SpdPulseNum makes the DKD show a HIGHER speed, in
+/// fine steps — matching the elektroroller-forum.de data (t=37065); the
+/// FarDriver manual ("larger = slower") is wrong here. Speed Pulses
+/// direction (larger = faster) agrees in manual and forum data but has not
+/// been checked hands-on; kept as is.
 class DkdSuggestion {
   static const int minSpeedPulses = 1;
   static const int maxSpeedPulses = 31; // 5-bit field
@@ -212,7 +217,9 @@ class DkdSuggestion {
       clamped = sp != rawSp;
     }
     final ratio = speedPulses > 0 ? sp / speedPulses : 1.0;
-    final rawSpn = (spdPulseNum * ratio * kDkd / kGps).round();
+    // Dash high (kDkd > kGps) → lower SpdPulseNum; the Speed Pulses step
+    // already covered `ratio` of the correction.
+    final rawSpn = (spdPulseNum * kGps / kDkd / ratio).round();
     final spn = rawSpn.clamp(minSpdPulseNum, maxSpdPulseNum);
     return DkdSuggestion._(
       speedPulses: speedPulses,
