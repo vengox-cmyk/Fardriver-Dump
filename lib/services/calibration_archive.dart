@@ -86,7 +86,8 @@ class CalibrationArchive {
       fit: state.fit,
       dkdSnapshots: state.dkdSnapshots,
       settings: settings,
-      dashAnchor: rideDashAnchor(state.dkdSnapshots, settings) ?? _rideAnchor,
+      // A stationary dash check (calibrated) wins over in-ride DKD readings.
+      dashAnchor: _rideAnchor ?? rideDashAnchor(state.dkdSnapshots, settings),
       appVersion: await _appVersion(),
       exportedAt: _clock(),
       startedAt: startedAt,

@@ -52,6 +52,7 @@ class DashCheckRecord {
   DashAnchor? get anchor => DashAnchor.fromReadings(points,
       speedPulses: speedPulses,
       spdPulseNum: spdPulseNum,
+      fromDashCheck: true,
       source: 'dash check ${SavedFilesStore.stamp(startedAt)}');
 }
 
@@ -113,7 +114,7 @@ class DashCheckCsv {
           [
             'result',
             'assumption',
-            'display ∝ SpeedPulse / SpdPulseNum (unverified)'
+            'display ∝ SpeedPulse × SpdPulseNum (SpdPulseNum direction verified hands-on)'
           ],
         ],
       ],

@@ -162,12 +162,13 @@ class CalibrationCsv {
         ],
     ]);
 
-    // Estimated dash speed (never used in any fit): see DashAnchor.
+    // Dash speed (estimated or calibrated, never used in any fit): see
+    // DashAnchor.
     final sp = settings.speedPulses, spn = settings.spdPulseNum;
     final dashK = dashAnchor?.kFor(sp: sp, spn: spn);
     section([
       ['section', 'key', 'value'],
-      ['dash_est', 'status', dashEstimateLabel],
+      ['dash_est', 'status', dashStatusLabel(dashAnchor)],
       ['dash_est', 'used_in_fit', 'no'],
       [
         'dash_est',
@@ -186,7 +187,7 @@ class CalibrationCsv {
               ? 'same settings as anchor (measured)'
               : dashK == null
                   ? 'settings unknown: no estimate'
-                  : 'scaled by SpeedPulse/SpdPulseNum (unverified)'
+                  : 'scaled ∝ SpeedPulse × SpdPulseNum'
         ],
         if (dashK != null) ['dash_est', 'k_dash_kmh_per_rpm', _f(dashK, 6)],
       ],

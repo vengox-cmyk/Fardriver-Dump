@@ -46,23 +46,24 @@ void main() {
   });
 
   group('DKD (Speed Pulses / SpdPulseNum)', () {
-    test('DKD reads 3 % high → SpdPulseNum 39192', () {
+    // Higher SpdPulseNum = higher dash speed (owner's hands-on check).
+    test('DKD reads 3 % high → lower SpdPulseNum 36942', () {
       final s = DkdSuggestion.compute(
           speedPulses: 11, spdPulseNum: 38050, kDkd: kTrue * 1.03, kGps: kTrue);
       expect(s.suggestedSpeedPulses, 11);
-      expect(s.suggestedSpdPulseNum, 39192);
+      expect(s.suggestedSpdPulseNum, 36942);
       expect(s.changesSpeedPulses, isFalse);
     });
 
-    test('DKD reads 2 % low → SpdPulseNum 37289', () {
+    test('DKD reads 2 % low → higher SpdPulseNum 38827', () {
       final s = DkdSuggestion.compute(
           speedPulses: 11, spdPulseNum: 38050, kDkd: kTrue * 0.98, kGps: kTrue);
-      expect(s.suggestedSpdPulseNum, 37289);
+      expect(s.suggestedSpdPulseNum, 38827);
       expect(s.ccFactor, closeTo(1 / 0.98, 1e-9));
     });
 
     test('above ~4 % error Speed Pulses steps first, SpdPulseNum trims', () {
-      // 10 % high: SP 11 → round(11/1.1) = 10, SPN = 38050 × 10/11 × 1.1.
+      // 10 % high: SP 11 → round(11/1.1) = 10, SPN = 38050 / 1.1 / (10/11).
       final s = DkdSuggestion.compute(
           speedPulses: 11, spdPulseNum: 38050, kDkd: kTrue * 1.10, kGps: kTrue);
       expect(s.suggestedSpeedPulses, 10);
@@ -71,9 +72,10 @@ void main() {
     });
 
     test('SpdPulseNum is clamped to 500…65530', () {
+      // Dash reads half: Speed Pulses already at its 31 limit, SPN × 2.
       final s = DkdSuggestion.compute(
-          speedPulses: 1, spdPulseNum: 60000, kDkd: kTrue * 1.5, kGps: kTrue);
-      expect(s.suggestedSpeedPulses, 1);
+          speedPulses: 31, spdPulseNum: 60000, kDkd: kTrue * 0.5, kGps: kTrue);
+      expect(s.suggestedSpeedPulses, 31);
       expect(s.suggestedSpdPulseNum, 65530);
       expect(s.clamped, isTrue);
     });

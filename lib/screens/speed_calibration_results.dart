@@ -506,9 +506,8 @@ class _DkdCard extends ConsumerWidget {
                 style: TextStyle(color: _red)),
           const SizedBox(height: 6),
           const Text(
-            'Larger SpdPulseNum = slower DKD reading. The exact SpdPulseNum ↔ DKD '
-            'relationship is to be verified with ride data: re-ride after changing.',
-            style: TextStyle(fontSize: 12, color: _amber),
+            'Higher SpdPulseNum = higher DKD reading (fine steps); Speed Pulses is the coarse step.',
+            style: TextStyle(fontSize: 12, color: Colors.white70),
           ),
           const SizedBox(height: 4),
           const Text(

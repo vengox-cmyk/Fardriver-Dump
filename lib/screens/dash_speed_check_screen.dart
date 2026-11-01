@@ -179,7 +179,7 @@ class _DashSpeedCheckScreenState extends ConsumerState<DashSpeedCheckScreen> {
                 child: Text(
                   'Dash should show about '
                   '${unit.speed(anchor.estimateKph(rpm, sp: anchor.speedPulses, spn: anchor.spdPulseNum) ?? 0, digits: 0)} '
-                  '($dashEstimateLabel, from your points)',
+                  '(calibrated from your points)',
                   style: const TextStyle(fontSize: 12, color: Colors.white60),
                 ),
               ),
@@ -233,8 +233,7 @@ class _DashSpeedCheckScreenState extends ConsumerState<DashSpeedCheckScreen> {
                 child: Text(
                     'Saved: Settings → Data management → Saved files → Dash checks',
                     key: ValueKey('dash-check-saved'),
-                    style:
-                        TextStyle(fontSize: 12, color: Colors.white54)),
+                    style: TextStyle(fontSize: 12, color: Colors.white54)),
               ),
           ],
         ),
@@ -291,9 +290,9 @@ class _ResultCard extends StatelessWidget {
           style: const TextStyle(fontWeight: FontWeight.w800, color: _green),
         ));
         lines.add(const Text(
-          'Assumes a bigger SpdPulseNum makes the dash read slower (manual and your own test). '
-          'Not verified for every dash: after changing it in the FarDriver app, repeat this check.',
-          style: TextStyle(fontSize: 12, color: _amber),
+          'A higher SpdPulseNum makes the dash read higher (fine steps); Speed Pulses is the coarse step. '
+          'Apply in the FarDriver app, then repeat this check to confirm.',
+          style: TextStyle(fontSize: 12, color: Colors.white70),
         ));
       } else if (rec != null) {
         lines.add(const Text(

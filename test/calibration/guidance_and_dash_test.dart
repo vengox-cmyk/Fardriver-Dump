@@ -77,7 +77,7 @@ void main() {
     });
   });
 
-  group('dash estimate (unverified)', () {
+  group('dash speed column', () {
     const anchor = DashAnchor(
         kDash: 0.02,
         speedPulses: 11,
@@ -85,10 +85,11 @@ void main() {
         points: 3,
         source: 't');
 
-    test('exact at the anchor settings, scaled SP/SPN otherwise', () {
+    test('exact at the anchor; rises with SpeedPulse and SpdPulseNum', () {
       expect(anchor.kFor(sp: 11, spn: 38050), 0.02);
       expect(anchor.kFor(sp: 22, spn: 38050), closeTo(0.04, 1e-12));
-      expect(anchor.kFor(sp: 11, spn: 76100), closeTo(0.01, 1e-12));
+      expect(anchor.kFor(sp: 11, spn: 76100), closeTo(0.04, 1e-12));
+      expect(anchor.kFor(sp: 11, spn: 19025), closeTo(0.01, 1e-12));
       expect(anchor.kFor(sp: null, spn: 38050), isNull);
       expect(anchor.estimateKph(1000, sp: 11, spn: 38050), closeTo(20, 1e-9));
       expect(anchor.estimateKph(0, sp: 11, spn: 38050), isNull);
@@ -107,11 +108,39 @@ void main() {
         dashAnchor: anchor,
       );
       expect(csv, contains('dash_kmh_est'));
-      expect(csv, contains(dashEstimateLabel));
+      expect(csv, contains('dash_est,status,$dashEstimateLabel\n'));
+      expect(csv, isNot(contains(dashCalibratedLabel)));
       final back = CalibrationCsv.parse(csv);
       expect(back.samples, hasLength(saved.samples.length));
       // Same fit with or without the estimate column.
       expect(back.toSessionState().fit!.kGps, closeTo(fit.kGps, 1e-12));
+    });
+  });
+
+  group('dash column after a dash check', () {
+    test('shown as calibrated from the check', () {
+      final rec = DashCheckRecord(
+        startedAt: DateTime(2026, 11, 1, 12, 30),
+        points: [pt(1000, 21), pt(2000, 42)],
+        speedPulses: 11,
+        spdPulseNum: 38050,
+      );
+      final anchor = rec.anchor!;
+      expect(anchor.fromDashCheck, isTrue);
+      expect(dashStatusLabel(anchor), startsWith(dashCalibratedLabel));
+      expect(dashStatusLabel(null), dashEstimateLabel);
+      final csv = CalibrationCsv.build(
+        samples: saved.samples,
+        analysis: analysis,
+        fit: fit,
+        dkdSnapshots: const [],
+        settings: saved.settings,
+        appVersion: 'test',
+        exportedAt: DateTime(2026, 11, 1),
+        dashAnchor: anchor,
+      );
+      expect(csv, contains('dash_est,status,$dashCalibratedLabel'));
+      expect(csv, contains('same settings as anchor (measured)'));
     });
   });
 
@@ -134,14 +163,14 @@ void main() {
       expect(r.referenceSource, 'gps');
       expect(r.error, closeTo(0.05, 1e-9));
       // Dash 5 % high (> 4 %): Speed Pulses step first, then SpdPulseNum;
-      // under the manual's rule (display ∝ SP / SPN) the new settings slow
-      // the dash by 1/1.05.
+      // display ∝ SP × SPN (higher SpdPulseNum = higher dash, verified
+      // hands-on by the owner) so the new settings slow the dash by 1/1.05.
       final s = r.suggestion!;
       expect(s.suggestedSpeedPulses, 10);
-      final factor = (s.suggestedSpeedPulses / 11) /
-          (s.suggestedSpdPulseNum / 38050);
+      final factor =
+          (s.suggestedSpeedPulses / 11) * (s.suggestedSpdPulseNum / 38050);
       expect(factor, closeTo(1 / 1.05, 0.001));
-      // 2 % high → SpdPulseNum only, bigger (= slower display).
+      // 2 % high → SpdPulseNum only, lower (= slower display).
       final small = DashCheckResult.compute(
           points: [pt(1000, 20.4), pt(2000, 40.8)],
           kGps: 0.02,
@@ -149,7 +178,7 @@ void main() {
           speedPulses: 11,
           spdPulseNum: 38050)!;
       expect(small.suggestion!.changesSpeedPulses, isFalse);
-      expect(small.suggestion!.suggestedSpdPulseNum, 38811);
+      expect(small.suggestion!.suggestedSpdPulseNum, 37304);
       final app = DashCheckResult.compute(
           points: [pt(1000, 21), pt(2000, 42)],
           kGps: null,
