@@ -226,7 +226,8 @@ class RideAnalysis {
           'Please review it and suggest what to check or try next. '
           'Suggestions only: I change controller settings myself.')
       ..writeln()
-      ..writeln('Ride ${_stamp(ride.start)}: ${_rideLine(ride, unit)}');
+      ..writeln('Ride ${_stamp(ride.start)}: ${_rideLine(ride, unit)}'
+          '${ride.finished ? '' : ' (unfinished: recording stopped early)'}');
     if (previous != null) {
       b.writeln('Previous ride ${_stamp(previous.start)}: '
           '${_rideLine(previous, unit)}');

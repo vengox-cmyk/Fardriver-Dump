@@ -1,9 +1,11 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:arcdash/models/ride_stats.dart';
 import 'package:arcdash/providers/stats_provider.dart';
 import 'package:arcdash/providers/rides_provider.dart';
 import 'package:arcdash/screens/ride_detail_screen.dart';
@@ -40,32 +42,6 @@ class StatsScreen extends ConsumerWidget {
         centerTitle: false,
         elevation: 0,
         actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh_outlined, size: 20),
-            tooltip: strings.text(AppText.resetSession),
-            onPressed: () async {
-              final confirmed = await showDialog<bool>(
-                context: context,
-                builder: (context) => AlertDialog(
-                  title: Text(strings.text(AppText.resetSession)),
-                  content: Text(strings.text(AppText.resetSessionMessage)),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.of(context).pop(false),
-                      child: Text(strings.text(AppText.cancel)),
-                    ),
-                    ElevatedButton(
-                      onPressed: () => Navigator.of(context).pop(true),
-                      child: Text(strings.text(AppText.reset)),
-                    ),
-                  ],
-                ),
-              );
-              if (confirmed == true) {
-                await ref.read(statsProvider.notifier).resetCurrentSession();
-              }
-            },
-          ),
           if (session != null)
             IconButton(
               icon: const Icon(Icons.share_outlined, size: 20),
@@ -100,6 +76,10 @@ class StatsScreen extends ConsumerWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    _RideControl(
+                        session: session,
+                        waitingForController: statsState.waitingForController),
+                    const SizedBox(height: 20),
                     if (session != null) ...[
                       _SectionHeader(
                           title: strings.text(AppText.currentSession)),
@@ -125,9 +105,6 @@ class StatsScreen extends ConsumerWidget {
                         ),
                         const SizedBox(height: 24),
                       ],
-                    ] else ...[
-                      const _EmptySession(),
-                      const SizedBox(height: 24),
                     ],
                   ],
                 ),
@@ -570,31 +547,168 @@ class _DetailRow extends StatelessWidget {
   }
 }
 
-class _EmptySession extends StatelessWidget {
-  const _EmptySession();
+/// Start ride / Stop ride with the running time. Rides are manual: one
+/// starts only here and ends only on Stop (it survives leaving the tab, the
+/// screen going off and Bluetooth drops). Big targets, used before and after
+/// riding, never during.
+class _RideControl extends ConsumerWidget {
+  const _RideControl(
+      {required this.session, required this.waitingForController});
+
+  final RideSession? session;
+  final bool waitingForController;
+
+  Future<void> _confirmStop(BuildContext context, WidgetRef ref) async {
+    final strings = AppStrings.of(context);
+    final stop = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(strings.text(AppText.rideStopConfirmTitle)),
+        content: Text(strings.text(AppText.rideStopConfirmBody)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: Text(strings.text(AppText.rideStopConfirmKeep)),
+          ),
+          ElevatedButton(
+            key: const ValueKey('ride-stop-confirm'),
+            onPressed: () => Navigator.of(context).pop(true),
+            child: Text(strings.text(AppText.rideStop)),
+          ),
+        ],
+      ),
+    );
+    if (stop == true) await ref.read(statsProvider.notifier).stopRide();
+  }
 
   @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Column(
+  Widget build(BuildContext context, WidgetRef ref) {
+    final strings = AppStrings.of(context);
+    final s = session;
+    if (s == null) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const SizedBox(height: 40),
-          const Icon(Icons.timeline, size: 48, color: Color(0xFF2A3548)),
-          const SizedBox(height: 16),
-          Text(
-            AppStrings.of(context).text(AppText.noActiveSession),
-            style: const TextStyle(color: Color(0xFF4A5568), fontSize: 15),
+          SizedBox(
+            height: 64,
+            child: ElevatedButton.icon(
+              key: const ValueKey('ride-start'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF1B5E20),
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14)),
+              ),
+              onPressed: () => ref.read(statsProvider.notifier).startRide(),
+              icon: const Icon(Icons.play_arrow_rounded, size: 32),
+              label: Text(strings.text(AppText.rideStart),
+                  style: const TextStyle(
+                      fontSize: 18, fontWeight: FontWeight.w800)),
+            ),
           ),
           const SizedBox(height: 8),
-          Text(
-            AppStrings.of(context).text(AppText.connectToTrack),
-            style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.2), fontSize: 13),
+          Text(strings.text(AppText.rideIdleHint),
+              style: const TextStyle(color: Color(0xFF8B949E), fontSize: 12)),
+        ],
+      );
+    }
+    return Container(
+      key: const ValueKey('ride-recording'),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: const Color(0xFF0D1117),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFFB71C1C)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(children: [
+            const Icon(Icons.fiber_manual_record,
+                color: Color(0xFFFF5252), size: 16),
+            const SizedBox(width: 6),
+            Text(strings.text(AppText.rideRecording),
+                style: const TextStyle(
+                    color: Color(0xFFFF5252),
+                    fontSize: 12,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 2)),
+            const Spacer(),
+            _ElapsedText(start: s.startTime),
+          ]),
+          if (waitingForController) ...[
+            const SizedBox(height: 8),
+            Text(strings.text(AppText.rideWaitingForController),
+                key: const ValueKey('ride-waiting-controller'),
+                style: const TextStyle(color: Colors.amber, fontSize: 12)),
+          ],
+          const SizedBox(height: 12),
+          SizedBox(
+            height: 56,
+            child: ElevatedButton.icon(
+              key: const ValueKey('ride-stop'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFB71C1C),
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14)),
+              ),
+              onPressed: () => _confirmStop(context, ref),
+              icon: const Icon(Icons.stop_rounded, size: 30),
+              label: Text(strings.text(AppText.rideStop),
+                  style: const TextStyle(
+                      fontSize: 17, fontWeight: FontWeight.w800)),
+            ),
           ),
         ],
       ),
     );
   }
+}
+
+/// Running time since [start], ticking once a second on its own (keeps
+/// going while no samples arrive, e.g. during a Bluetooth drop).
+class _ElapsedText extends StatefulWidget {
+  const _ElapsedText({required this.start});
+
+  final DateTime start;
+
+  @override
+  State<_ElapsedText> createState() => _ElapsedTextState();
+}
+
+class _ElapsedTextState extends State<_ElapsedText> {
+  Timer? _timer;
+
+  @override
+  void initState() {
+    super.initState();
+    _timer = Timer.periodic(
+        const Duration(seconds: 1), (_) => mounted ? setState(() {}) : null);
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  static String format(Duration d) {
+    final s = d.isNegative ? 0 : d.inSeconds;
+    String two(int v) => v.toString().padLeft(2, '0');
+    return '${s ~/ 3600}:${two(s % 3600 ~/ 60)}:${two(s % 60)}';
+  }
+
+  @override
+  Widget build(BuildContext context) => Text(
+        format(DateTime.now().difference(widget.start)),
+        key: const ValueKey('ride-elapsed'),
+        style: const TextStyle(
+            color: Colors.white,
+            fontSize: 26,
+            fontWeight: FontWeight.w800,
+            fontFeatures: [FontFeature.tabularFigures()]),
+      );
 }
 
 class _SectionHeader extends StatelessWidget {
@@ -736,6 +850,13 @@ class _SavedEntryTile extends ConsumerWidget {
       _ => (Icons.route_outlined, strings.text(AppText.savedRides), date),
     };
     final ride = entry.kind == SavedFileKind.rideRecord;
+    final activeId =
+        ref.watch(statsProvider.select((st) => st.currentSession?.id));
+    final String? badge = !ride || info['finished'] != 'false'
+        ? null
+        : info['id'] == activeId
+            ? strings.text(AppText.rideRecording).toLowerCase()
+            : strings.text(AppText.rideUnfinished);
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Material(
@@ -755,7 +876,16 @@ class _SavedEntryTile extends ConsumerWidget {
                   color: Colors.white,
                   fontSize: 14,
                   fontWeight: FontWeight.w600)),
-          subtitle: Text(subtitle,
+          subtitle: Text.rich(
+              TextSpan(children: [
+                if (badge != null)
+                  TextSpan(
+                      text: '$badge  ',
+                      style: const TextStyle(
+                          color: Colors.amber, fontWeight: FontWeight.w700)),
+                TextSpan(text: subtitle),
+              ]),
+              key: badge == null ? null : ValueKey('ride-badge-${entry.name}'),
               style: const TextStyle(color: Color(0xFF8B949E), fontSize: 12)),
           trailing: const Icon(Icons.chevron_right, color: Color(0xFF4A5568)),
           onTap: () => _open(context),

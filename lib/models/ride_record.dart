@@ -42,6 +42,11 @@ class RideRecord {
   final String controllerId;
   final String appVersion;
 
+  /// False while a ride is being recorded (checkpoints) and for a ride that
+  /// never got its Stop (app killed / crash): the saved part is kept and
+  /// shown as unfinished. Records from before manual rides count as finished.
+  final bool finished;
+
   const RideRecord({
     required this.id,
     required this.start,
@@ -65,6 +70,7 @@ class RideRecord {
     this.csvFile,
     this.controllerId = '',
     this.appVersion = '',
+    this.finished = true,
   });
 
   Duration get duration => end.difference(start);
@@ -83,6 +89,7 @@ class RideRecord {
     String? csvFile,
     String controllerId = '',
     String appVersion = '',
+    bool finished = true,
   }) {
     final t = s.telemetry;
     final hasV = t.minV != null;
@@ -110,6 +117,7 @@ class RideRecord {
       csvFile: csvFile,
       controllerId: controllerId,
       appVersion: appVersion,
+      finished: finished,
     );
   }
 
@@ -140,6 +148,7 @@ class RideRecord {
         'csvFile': csvFile,
         'controllerId': controllerId,
         'appVersion': appVersion,
+        'finished': finished,
       };
 
   String encode() => const JsonEncoder.withIndent(' ').convert(toJson());
@@ -189,6 +198,7 @@ class RideRecord {
       csvFile: j['csvFile'] as String?,
       controllerId: j['controllerId']?.toString() ?? '',
       appVersion: j['appVersion']?.toString() ?? '',
+      finished: j['finished'] != false,
     );
   }
 

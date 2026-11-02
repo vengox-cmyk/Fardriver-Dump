@@ -75,15 +75,25 @@ class RideSession {
     _avgSpeedSum += speedKph;
     _avgSpeedSamples++;
 
-    // Record speed history (max 500 samples)
-    if (speedHistory.length < 500) {
-      speedHistory.add(SpeedSample(
-        timestamp: at ?? DateTime.now(),
-        speedKph: speedKph,
-        gear: gear,
-      ));
+    // Recent speed history for the live chart: the newest
+    // [chartSamples] only, so memory stays flat on a long ride. Every
+    // sample is streamed to the ride CSV on disk by the ride recorder.
+    if (speedHistory.length >= chartSamples) {
+      speedHistory.removeRange(0, speedHistory.length - chartSamples + 1);
     }
+    speedHistory.add(SpeedSample(
+      timestamp: at ?? DateTime.now(),
+      speedKph: speedKph,
+      gear: gear,
+    ));
+    sampleCount++;
   }
+
+  /// Samples kept in memory for the live chart (about 8 minutes at 1 Hz).
+  static const chartSamples = 500;
+
+  /// All samples taken, including those no longer in [speedHistory].
+  int sampleCount = 0;
 
   void end() {
     endTime = DateTime.now();
@@ -103,14 +113,20 @@ class RideSession {
   /// Per-sample export. `Gear` is N / R / D-LOW / D-MID / D-HIGH (blank when
   /// unknown), `Boost` 1 while boost (D6 Global_state3 bit 2) was active.
 
+  /// Rows of [speedHistory] (the newest [chartSamples]); the full ride is
+  /// streamed to disk by the ride recorder with the same columns.
   List<List<String>> toCsvRows() => [
-        ['Time', 'Speed (km/h)', 'Gear', 'Boost'],
-        ...speedHistory.map((s) => [
-              s.timestamp.toIso8601String(),
-              s.speedKph.toStringAsFixed(1),
-              s.gearCode,
-              s.gear == null ? '' : (s.gear!.showsBoost ? '1' : '0'),
-            ]),
+        csvHeader,
+        ...speedHistory.map(csvRow),
+      ];
+
+  static const csvHeader = ['Time', 'Speed (km/h)', 'Gear', 'Boost'];
+
+  static List<String> csvRow(SpeedSample s) => [
+        s.timestamp.toIso8601String(),
+        s.speedKph.toStringAsFixed(1),
+        s.gearCode,
+        s.gear == null ? '' : (s.gear!.showsBoost ? '1' : '0'),
       ];
 }
 

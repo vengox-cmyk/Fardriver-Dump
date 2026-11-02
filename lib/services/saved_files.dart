@@ -241,6 +241,7 @@ class SavedFilesStore {
           'maxSpeedKph',
           'settingsDump',
           'controllerId',
+          'finished',
         ])
           if (json[k] != null) k: '${json[k]}',
       };

@@ -90,10 +90,13 @@ void main() {
         {'${day1.millisecondsSinceEpoch}', '${day2.millisecondsSinceEpoch}'});
   });
 
-  test('skips very short rides and never throws', () async {
+  test('saves even very short rides and never throws', () async {
     final short = RideSession(id: 'x', startTime: day1)
       ..endTime = day1.add(const Duration(seconds: 20));
-    expect(await archive.save(short), isNull);
+    final saved = await archive.save(short);
+    expect(saved, isNotNull);
+    expect(saved!.finished, isTrue);
+    expect(saved.duration, const Duration(seconds: 20));
     final broken = RideArchive(
         SavedFilesStore(
             documentsDir: () async => throw const FileSystemException('no')),

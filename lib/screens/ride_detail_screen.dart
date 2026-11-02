@@ -131,6 +131,14 @@ class _RideDetailScreenState extends ConsumerState<RideDetailScreen> {
                 color: Colors.white,
                 fontSize: 18,
                 fontWeight: FontWeight.w700)),
+        if (!r.finished)
+          Padding(
+            padding: const EdgeInsets.only(top: 4),
+            child: Text(strings.text(AppText.rideUnfinished),
+                key: const ValueKey('ride-detail-unfinished'),
+                style: const TextStyle(
+                    color: Colors.amber, fontWeight: FontWeight.w700)),
+          ),
         const SizedBox(height: 6),
         Text(
           [
