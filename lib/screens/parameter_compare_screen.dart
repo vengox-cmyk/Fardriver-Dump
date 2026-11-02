@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:arcdash/utils/speed_units.dart';
 import 'package:arcdash/l10n/app_strings.dart';
 import 'package:arcdash/providers/controller_provider.dart';
 import 'package:arcdash/services/parameter_capture.dart';
@@ -20,7 +21,11 @@ Future<ParameterDump?> loadLiveParameterDump(WidgetRef ref) async {
 
 /// Compare two dumps (live snapshot, .heb or FarSure/ArcDash CSV). Read-only.
 class ParameterCompareScreen extends ConsumerStatefulWidget {
-  const ParameterCompareScreen({super.key, this.initialA, this.initialB});
+  const ParameterCompareScreen(
+      {super.key, this.initialA, this.initialB, this.unit = SpeedUnit.kmh});
+
+  /// Settings > Display unit for km / km/h / Wh/km values (display only).
+  final SpeedUnit unit;
 
   /// Pre-loaded sources (tests, or opening a compare from another screen).
   final ParameterDump? initialA;
@@ -168,13 +173,8 @@ class _ParameterCompareScreenState
                         itemCount: entries.length,
                         itemBuilder: (context, index) {
                           final e = entries[index];
-                          final unit =
-                              e.def.unit.isEmpty ? '' : ' ${e.def.unit}';
-                          String show(DecodedParameter? p) => p == null
-                              ? '—'
-                              : p.label.isEmpty
-                                  ? '${p.value}$unit'
-                                  : '${p.label} (${p.value})';
+                          String show(DecodedParameter? p) =>
+                              p == null ? '—' : p.displayIn(widget.unit);
                           final unidentified = e.def.unidentified;
                           return ListTile(
                             dense: true,

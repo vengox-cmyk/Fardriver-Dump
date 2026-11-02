@@ -10,6 +10,7 @@ A Flutter app for read-only monitoring of FarDriver motor controllers on electri
 
 - **Live Telemetry Dashboard** — speed, voltage, current, power, temperatures, battery %
 - **Ride Stats** — session log with distance, time, avg/top speed, Wh used
+- **Saved Rides** (1.2.4) — each ride kept offline with its settings snapshot, changes vs the previous ride and rule-based notes; "Copy for AI" only copies text, FarSure never writes controller settings
 - **Raw Debug Screen** — live hex packet dump with CRC verification
 - **Local Dashboard Layouts** — separate portrait and landscape cockpit layouts
 - **Android-first** — Android is the supported Version-1 target

@@ -1,5 +1,6 @@
 import 'package:arcdash/models/fardriver_param_catalog.dart';
 import 'package:arcdash/services/heb_file_parser.dart';
+import 'package:arcdash/utils/speed_units.dart';
 
 /// Where a parameter dump came from.
 enum ParameterDumpSource { live, heb, csv }
@@ -29,6 +30,35 @@ class DecodedParameter {
     final unit = def.unit.isEmpty ? '' : ' ${def.unit}';
     return label.isEmpty ? '$value$unit' : '$label ($value)';
   }
+
+  /// [display] in the rider's Settings > Display unit. Only distance (km),
+  /// speed (km/h) and energy per distance (Wh/km) follow the mph switch;
+  /// rpm and everything else is shown as stored. Exports stay metric.
+  String displayIn(SpeedUnit unit) =>
+      label.isEmpty ? formatValue(def.unit, value, unit) : display;
+
+  /// "15.9 mi (25.6 km)" in mph mode; the plain metric value otherwise.
+  static String formatValue(String metricUnit, String value, SpeedUnit unit) {
+    final plain = metricUnit.isEmpty ? value : '$value $metricUnit';
+    if (unit == SpeedUnit.kmh) return plain;
+    final v = double.tryParse(value);
+    if (v == null) return plain;
+    final String converted;
+    switch (metricUnit) {
+      case 'km':
+        converted = '${_fmt(unit.fromKm(v))} ${unit.distanceLabel}';
+      case 'km/h':
+        converted = '${_fmt(unit.fromKph(v))} ${unit.speedLabel}';
+      case 'Wh/km':
+        converted = '${_fmt(unit.whPerDistanceFromWhPerKm(v))} '
+            '${unit.energyPerDistanceLabel}';
+      default:
+        return plain;
+    }
+    return '$converted ($plain)';
+  }
+
+  static String _fmt(double v) => v.toStringAsFixed(1);
 }
 
 /// A set of raw 12-byte configuration blocks plus provenance metadata.

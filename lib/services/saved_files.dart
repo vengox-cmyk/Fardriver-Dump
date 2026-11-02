@@ -10,7 +10,10 @@ enum SavedFileKind {
   dump('dumps'),
   diagnosticLog('logs'),
   rideCsv('rides'),
-  dashCheck('dash_checks');
+  dashCheck('dash_checks'),
+
+  /// Ride summaries (`farsure-ride-v1` JSON) for the Rides tab.
+  rideRecord('ride_records');
 
   const SavedFileKind(this.folder);
   final String folder;
@@ -130,6 +133,7 @@ class SavedFilesStore {
         SavedFileKind.calibration => calibrationInfo(head),
         SavedFileKind.dump => dumpInfo(head),
         SavedFileKind.dashCheck => dashCheckInfo(head),
+        SavedFileKind.rideRecord => rideRecordInfo(head),
         _ => const <String, String>{},
       };
       final recorded = DateTime.tryParse(info['time'] ?? '');
@@ -220,6 +224,30 @@ class SavedFilesStore {
       }
     }
     return info;
+  }
+
+  /// Key facts of a saved ride record (small JSON, read whole from the head).
+  static Map<String, String> rideRecordInfo(String head) {
+    try {
+      final json = jsonDecode(head);
+      if (json is! Map<String, dynamic>) return const {};
+      return {
+        if (json['start'] is String) 'time': json['start'] as String,
+        for (final k in const [
+          'id',
+          'distanceKm',
+          'csvFile',
+          'durationSeconds',
+          'maxSpeedKph',
+          'settingsDump',
+          'controllerId',
+          'finished',
+        ])
+          if (json[k] != null) k: '${json[k]}',
+      };
+    } on FormatException {
+      return const {};
+    }
   }
 
   /// Key facts of a saved parameter dump (`# key,value` header rows).

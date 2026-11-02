@@ -1,0 +1,263 @@
+screen_label,section,name,value_as_shown
+pro_p1_model_parameters,ModelType,ModelTyp,ND961000_34_AKH
+pro_p1_model_parameters,ModelType,Voltage/Power,96V15000W
+pro_p1_model_parameters,ModelType,LineCurr/PhaseCurr,250A/600A
+pro_p1_model_parameters,ModelType,ProductCode,JSWX0V250214KIMO4309
+pro_p1_model_parameters,ModelType,CostumCode,ND
+pro_p1_model_parameters,ModelType,MorseCode,000000
+pro_p1_model_parameters,DateTime,Date,2026-10-22
+pro_p1_model_parameters,DateTime,Time,20:44:35
+pro_p1_model_parameters,Parameters,AngleDetect,0-120°Hall
+pro_p1_model_parameters,Parameters,TempSensor,6-NTC10K
+pro_p1_model_parameters,Parameters,PhaseOffset,18
+pro_p1_model_parameters,Parameters,PolePairs,5
+pro_p1_model_parameters,Parameters,Motor Direction,1
+pro_p1_model_parameters,Parameters,RatedSpeed,6299RPM
+pro_p1_model_parameters,Parameters,RatedVoltage,96V
+pro_p1_model_parameters,Parameters,RatedPower,15000W
+pro_p1_model_parameters,Parameters,MaxSpeed,10000RPM
+pro_p1_model_parameters,Parameters,BackSpeed,250RPM
+pro_p1_model_parameters,Parameters,MaxLineCurr,250A
+pro_p1_model_parameters,Parameters,MaxPhaseCurr,600A
+pro_p1_model_parameters,Parameters,ThrottleResponse,0-Line
+pro_p1_model_parameters,Parameters,Throttle Acc Step,224
+pro_p1_model_parameters,Parameters,BoostLineCurr,300A
+pro_p1_model_parameters,Parameters,BoostPhaseCurr,750A
+pro_p1_model_parameters,Parameters,PhaseExchange,Exchange
+pro_p1_model_parameters,Parameters,ECOAccCoeff,8
+pro_p1_model_parameters,Parameters,Weak Character,0-Fast
+pro_p1_model_parameters,Parameters,WeakResponse,1
+pro_p1_model_parameters,Parameters,Throttle Dec Step,200
+pro_p1_model_parameters,Parameters,Release Throttle,0
+pro_p2_ratios,Parameters,Throttle Low,1.1V
+pro_p2_ratios,Parameters,Throttle High,3.65V
+pro_p2_ratios,Ratios in Speed,500RPM,100%
+pro_p2_ratios,Ratios in Speed,1000RPM,100%
+pro_p2_ratios,Ratios in Speed,1500RPM,100%
+pro_p2_ratios,Ratios in Speed,2000RPM,100%
+pro_p2_ratios,Ratios in Speed,2500RPM,100%
+pro_p2_ratios,Ratios in Speed,3000RPM,100%
+pro_p2_ratios,Ratios in Speed,3500RPM,100%
+pro_p2_ratios,Ratios in Speed,4000RPM,100%
+pro_p2_ratios,Ratios in Speed,4500RPM,100%
+pro_p2_ratios,Ratios in Speed,5000RPM,100%
+pro_p2_ratios,Ratios in Speed,5500RPM,100%
+pro_p2_ratios,Ratios in Speed,6000RPM,100%
+pro_p2_ratios,Ratios in Speed,6500RPM,100%
+pro_p2_ratios,Ratios in Speed,7000RPM,100%
+pro_p2_ratios,Ratios in Speed,7500RPM,100%
+pro_p2_ratios,Ratios in Speed,8000RPM,80%
+pro_p2_ratios,Ratios in Speed,8500RPM,60%
+pro_p2_ratios,Ratios in Speed,9000RPM,40%
+pro_p2_ratios,Ratios in Speed,LD,900
+pro_p2_ratios,Ratios in Speed,LQ,329
+pro_p2_ratios,Ratios in Speed,FAIF,128
+pro_p2_ratios,Ratios in Speed,LimitSpeed,3500RPM
+pro_p2_ratios,Ratios in Gear,LowSpeedLineRatio,25%
+pro_p2_ratios,Ratios in Gear,MidSpeedLineRatio,50%
+pro_p2_ratios,Ratios in Gear,LowSpeedPhaseRatio,50%
+pro_p2_ratios,Ratios in Gear,MidSpeedPhaseRatio,75%
+pro_p2_ratios,Ratios in Gear,LowSpeed,3500RPM
+pro_p2_ratios,Ratios in Gear,MiddleSpeed,4500RPM
+pro_p3_regen_functions,Energy Regenerate,StopBackCurr,2A
+pro_p3_regen_functions,Energy Regenerate,MaxBackCurr,4A
+pro_p3_regen_functions,Energy Regenerate,Batt RatedCapacity,45AH
+pro_p3_regen_functions,Energy Regenerate,FreeThrottle,0
+pro_p3_regen_functions,Energy Regenerate,Brake Voltage,0.37V
+pro_p3_regen_functions,Energy Regenerate,Regen 500RPM,0%
+pro_p3_regen_functions,Energy Regenerate,Regen 1000RPM,0%
+pro_p3_regen_functions,Energy Regenerate,Regen 1500RPM,0%
+pro_p3_regen_functions,Energy Regenerate,Regen 2000RPM,0%
+pro_p3_regen_functions,Energy Regenerate,Regen 2500RPM,0%
+pro_p3_regen_functions,Energy Regenerate,Regen 3000RPM,0%
+pro_p3_regen_functions,Energy Regenerate,Regen 3500RPM,0%
+pro_p3_regen_functions,Energy Regenerate,Regen 4000RPM,0%
+pro_p3_regen_functions,Energy Regenerate,Regen 4500RPM,0%
+pro_p3_regen_functions,Energy Regenerate,Regen 5000RPM,0%
+pro_p3_regen_functions,Energy Regenerate,Regen 5500RPM,0%
+pro_p3_regen_functions,Energy Regenerate,Regen 6000RPM,0%
+pro_p3_regen_functions,Energy Regenerate,Regen 6500RPM,0%
+pro_p3_regen_functions,Energy Regenerate,Regen 7000RPM,0%
+pro_p3_regen_functions,Energy Regenerate,Regen 7500RPM,0%
+pro_p3_regen_functions,Energy Regenerate,Regen 8000RPM,0%
+pro_p3_regen_functions,Energy Regenerate,Regen 8500RPM,0%
+pro_p3_regen_functions,Energy Regenerate,Regen 9000RPM,0%
+pro_p3_regen_functions,Functions,Boost Pin,13-Invalid
+pro_p3_regen_functions,Functions,Cruise Pin,8-PIN17
+pro_p3_regen_functions,Functions,SideStand Pin,13-Invalid
+pro_p3_regen_functions,Functions,Pause Pin,8-PIN17
+pro_p3_regen_functions,Functions,Forward Pin,13-Invalid
+pro_p3_regen_functions,Functions,Backward Pin,4-PIN8
+pro_p3_regen_functions,Functions,Highspeed Pin,2-PIN3
+pro_p3_regen_functions,Functions,LowSpeed Pin,1-PIN2
+pro_p3_regen_functions,Functions,Charge Pin,13-Invalid
+pro_p3_regen_functions,Functions,Anti-theft Pin,6-PIN14
+pro_p3_regen_functions,Functions,Seat Pin,13-Invalid
+pro_p3_regen_functions,Functions,SpeedLimit Pin,0-NC
+pro_p4_functions_display,Functions,Switch Voltage Pin,13-Invalid
+pro_p4_functions_display,Functions,Repair Pin,0-NC
+pro_p4_functions_display,Functions,BoostTime,45s
+pro_p4_functions_display,Functions,BoostRelease,90s
+pro_p4_functions_display,Functions,HighLowSpeed,11-Line3Speed
+pro_p4_functions_display,Functions,Puse RE,0-Invalid
+pro_p4_functions_display,Functions,EmptyRun,0
+pro_p4_functions_display,Functions,SlowDown,1
+pro_p4_functions_display,Functions,Gear,1-Default D
+pro_p4_functions_display,Functions,Brake,0-StopWhenGround
+pro_p4_functions_display,Functions,PC13,0-NomalResponse
+pro_p4_functions_display,Functions,Park,2-Disabled
+pro_p4_functions_display,Functions,Follow,1-Disabled
+pro_p4_functions_display,Display,Speed Pulses,11
+pro_p4_functions_display,Display,SpdPulseNum,38050
+pro_p4_functions_display,Display,SpeedoMeter,0-Pulse
+pro_p4_functions_display,Display,AnalogSpeedCoeff,10000RPM
+pro_p4_functions_display,Display,CAN,None
+pro_p4_functions_display,Display,CAN Detect,150ms
+pro_p4_functions_display,Display,CAN Baud,0-250K
+pro_p4_functions_display,Display,TorqueCoeff,748
+pro_p4_functions_display,Display,Step,1-0.9ms
+pro_p4_functions_display,Display,Stop,2-124ms
+pro_p4_functions_display,Display,SpecialFrame,21
+pro_p4_functions_display,Display,PULSE,0
+pro_p4_functions_display,Display,SQH,0
+pro_p4_functions_display,Display,DATA0,8
+pro_p5_display_protect,Display,DATA1,97
+pro_p5_display_protect,Display,SEC0,0
+pro_p5_display_protect,Display,SEC1,0
+pro_p5_display_protect,Display,SEC2,0
+pro_p5_display_protect,Display,SEC3,0
+pro_p5_display_protect,Display,SEC4,0
+pro_p5_display_protect,Display,SEC5,0
+pro_p5_display_protect,Display,SEC6,0
+pro_p5_display_protect,Display,SEC7,0
+pro_p5_display_protect,Display,PPosition,1
+pro_p5_display_protect,Display,BCPosition,0
+pro_p5_display_protect,Display,HbarPosition,0
+pro_p5_display_protect,Display,FDPosition,8
+pro_p5_display_protect,Display,CurrentCoeff,64
+pro_p5_display_protect,Display,ByteOption,2
+pro_p5_display_protect,Display,WheelWidth,120
+pro_p5_display_protect,Display,WheelRatio,70
+pro_p5_display_protect,Display,WheelR,12
+pro_p5_display_protect,Display,GearRatio,4
+pro_p5_display_protect,Protect,OverVolProtect,121.5V
+pro_p5_display_protect,Protect,OverVolRestore,119.5V
+pro_p5_display_protect,Protect,LowVolProtect,63V
+pro_p5_display_protect,Protect,LowVolRestore,65V
+pro_p5_display_protect,Protect,MotorTempProtect,160°C
+pro_p5_display_protect,Protect,MotorTempRestore,140°C
+pro_p5_display_protect,Protect,ControllerTempProtect,100°C
+pro_p5_display_protect,Protect,ControllerTempRestore,80°C
+pro_p5_display_protect,Protect,0 BattCoeff,800
+pro_p5_display_protect,Protect,Full BattCoeff,1050
+pro_p5_display_protect,Protect,ThrottleLost,0-Inval
+pro_p5_display_protect,Protect,ThrottleInsert,256
+pro_p5_display_protect,Protect,BackP_Time,18-240s
+pro_p5_display_protect,Protect,ReleaseToSeat,2s
+pro_p5_display_protect,Protect,BlockTime,50s
+pro_p5_display_protect,Protect,ParkTime,10s
+pro_p5_display_protect,Protect,LmtSpdStartCap,0
+pro_p5_display_protect,Protect,LmtSpdMinCap,0
+pro_p6_protect_pid_product,Protect,LmtSpdMaxCoeff,128
+pro_p6_protect_pid_product,Protect,TurtleSpeedCurrCoeff,53
+pro_p6_protect_pid_product,Protect,BattSignal,3-Lithium Battery
+pro_p6_protect_pid_product,Protect,LowVol Way,0-Vol2V
+pro_p6_protect_pid_product,Protect,IntRes,32
+pro_p6_protect_pid_product,Protect,TempCoeff,300
+pro_p6_protect_pid_product,PID Paras,AN,16
+pro_p6_protect_pid_product,PID Paras,LM,22en-US
+pro_p6_protect_pid_product,PID Paras,StartKI,4
+pro_p6_protect_pid_product,PID Paras,StartKC,0
+pro_p6_protect_pid_product,PID Paras,MidKI,4
+pro_p6_protect_pid_product,PID Paras,MidKC,80
+pro_p6_protect_pid_product,PID Paras,MaxKI,8
+pro_p6_protect_pid_product,PID Paras,MaxKC,169
+pro_p6_protect_pid_product,PID Paras,SpeedKI,9
+pro_p6_protect_pid_product,PID Paras,SpeedKP,10
+pro_p6_protect_pid_product,PID Paras,MOE,0-Enable
+pro_p6_protect_pid_product,PID Paras,CurveTime,100ms
+pro_p6_protect_pid_product,Product,ReCurrRatio,128
+pro_p6_protect_pid_product,Product,FwReRatio,64
+pro_p6_protect_pid_product,Product,VolSelectRatio,106
+pro_p6_protect_pid_product,Product,WeakCurrCoeff,64
+pro_p6_protect_pid_product,Product,Re Acc,64s
+pro_p6_protect_pid_product,Product,AlarmDelay,500
+pro_p6_protect_pid_product,Product,RelayDelay,20480ms
+pro_p6_protect_pid_product,Product,RelayOut,0
+pro_p6_protect_pid_product,Product,BCEnable,0
+pro_p6_protect_pid_product,Product,SeatEnable,0
+pro_p6_protect_pid_product,Product,PEnable,0
+pro_p6_protect_pid_product,Product,AutoBackPEnable,0
+pro_p7_product,Product,CruiseEnable,0
+pro_p7_product,Product,EABSEnable,0
+pro_p7_product,Product,PushEnable,0
+pro_p7_product,Product,ForseAntiTheft,0
+pro_p7_product,Product,OverSpeedAlarm,0
+pro_p7_product,Product,BrakeStillPark,0
+pro_p7_product,Product,RememberGear,0
+pro_p7_product,Product,BackEnable,1
+pro_p7_product,Product,RelayDelay1S,0
+pro_p7_product,Product,0SpeedSwitch,0-Invalid
+pro_p7_product,Product,StartIs,512
+pro_p7_product,Product,FollowSpeed,0rpm
+pro_p7_product,Product,Curr-Anti-theft,0-Invalid
+pro_p7_product,Product,Anti-theft Pulse,0-Invalid
+pro_p7_product,Product,Temp 70,0
+pro_p7_product,Product,Fast RE,0
+pro_p7_product,Product,InverseTime,36
+pro_p7_product,Product,SlowDownRpm,512
+pro_p7_product,Product,SlowDownCoeff,10
+pro_p7_product,Product,RXD,0-AF
+pro_p7_product,Product,LearnThrottle,24
+pro_p7_product,Product,LearnVolLow,18432
+pro_p7_product,Product,LearnVolHigh,24320
+pro_p7_product,Product,DeepWeak,0-Normal
+pro_p7_product,Product,Protocol485,0
+pro_p8_product_fixedparas,FixedParas,LineCurrCoeff,640
+pro_p8_product_fixedparas,FixedParas,BattVoltage,256
+pro_p8_product_fixedparas,FixedParas,PhaseCoeffA,295
+pro_p8_product_fixedparas,FixedParas,PhaseCoeffB,295
+pro_p8_product_fixedparas,FixedParas,PhseAZero,2084
+pro_p8_product_fixedparas,FixedParas,PhaseCZero,2085
+pro_p8_product_fixedparas,FixedParas,TempCoeff,300
+pro_p8_product_fixedparas,FixedParas,VoltageCoeff,256
+pro_p8_product_fixedparas,FixedParas,Save Times,107
+live_gauges,Live,Gear indicator,3
+live_gauges,Live,Power,0W
+live_gauges,Live,Motor speed,0R
+live_gauges,Live,Batt Capacity,63
+live_gauges,Live,MOS Temperature,9°
+live_gauges,Live,Motor Temperature,7°
+live_gauges,Live,Voltage,86.5V
+live_gauges,Live,Motor state,MotorStop
+live_gauges,Live,Current,0.0A
+live_gauges,Live,Control mode,MTPA
+live_gauges,Live,Throttle,0 /0.82V
+live_gauges,Live,AVG Power,684Wh/Km
+live_gauges,Live,AVG Speed,30Km/h
+live_gauges,Live,APhaseCurr,0.0A
+live_gauges,Live,CPhaseCurr,0.0A
+live_gauges,Live,System status,System OK
+live_gauges,Live,ODO,23.2Km
+live_gauges,Live,WorkTime,1.0h
+simple_model_base,Base Parameters,Motor Reverse Direction,on (Motor Direction:1)
+simple_model_base,Base Parameters,Low Power Control Mode,0-Vol2V
+simple_model_base,Base Parameters,Energy feedback,Disabled
+simple_three_speed,Three speed parameters,GearHigh Power Output,80%
+simple_three_speed,Three speed parameters,GearMiddle Power Output,50%
+simple_three_speed,Three speed parameters,GearLow Power Output,50%
+simple_three_speed,Three speed parameters,GearHigh Speed,83%
+simple_three_speed,Three speed parameters,GearMiddle Speed,37%
+simple_three_speed,Three speed parameters,GearLow Speed,29%
+simple_functions,Functions,Cruise Function,off
+simple_functions,Functions,P Function,off
+simple_functions,Functions,Auto return to P Function,off
+simple_functions,Functions,HighSpeed Push Acc,11-Line3Speed / PIN3
+simple_functions,Functions,LowSpeed Push Dec,11-Line3Speed / PIN2
+simple_functions,Functions,RE Function,on / PIN8
+simple_functions,Functions,Seat Function,off
+simple_functions,Functions,Assist roll Function,off
+simple_functions,Functions,SideStand Function,off
+simple_functions,Functions,Gear Remember Function,off
+simple_functions,Functions,Park Function,Park function is disabled
+simple_functions,Functions,TCS Function,TCS Closed: Asphalt Road

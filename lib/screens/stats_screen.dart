@@ -1,10 +1,17 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:arcdash/models/ride_stats.dart';
 import 'package:arcdash/providers/stats_provider.dart';
+import 'package:arcdash/providers/rides_provider.dart';
+import 'package:arcdash/screens/ride_detail_screen.dart';
+import 'package:arcdash/screens/saved_calibration_screen.dart';
+import 'package:arcdash/screens/saved_files_screen.dart';
+import 'package:arcdash/services/saved_files.dart';
 import 'package:arcdash/l10n/app_strings.dart';
 import 'package:arcdash/providers/units_provider.dart';
 import 'package:arcdash/utils/speed_units.dart';
@@ -35,32 +42,6 @@ class StatsScreen extends ConsumerWidget {
         centerTitle: false,
         elevation: 0,
         actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh_outlined, size: 20),
-            tooltip: strings.text(AppText.resetSession),
-            onPressed: () async {
-              final confirmed = await showDialog<bool>(
-                context: context,
-                builder: (context) => AlertDialog(
-                  title: Text(strings.text(AppText.resetSession)),
-                  content: Text(strings.text(AppText.resetSessionMessage)),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.of(context).pop(false),
-                      child: Text(strings.text(AppText.cancel)),
-                    ),
-                    ElevatedButton(
-                      onPressed: () => Navigator.of(context).pop(true),
-                      child: Text(strings.text(AppText.reset)),
-                    ),
-                  ],
-                ),
-              );
-              if (confirmed == true) {
-                await ref.read(statsProvider.notifier).resetCurrentSession();
-              }
-            },
-          ),
           if (session != null)
             IconButton(
               icon: const Icon(Icons.share_outlined, size: 20),
@@ -86,46 +67,52 @@ class StatsScreen extends ConsumerWidget {
         ),
       ),
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              if (session != null) ...[
-                _SectionHeader(title: strings.text(AppText.currentSession)),
-                const SizedBox(height: 12),
-                _SessionSummaryCards(
-                  distanceKm: session.distanceKm,
-                  durationSeconds: session.duration.inSeconds,
-                  avgSpeedKph: session.avgSpeedKph,
-                  maxSpeedKph: session.maxSpeedKph,
-                  totalWhUsed: session.totalWhUsed,
-                  unit: unit,
+        child: CustomScrollView(
+          key: const ValueKey('rides-scroll'),
+          slivers: [
+            SliverPadding(
+              padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
+              sliver: SliverToBoxAdapter(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _RideControl(
+                        session: session,
+                        waitingForController: statsState.waitingForController),
+                    const SizedBox(height: 20),
+                    if (session != null) ...[
+                      _SectionHeader(
+                          title: strings.text(AppText.currentSession)),
+                      const SizedBox(height: 12),
+                      _SessionSummaryCards(
+                        distanceKm: session.distanceKm,
+                        durationSeconds: session.duration.inSeconds,
+                        avgSpeedKph: session.avgSpeedKph,
+                        maxSpeedKph: session.maxSpeedKph,
+                        totalWhUsed: session.totalWhUsed,
+                        unit: unit,
+                      ),
+                      const SizedBox(height: 20),
+                      if (session.speedHistory.isNotEmpty) ...[
+                        _SectionHeader(
+                            title: strings.text(AppText.speedHistory)),
+                        const SizedBox(height: 12),
+                        _SpeedChart(
+                          samples: session.speedHistory
+                              .map((s) => unit.fromKph(s.speedKph))
+                              .toList(),
+                          unit: unit.speedLabel,
+                        ),
+                        const SizedBox(height: 24),
+                      ],
+                    ],
+                  ],
                 ),
-                const SizedBox(height: 20),
-                if (session.speedHistory.isNotEmpty) ...[
-                  _SectionHeader(title: strings.text(AppText.speedHistory)),
-                  const SizedBox(height: 12),
-                  _SpeedChart(
-                    samples: session.speedHistory
-                        .map((s) => unit.fromKph(s.speedKph))
-                        .toList(),
-                    unit: unit.speedLabel,
-                  ),
-                  const SizedBox(height: 24),
-                ],
-              ] else ...[
-                const _EmptySession(),
-                const SizedBox(height: 24),
-              ],
-              if (statsState.pastSessions.isNotEmpty) ...[
-                _SectionHeader(title: strings.text(AppText.pastSessions)),
-                const SizedBox(height: 12),
-                for (final json in statsState.pastSessions.reversed)
-                  _PastSessionCard(json: json, unit: unit),
-              ],
-            ],
-          ),
+              ),
+            ),
+            _SavedRidesSliver(
+                unit: unit, pastSessions: statsState.pastSessions),
+          ],
         ),
       ),
     );
@@ -560,31 +547,168 @@ class _DetailRow extends StatelessWidget {
   }
 }
 
-class _EmptySession extends StatelessWidget {
-  const _EmptySession();
+/// Start ride / Stop ride with the running time. Rides are manual: one
+/// starts only here and ends only on Stop (it survives leaving the tab, the
+/// screen going off and Bluetooth drops). Big targets, used before and after
+/// riding, never during.
+class _RideControl extends ConsumerWidget {
+  const _RideControl(
+      {required this.session, required this.waitingForController});
+
+  final RideSession? session;
+  final bool waitingForController;
+
+  Future<void> _confirmStop(BuildContext context, WidgetRef ref) async {
+    final strings = AppStrings.of(context);
+    final stop = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(strings.text(AppText.rideStopConfirmTitle)),
+        content: Text(strings.text(AppText.rideStopConfirmBody)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: Text(strings.text(AppText.rideStopConfirmKeep)),
+          ),
+          ElevatedButton(
+            key: const ValueKey('ride-stop-confirm'),
+            onPressed: () => Navigator.of(context).pop(true),
+            child: Text(strings.text(AppText.rideStop)),
+          ),
+        ],
+      ),
+    );
+    if (stop == true) await ref.read(statsProvider.notifier).stopRide();
+  }
 
   @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Column(
+  Widget build(BuildContext context, WidgetRef ref) {
+    final strings = AppStrings.of(context);
+    final s = session;
+    if (s == null) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const SizedBox(height: 40),
-          const Icon(Icons.timeline, size: 48, color: Color(0xFF2A3548)),
-          const SizedBox(height: 16),
-          Text(
-            AppStrings.of(context).text(AppText.noActiveSession),
-            style: const TextStyle(color: Color(0xFF4A5568), fontSize: 15),
+          SizedBox(
+            height: 64,
+            child: ElevatedButton.icon(
+              key: const ValueKey('ride-start'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF1B5E20),
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14)),
+              ),
+              onPressed: () => ref.read(statsProvider.notifier).startRide(),
+              icon: const Icon(Icons.play_arrow_rounded, size: 32),
+              label: Text(strings.text(AppText.rideStart),
+                  style: const TextStyle(
+                      fontSize: 18, fontWeight: FontWeight.w800)),
+            ),
           ),
           const SizedBox(height: 8),
-          Text(
-            AppStrings.of(context).text(AppText.connectToTrack),
-            style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.2), fontSize: 13),
+          Text(strings.text(AppText.rideIdleHint),
+              style: const TextStyle(color: Color(0xFF8B949E), fontSize: 12)),
+        ],
+      );
+    }
+    return Container(
+      key: const ValueKey('ride-recording'),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: const Color(0xFF0D1117),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFFB71C1C)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(children: [
+            const Icon(Icons.fiber_manual_record,
+                color: Color(0xFFFF5252), size: 16),
+            const SizedBox(width: 6),
+            Text(strings.text(AppText.rideRecording),
+                style: const TextStyle(
+                    color: Color(0xFFFF5252),
+                    fontSize: 12,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 2)),
+            const Spacer(),
+            _ElapsedText(start: s.startTime),
+          ]),
+          if (waitingForController) ...[
+            const SizedBox(height: 8),
+            Text(strings.text(AppText.rideWaitingForController),
+                key: const ValueKey('ride-waiting-controller'),
+                style: const TextStyle(color: Colors.amber, fontSize: 12)),
+          ],
+          const SizedBox(height: 12),
+          SizedBox(
+            height: 56,
+            child: ElevatedButton.icon(
+              key: const ValueKey('ride-stop'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFB71C1C),
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14)),
+              ),
+              onPressed: () => _confirmStop(context, ref),
+              icon: const Icon(Icons.stop_rounded, size: 30),
+              label: Text(strings.text(AppText.rideStop),
+                  style: const TextStyle(
+                      fontSize: 17, fontWeight: FontWeight.w800)),
+            ),
           ),
         ],
       ),
     );
   }
+}
+
+/// Running time since [start], ticking once a second on its own (keeps
+/// going while no samples arrive, e.g. during a Bluetooth drop).
+class _ElapsedText extends StatefulWidget {
+  const _ElapsedText({required this.start});
+
+  final DateTime start;
+
+  @override
+  State<_ElapsedText> createState() => _ElapsedTextState();
+}
+
+class _ElapsedTextState extends State<_ElapsedText> {
+  Timer? _timer;
+
+  @override
+  void initState() {
+    super.initState();
+    _timer = Timer.periodic(
+        const Duration(seconds: 1), (_) => mounted ? setState(() {}) : null);
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  static String format(Duration d) {
+    final s = d.isNegative ? 0 : d.inSeconds;
+    String two(int v) => v.toString().padLeft(2, '0');
+    return '${s ~/ 3600}:${two(s % 3600 ~/ 60)}:${two(s % 60)}';
+  }
+
+  @override
+  Widget build(BuildContext context) => Text(
+        format(DateTime.now().difference(widget.start)),
+        key: const ValueKey('ride-elapsed'),
+        style: const TextStyle(
+            color: Colors.white,
+            fontSize: 26,
+            fontWeight: FontWeight.w800,
+            fontFeatures: [FontFeature.tabularFigures()]),
+      );
 }
 
 class _SectionHeader extends StatelessWidget {
@@ -602,5 +726,184 @@ class _SectionHeader extends StatelessWidget {
         letterSpacing: 2,
       ),
     );
+  }
+}
+
+/// Saved rides and captures (lazy: built row by row, [_page] at a time),
+/// then rides from older versions that only have the prefs summary.
+class _SavedRidesSliver extends ConsumerStatefulWidget {
+  const _SavedRidesSliver({required this.unit, required this.pastSessions});
+
+  final SpeedUnit unit;
+  final List<Map<String, dynamic>> pastSessions;
+
+  @override
+  ConsumerState<_SavedRidesSliver> createState() => _SavedRidesSliverState();
+}
+
+class _SavedRidesSliverState extends ConsumerState<_SavedRidesSliver> {
+  static const _page = 20;
+  int _shown = _page;
+
+  @override
+  Widget build(BuildContext context) {
+    final strings = AppStrings.of(context);
+    final listing = ref.watch(ridesListingProvider).valueOrNull;
+    final entries = listing?.entries ?? const <SavedFileEntry>[];
+    final recordIds = listing?.recordIds ?? const <String>{};
+    final legacy = [
+      for (final json in widget.pastSessions.reversed)
+        if (!recordIds.contains('${json['id']}')) json
+    ];
+    final visible = entries.length < _shown ? entries.length : _shown;
+    final more = entries.length > visible;
+    // rows: header, entries (or empty note), [show more], [legacy block]
+    final rowCount = 1 +
+        (entries.isEmpty ? 1 : visible) +
+        (more ? 1 : 0) +
+        (legacy.isEmpty ? 0 : 1 + legacy.length);
+    return SliverPadding(
+      padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+      sliver: SliverList.builder(
+        itemCount: rowCount,
+        itemBuilder: (context, i) {
+          if (i == 0) {
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: _SectionHeader(title: strings.text(AppText.ridesSaved)),
+            );
+          }
+          i -= 1;
+          if (entries.isEmpty) {
+            if (i == 0) {
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 16),
+                child: Text(strings.text(AppText.ridesNoneSaved),
+                    key: const ValueKey('rides-none-saved'),
+                    style: const TextStyle(
+                        color: Color(0xFF4A5568), fontSize: 13)),
+              );
+            }
+            i -= 1;
+          } else {
+            if (i < visible) return _SavedEntryTile(entries[i], widget.unit);
+            i -= visible;
+          }
+          if (more) {
+            if (i == 0) {
+              return TextButton(
+                key: const ValueKey('rides-show-more'),
+                onPressed: () => setState(() => _shown += _page),
+                child: Text(strings.text(AppText.ridesShowMore)),
+              );
+            }
+            i -= 1;
+          }
+          if (i == 0) {
+            return Padding(
+              padding: const EdgeInsets.only(top: 16, bottom: 12),
+              child: _SectionHeader(
+                  title: strings.text(AppText.ridesOlderSummaryOnly)),
+            );
+          }
+          return _PastSessionCard(json: legacy[i - 1], unit: widget.unit);
+        },
+      ),
+    );
+  }
+}
+
+class _SavedEntryTile extends ConsumerWidget {
+  const _SavedEntryTile(this.entry, this.unit);
+
+  final SavedFileEntry entry;
+  final SpeedUnit unit;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final strings = AppStrings.of(context);
+    final date = DateFormat('dd.MM.yyyy  HH:mm').format(entry.time);
+    final info = entry.info;
+    final (IconData icon, String title, String subtitle) = switch (entry.kind) {
+      SavedFileKind.rideRecord => (
+          Icons.two_wheeler,
+          date,
+          [
+            if (double.tryParse(info['distanceKm'] ?? '') case final km?)
+              unit.distance(km, digits: 2),
+            if (int.tryParse(info['durationSeconds'] ?? '') case final s?)
+              '${s ~/ 60}m ${s % 60}s',
+            if (double.tryParse(info['maxSpeedKph'] ?? '') case final v?)
+              '${strings.text(AppText.calloutTopSpeed)} ${unit.speed(v)}',
+          ].join('  •  ')
+        ),
+      SavedFileKind.calibration => (
+          Icons.speed,
+          strings.text(AppText.savedCalibrations),
+          date
+        ),
+      SavedFileKind.dashCheck => (
+          Icons.speed_outlined,
+          strings.text(AppText.savedDashChecks),
+          date
+        ),
+      _ => (Icons.route_outlined, strings.text(AppText.savedRides), date),
+    };
+    final ride = entry.kind == SavedFileKind.rideRecord;
+    final activeId =
+        ref.watch(statsProvider.select((st) => st.currentSession?.id));
+    final String? badge = !ride || info['finished'] != 'false'
+        ? null
+        : info['id'] == activeId
+            ? strings.text(AppText.rideRecording).toLowerCase()
+            : strings.text(AppText.rideUnfinished);
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Material(
+        color: const Color(0xFF0D1117),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+          side: const BorderSide(color: Color(0xFF1A2030)),
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: ListTile(
+          key: ValueKey('ride-entry-${entry.name}'),
+          dense: true,
+          leading: Icon(icon,
+              color: ride ? const Color(0xFF00E5FF) : const Color(0xFF8B949E)),
+          title: Text(title,
+              style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600)),
+          subtitle: Text.rich(
+              TextSpan(children: [
+                if (badge != null)
+                  TextSpan(
+                      text: '$badge  ',
+                      style: const TextStyle(
+                          color: Colors.amber, fontWeight: FontWeight.w700)),
+                TextSpan(text: subtitle),
+              ]),
+              key: badge == null ? null : ValueKey('ride-badge-${entry.name}'),
+              style: const TextStyle(color: Color(0xFF8B949E), fontSize: 12)),
+          trailing: const Icon(Icons.chevron_right, color: Color(0xFF4A5568)),
+          onTap: () => _open(context),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _open(BuildContext context) async {
+    final Widget page = switch (entry.kind) {
+      SavedFileKind.rideRecord =>
+        RideDetailScreen(file: entry.file, unit: unit),
+      SavedFileKind.calibration => SavedCalibrationScreen(file: entry.file),
+      _ => SavedTextFileScreen(
+          title: entry.name, text: await entry.file.readAsString()),
+    };
+    if (!context.mounted) return;
+    await Navigator.of(context)
+        .push(MaterialPageRoute<void>(builder: (_) => page));
   }
 }

@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:arcdash/widgets/gear_chip.dart';
 import 'package:arcdash/models/dash_speed.dart';
 import 'package:arcdash/providers/bluetooth_provider.dart';
 import 'package:arcdash/providers/calibration_provider.dart';
@@ -128,7 +129,8 @@ class _DashSpeedCheckScreenState extends ConsumerState<DashSpeedCheckScreen> {
                 : (_red, 'Moving — the dash check only works standing still');
 
     return Scaffold(
-      appBar: AppBar(title: const Text('DASH SPEED CHECK')),
+      appBar: AppBar(
+          title: const Text('DASH SPEED CHECK'), actions: const [GearChip()]),
       body: SafeArea(
         child: ListView(
           key: const ValueKey('dash-check-list'),

@@ -57,6 +57,11 @@ class LiveDumpArchiver {
     ('AVGSpeed', 0xD0),
   ];
 
+  /// True for the controller clock, save counter and riding counters,
+  /// which change without anyone touching the settings.
+  static bool isVolatile(FardriverParamDef def) =>
+      _volatile.any((v) => v.$1 == def.name && v.$2 == def.block);
+
   /// Snapshot signature of the parameter values only (clock, counters and
   /// save counter masked; BLE id and timestamps are not part of it).
   static String configSignature(Map<int, List<int>> blocks) {

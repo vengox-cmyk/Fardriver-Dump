@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:arcdash/providers/units_provider.dart';
 import 'package:arcdash/l10n/app_strings.dart';
 import 'package:arcdash/providers/saved_files_provider.dart';
+import 'package:arcdash/screens/ride_detail_screen.dart';
 import 'package:arcdash/screens/parameter_dump_screen.dart';
 import 'package:arcdash/screens/saved_calibration_screen.dart';
 import 'package:arcdash/services/parameter_dump_io.dart';
@@ -110,6 +112,7 @@ class _SavedFilesScreenState extends ConsumerState<SavedFilesScreen> {
         SavedFileKind.diagnosticLog => AppText.savedLogs,
         SavedFileKind.rideCsv => AppText.savedRides,
         SavedFileKind.dashCheck => AppText.savedDashChecks,
+        SavedFileKind.rideRecord => AppText.savedRideRecords,
       });
 
   IconData _icon(SavedFileKind kind) => switch (kind) {
@@ -118,6 +121,7 @@ class _SavedFilesScreenState extends ConsumerState<SavedFilesScreen> {
         SavedFileKind.diagnosticLog => Icons.receipt_long_outlined,
         SavedFileKind.rideCsv => Icons.route_outlined,
         SavedFileKind.dashCheck => Icons.speed_outlined,
+        SavedFileKind.rideRecord => Icons.two_wheeler,
       };
 
   Future<bool> _confirm(String title, String body) async {
@@ -184,11 +188,17 @@ class _SavedFilesScreenState extends ConsumerState<SavedFilesScreen> {
         case SavedFileKind.dump:
           final dump = ParameterDumpIo.parseFile(
               await entry.file.readAsBytes(), entry.name);
-          page = ParameterDumpScreen(dump: dump, savedFile: entry.file);
+          page = ParameterDumpScreen(
+              dump: dump,
+              savedFile: entry.file,
+              unit: ref.read(speedUnitProvider));
+        case SavedFileKind.rideRecord:
+          page = RideDetailScreen(
+              file: entry.file, unit: ref.read(speedUnitProvider));
         case SavedFileKind.diagnosticLog:
         case SavedFileKind.rideCsv:
         case SavedFileKind.dashCheck:
-          page = _TextFileScreen(
+          page = SavedTextFileScreen(
               title: entry.name, text: await entry.file.readAsString());
       }
       if (!mounted) return;
@@ -235,6 +245,9 @@ class _SavedFilesScreenState extends ConsumerState<SavedFilesScreen> {
         if (err != null && err.isNotEmpty) parts.add('dash $err %');
         final spn = info['suggested_SpdPulseNum'];
         if (spn != null && spn.isNotEmpty) parts.add('SpdPulseNum → $spn');
+      case SavedFileKind.rideRecord:
+        final km = double.tryParse(info['distanceKm'] ?? '');
+        if (km != null) parts.add(ref.read(speedUnitProvider).distance(km));
       case SavedFileKind.diagnosticLog:
       case SavedFileKind.rideCsv:
         break;
@@ -460,8 +473,10 @@ String _formatSize(int bytes) {
 }
 
 /// Plain viewer for diagnostic logs and ride CSVs.
-class _TextFileScreen extends StatelessWidget {
-  const _TextFileScreen({required this.title, required this.text});
+/// Plain text view of a saved file (logs, ride CSVs, dash checks).
+class SavedTextFileScreen extends StatelessWidget {
+  const SavedTextFileScreen(
+      {super.key, required this.title, required this.text});
 
   final String title;
   final String text;

@@ -1,0 +1,227 @@
+import 'dart:io';
+
+import 'package:csv/csv.dart';
+import 'package:flutter/foundation.dart';
+
+import 'package:arcdash/models/ride_record.dart';
+import 'package:arcdash/models/ride_stats.dart';
+import 'package:arcdash/services/parameter_dump.dart';
+import 'package:arcdash/services/parameter_dump_io.dart';
+import 'package:arcdash/services/ride_analysis.dart';
+import 'package:arcdash/services/saved_files.dart';
+
+/// Saves rides permanently and reads them back for the Rides tab.
+///
+/// A ride writes the per-second CSV (`farsure/rides/`) and a small ride
+/// record (`farsure/ride_records/`) that points at the parameter dump in
+/// force at the start. It never writes a parameter dump itself (the live
+/// archiver already saves each distinct configuration once), so nothing is
+/// duplicated. Every ride the rider starts is saved, however short.
+class RideArchive {
+  RideArchive(this.store, {Future<String> Function()? appVersion})
+      : _appVersion = appVersion ?? ParameterDumpIo.appVersion;
+
+  final SavedFilesStore store;
+  final Future<String> Function() _appVersion;
+
+  static String recordFileName(DateTime start) =>
+      'ride_${SavedFilesStore.stamp(start)}.json';
+
+  static String csvFileName(DateTime start) =>
+      'arcdash_ride_${start.millisecondsSinceEpoch}.csv';
+
+  /// Writes the whole CSV (from the samples in memory) and a finished
+  /// record in one go. Returns the record, or null when the write failed
+  /// (never throws). Live rides use [RideRecorder], which streams instead.
+  Future<RideRecord?> save(RideSession session) async {
+    try {
+      final csvName = csvFileName(session.startTime);
+      await store.write(SavedFileKind.rideCsv, csvName,
+          const ListToCsvConverter().convert(session.toCsvRows()));
+      final snapshot = await pickSnapshot(session.startTime);
+      return await writeRecord(session,
+          csvName: csvName, snapshot: snapshot, finished: true);
+    } catch (e) {
+      debugPrint('Saving ride record failed: $e');
+      return null;
+    }
+  }
+
+  /// Settings snapshot for a ride: the newest saved dump before the start,
+  /// or one saved within the grace window after it (file name + controller
+  /// id; both empty/null when there is none).
+  Future<({String? name, String controllerId})> pickSnapshot(
+      DateTime start) async {
+    final dumps = await store.list(kind: SavedFileKind.dump);
+    final snapshot = RideAnalysis.pickSnapshot([
+      for (final d in dumps)
+        (time: d.time, source: d.info['source'] ?? '', name: d.name)
+    ], start);
+    var controllerId = '';
+    for (final d in dumps) {
+      if (d.name == snapshot) controllerId = d.info['controller_id'] ?? '';
+    }
+    return (name: snapshot, controllerId: controllerId);
+  }
+
+  /// Writes (atomically replaces) the ride record of [session].
+  Future<RideRecord> writeRecord(
+    RideSession session, {
+    required String csvName,
+    required ({String? name, String controllerId}) snapshot,
+    required bool finished,
+  }) async {
+    final record = RideRecord.fromSession(session,
+        settingsDump: snapshot.name,
+        csvFile: csvName,
+        controllerId: snapshot.controllerId,
+        appVersion: await _appVersion(),
+        finished: finished);
+    await store.write(SavedFileKind.rideRecord,
+        recordFileName(session.startTime), record.encode());
+    return record;
+  }
+
+  /// Ride record entries, newest first (heads only; cheap).
+  Future<List<SavedFileEntry>> listRecords() =>
+      store.list(kind: SavedFileKind.rideRecord);
+
+  static Future<RideRecord> load(File file) async =>
+      RideRecord.decode(await file.readAsString());
+
+  /// The saved ride directly before [ride] (by start time), or null.
+  Future<RideRecord?> previousOf(RideRecord ride) async {
+    final entries = await listRecords();
+    for (final e in entries) {
+      // newest first: the first one older than this ride
+      if (!e.time.isBefore(ride.start)) continue;
+      try {
+        final r = await load(e.file);
+        if (r.id != ride.id) return r;
+      } on Object {
+        continue;
+      }
+    }
+    return null;
+  }
+
+  /// The parameter dump file a record points at, parsed; null when gone.
+  Future<ParameterDump?> loadDump(String? fileName) async {
+    if (fileName == null || fileName.isEmpty) return null;
+    try {
+      final dir = await store.directoryFor(SavedFileKind.dump);
+      final file = File('${dir.path}/${SavedFilesStore.safeName(fileName)}');
+      if (!await file.exists()) return null;
+      return ParameterDumpIo.parseFile(await file.readAsBytes(), fileName);
+    } on Object catch (e) {
+      debugPrint('Ride settings snapshot unreadable: $e');
+      return null;
+    }
+  }
+}
+
+/// Streams one running ride to disk so nothing is lost and memory stays
+/// flat however long the ride is.
+///
+/// * [begin] creates the ride CSV (header) and an unfinished record.
+/// * [add] buffers one CSV row in memory (a few bytes).
+/// * [checkpoint] appends the buffered rows to the CSV and rewrites the
+///   record (atomic), still marked unfinished, with the end time = now.
+///   The stats notifier calls it every few seconds, so a crash or a killed
+///   app loses at most that much and leaves a ride marked unfinished.
+/// * [finish] flushes the rest and writes the record as finished.
+///
+/// All disk work runs one after another on a private queue and never throws.
+class RideRecorder {
+  RideRecorder(this.archive, this.session);
+
+  final RideArchive archive;
+  final RideSession session;
+
+  final StringBuffer _pending = StringBuffer();
+  File? _csv;
+  ({String? name, String controllerId}) _snapshot =
+      (name: null, controllerId: '');
+  Future<void> _queue = Future<void>.value();
+  int _rowsWritten = 0;
+
+  String get csvName => RideArchive.csvFileName(session.startTime);
+
+  /// CSV rows on disk so far (header excluded).
+  int get rowsWritten => _rowsWritten;
+
+  static const _codec = ListToCsvConverter();
+  static String _line(List<String> row) => '${_codec.convert([row])}\r\n';
+
+  Future<void> _enqueue(Future<void> Function() job) {
+    return _queue = _queue.then((_) => job()).catchError((Object e) {
+      debugPrint('Ride recorder: $e');
+    });
+  }
+
+  Future<void> begin() => _enqueue(() async {
+        final dir = await archive.store.directoryFor(SavedFileKind.rideCsv);
+        final file = File('${dir.path}/$csvName');
+        await file.writeAsString(_line(RideSession.csvHeader), flush: true);
+        _csv = file;
+        await _refreshSnapshot();
+        await _writeRecord(finished: false);
+      });
+
+  void add(SpeedSample sample) {
+    _pending.write(_line(RideSession.csvRow(sample)));
+  }
+
+  Future<void> checkpoint() => _enqueue(() async {
+        await _flushRows();
+        // The snapshot may still change until the grace window after the
+        // start has passed (a dump read right after starting counts).
+        if (DateTime.now().difference(session.startTime) <=
+            RideAnalysis.snapshotGrace + const Duration(seconds: 10)) {
+          await _refreshSnapshot();
+        }
+        await _writeRecord(finished: false);
+      });
+
+  /// Flushes everything and writes the finished record (null on failure).
+  Future<RideRecord?> finish() async {
+    RideRecord? record;
+    await _enqueue(() async {
+      await _flushRows();
+      await _refreshSnapshot();
+      record = await _writeRecord(finished: true);
+    });
+    return record;
+  }
+
+  Future<void> _flushRows() async {
+    final file = _csv;
+    if (file == null || _pending.isEmpty) return;
+    final text = _pending.toString();
+    _pending.clear();
+    try {
+      await file.writeAsString(text, mode: FileMode.append, flush: true);
+    } catch (_) {
+      // Keep the rows for the next checkpoint.
+      final later = _pending.toString();
+      _pending
+        ..clear()
+        ..write(text)
+        ..write(later);
+      rethrow;
+    }
+    _rowsWritten += '\n'.allMatches(text).length;
+  }
+
+  Future<void> _refreshSnapshot() async {
+    try {
+      _snapshot = await archive.pickSnapshot(session.startTime);
+    } catch (e) {
+      debugPrint('Ride snapshot lookup failed: $e');
+    }
+  }
+
+  Future<RideRecord> _writeRecord({required bool finished}) =>
+      archive.writeRecord(session,
+          csvName: csvName, snapshot: _snapshot, finished: finished);
+}

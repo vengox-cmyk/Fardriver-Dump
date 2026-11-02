@@ -18,7 +18,7 @@ class ArcDashForegroundService : Service() {
     override fun onCreate() {
         super.onCreate()
         createNotificationChannel()
-        startForeground(NOTIFICATION_ID, notification("Controller-Verbindung aktiv"))
+        startForeground(NOTIFICATION_ID, notification("Recording a ride – stop it in the Rides tab"))
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -38,10 +38,10 @@ class ArcDashForegroundService : Service() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
                 CHANNEL_ID,
-                "ArcDash Controller",
+                "FarSure ride recording",
                 NotificationManager.IMPORTANCE_LOW,
             )
-            channel.description = "Status der BLE-Controllerverbindung"
+            channel.description = "Shown while a ride is recording"
             getSystemService(NotificationManager::class.java)
                 .createNotificationChannel(channel)
         }
@@ -49,7 +49,7 @@ class ArcDashForegroundService : Service() {
 
     private fun notification(text: String): Notification {
         return Notification.Builder(this, CHANNEL_ID)
-            .setContentTitle("ArcDash")
+            .setContentTitle("FarSure")
             .setContentText(text)
             .setSmallIcon(android.R.drawable.stat_sys_data_bluetooth)
             .setOngoing(true)
