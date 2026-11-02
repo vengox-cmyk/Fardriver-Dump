@@ -213,6 +213,34 @@ enum AppText {
   exitConfirmBody,
   exitConfirmStay,
   exitConfirmExit,
+  savedRideRecords,
+  ridesSaved,
+  ridesNoneSaved,
+  ridesShowMore,
+  ridesOlderSummaryOnly,
+  rideDetailTitle,
+  rideSettingsSnapshot,
+  rideNoSnapshot,
+  rideSnapshotMissing,
+  rideViewSettings,
+  rideChangesVsPrevious,
+  rideNoPrevious,
+  rideNoChanges,
+  rideNoSettingsToCompare,
+  rideUnidentifiedChanged,
+  rideTelemetry,
+  rideGearTime,
+  rideSummary,
+  rideDisclaimer,
+  rideCopyForAi,
+  rideCopiedForAi,
+  calloutTopSpeed,
+  calloutLineCurrent,
+  calloutPhaseCurrent,
+  calloutSag,
+  calloutMotorTemp,
+  calloutControllerTemp,
+  calloutAvgPower,
 }
 
 class AppStrings {
@@ -479,6 +507,41 @@ const _germanText = {
       'Die Verbindung zum Controller wird getrennt. Eine laufende Fahrt oder Kalibrierung wird vorher gespeichert.',
   AppText.exitConfirmStay: 'Bleiben',
   AppText.exitConfirmExit: 'Trennen und beenden',
+  AppText.savedRideRecords: 'Fahrten',
+  AppText.ridesSaved: 'GESPEICHERTE FAHRTEN & AUFZEICHNUNGEN',
+  AppText.ridesNoneSaved:
+      'Noch nichts gespeichert. Fahrten werden nach dem Ende automatisch gespeichert.',
+  AppText.ridesShowMore: 'Mehr anzeigen',
+  AppText.ridesOlderSummaryOnly: 'ÄLTERE FAHRTEN (NUR ZUSAMMENFASSUNG)',
+  AppText.rideDetailTitle: 'Fahrt',
+  AppText.rideSettingsSnapshot: 'Einstellungen bei Fahrtbeginn',
+  AppText.rideNoSnapshot:
+      'Vor dieser Fahrt wurde kein Parameter-Dump gespeichert.',
+  AppText.rideSnapshotMissing:
+      'Der Parameter-Dump dieser Fahrt wurde gelöscht.',
+  AppText.rideViewSettings: 'Einstellungen ansehen',
+  AppText.rideChangesVsPrevious: 'Änderungen seit der letzten Fahrt',
+  AppText.rideNoPrevious: 'Keine frühere Fahrt zum Vergleich.',
+  AppText.rideNoChanges: 'Keine Einstellungen geändert.',
+  AppText.rideNoSettingsToCompare:
+      'Für eine der beiden Fahrten fehlen die Einstellungen.',
+  AppText.rideUnidentifiedChanged:
+      '{n} nicht identifizierte Felder unterscheiden sich',
+  AppText.rideTelemetry: 'Telemetrie gegenüber der letzten Fahrt',
+  AppText.rideGearTime: 'Zeit pro Gang',
+  AppText.rideSummary: 'Zusammenfassung (regelbasiert)',
+  AppText.rideDisclaimer:
+      'Nur Vorschläge, auf diesem Telefon nach festen Regeln erstellt. FarSure ändert nie Controller-Einstellungen; prüfe jede Änderung selbst, bevor du sie mit der FarDriver-App schreibst.',
+  AppText.rideCopyForAi: 'Für KI kopieren',
+  AppText.rideCopiedForAi:
+      'Kopiert. In der Grok-App einfügen – FarSure sendet nichts.',
+  AppText.calloutTopSpeed: 'Höchstgeschwindigkeit',
+  AppText.calloutLineCurrent: 'Spitzen-Batteriestrom',
+  AppText.calloutPhaseCurrent: 'Spitzen-Phasenstrom',
+  AppText.calloutSag: 'Max. Spannungseinbruch',
+  AppText.calloutMotorTemp: 'Max. Motortemperatur',
+  AppText.calloutControllerTemp: 'Max. Controllertemperatur',
+  AppText.calloutAvgPower: 'Durchschnittsleistung',
 };
 
 const _englishText = {
@@ -717,6 +780,38 @@ const _englishText = {
       'The controller connection will be closed. A running ride or calibration is saved first.',
   AppText.exitConfirmStay: 'Stay',
   AppText.exitConfirmExit: 'Disconnect and exit',
+  AppText.savedRideRecords: 'Rides',
+  AppText.ridesSaved: 'SAVED RIDES & CAPTURES',
+  AppText.ridesNoneSaved:
+      'Nothing saved yet. Rides are saved automatically when they end.',
+  AppText.ridesShowMore: 'Show more',
+  AppText.ridesOlderSummaryOnly: 'OLDER RIDES (SUMMARY ONLY)',
+  AppText.rideDetailTitle: 'Ride',
+  AppText.rideSettingsSnapshot: 'Settings at ride start',
+  AppText.rideNoSnapshot: 'No parameter dump was saved before this ride.',
+  AppText.rideSnapshotMissing: 'The parameter dump of this ride was deleted.',
+  AppText.rideViewSettings: 'View settings',
+  AppText.rideChangesVsPrevious: 'Changes since previous ride',
+  AppText.rideNoPrevious: 'No previous ride to compare with.',
+  AppText.rideNoChanges: 'No settings changed.',
+  AppText.rideNoSettingsToCompare:
+      'Settings are missing for one of the two rides.',
+  AppText.rideUnidentifiedChanged: '{n} unidentified fields differ',
+  AppText.rideTelemetry: 'Telemetry vs previous ride',
+  AppText.rideGearTime: 'Time in gear',
+  AppText.rideSummary: 'Summary (rule-based)',
+  AppText.rideDisclaimer:
+      'Suggestions only, made on this phone by fixed rules. FarSure never changes controller settings; check any change yourself before writing it with the FarDriver app.',
+  AppText.rideCopyForAi: 'Copy for AI',
+  AppText.rideCopiedForAi:
+      'Copied. Paste it into the Grok app – FarSure sends nothing.',
+  AppText.calloutTopSpeed: 'Top speed',
+  AppText.calloutLineCurrent: 'Peak line current',
+  AppText.calloutPhaseCurrent: 'Peak phase current',
+  AppText.calloutSag: 'Max voltage sag',
+  AppText.calloutMotorTemp: 'Max motor temperature',
+  AppText.calloutControllerTemp: 'Max controller temperature',
+  AppText.calloutAvgPower: 'Average power',
 };
 
 const _germanMetrics = {

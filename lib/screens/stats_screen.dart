@@ -5,6 +5,11 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:arcdash/providers/stats_provider.dart';
+import 'package:arcdash/providers/rides_provider.dart';
+import 'package:arcdash/screens/ride_detail_screen.dart';
+import 'package:arcdash/screens/saved_calibration_screen.dart';
+import 'package:arcdash/screens/saved_files_screen.dart';
+import 'package:arcdash/services/saved_files.dart';
 import 'package:arcdash/l10n/app_strings.dart';
 import 'package:arcdash/providers/units_provider.dart';
 import 'package:arcdash/utils/speed_units.dart';
@@ -86,46 +91,51 @@ class StatsScreen extends ConsumerWidget {
         ),
       ),
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              if (session != null) ...[
-                _SectionHeader(title: strings.text(AppText.currentSession)),
-                const SizedBox(height: 12),
-                _SessionSummaryCards(
-                  distanceKm: session.distanceKm,
-                  durationSeconds: session.duration.inSeconds,
-                  avgSpeedKph: session.avgSpeedKph,
-                  maxSpeedKph: session.maxSpeedKph,
-                  totalWhUsed: session.totalWhUsed,
-                  unit: unit,
+        child: CustomScrollView(
+          key: const ValueKey('rides-scroll'),
+          slivers: [
+            SliverPadding(
+              padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
+              sliver: SliverToBoxAdapter(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (session != null) ...[
+                      _SectionHeader(
+                          title: strings.text(AppText.currentSession)),
+                      const SizedBox(height: 12),
+                      _SessionSummaryCards(
+                        distanceKm: session.distanceKm,
+                        durationSeconds: session.duration.inSeconds,
+                        avgSpeedKph: session.avgSpeedKph,
+                        maxSpeedKph: session.maxSpeedKph,
+                        totalWhUsed: session.totalWhUsed,
+                        unit: unit,
+                      ),
+                      const SizedBox(height: 20),
+                      if (session.speedHistory.isNotEmpty) ...[
+                        _SectionHeader(
+                            title: strings.text(AppText.speedHistory)),
+                        const SizedBox(height: 12),
+                        _SpeedChart(
+                          samples: session.speedHistory
+                              .map((s) => unit.fromKph(s.speedKph))
+                              .toList(),
+                          unit: unit.speedLabel,
+                        ),
+                        const SizedBox(height: 24),
+                      ],
+                    ] else ...[
+                      const _EmptySession(),
+                      const SizedBox(height: 24),
+                    ],
+                  ],
                 ),
-                const SizedBox(height: 20),
-                if (session.speedHistory.isNotEmpty) ...[
-                  _SectionHeader(title: strings.text(AppText.speedHistory)),
-                  const SizedBox(height: 12),
-                  _SpeedChart(
-                    samples: session.speedHistory
-                        .map((s) => unit.fromKph(s.speedKph))
-                        .toList(),
-                    unit: unit.speedLabel,
-                  ),
-                  const SizedBox(height: 24),
-                ],
-              ] else ...[
-                const _EmptySession(),
-                const SizedBox(height: 24),
-              ],
-              if (statsState.pastSessions.isNotEmpty) ...[
-                _SectionHeader(title: strings.text(AppText.pastSessions)),
-                const SizedBox(height: 12),
-                for (final json in statsState.pastSessions.reversed)
-                  _PastSessionCard(json: json, unit: unit),
-              ],
-            ],
-          ),
+              ),
+            ),
+            _SavedRidesSliver(
+                unit: unit, pastSessions: statsState.pastSessions),
+          ],
         ),
       ),
     );
@@ -602,5 +612,168 @@ class _SectionHeader extends StatelessWidget {
         letterSpacing: 2,
       ),
     );
+  }
+}
+
+/// Saved rides and captures (lazy: built row by row, [_page] at a time),
+/// then rides from older versions that only have the prefs summary.
+class _SavedRidesSliver extends ConsumerStatefulWidget {
+  const _SavedRidesSliver({required this.unit, required this.pastSessions});
+
+  final SpeedUnit unit;
+  final List<Map<String, dynamic>> pastSessions;
+
+  @override
+  ConsumerState<_SavedRidesSliver> createState() => _SavedRidesSliverState();
+}
+
+class _SavedRidesSliverState extends ConsumerState<_SavedRidesSliver> {
+  static const _page = 20;
+  int _shown = _page;
+
+  @override
+  Widget build(BuildContext context) {
+    final strings = AppStrings.of(context);
+    final listing = ref.watch(ridesListingProvider).valueOrNull;
+    final entries = listing?.entries ?? const <SavedFileEntry>[];
+    final recordIds = listing?.recordIds ?? const <String>{};
+    final legacy = [
+      for (final json in widget.pastSessions.reversed)
+        if (!recordIds.contains('${json['id']}')) json
+    ];
+    final visible = entries.length < _shown ? entries.length : _shown;
+    final more = entries.length > visible;
+    // rows: header, entries (or empty note), [show more], [legacy block]
+    final rowCount = 1 +
+        (entries.isEmpty ? 1 : visible) +
+        (more ? 1 : 0) +
+        (legacy.isEmpty ? 0 : 1 + legacy.length);
+    return SliverPadding(
+      padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+      sliver: SliverList.builder(
+        itemCount: rowCount,
+        itemBuilder: (context, i) {
+          if (i == 0) {
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: _SectionHeader(title: strings.text(AppText.ridesSaved)),
+            );
+          }
+          i -= 1;
+          if (entries.isEmpty) {
+            if (i == 0) {
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 16),
+                child: Text(strings.text(AppText.ridesNoneSaved),
+                    key: const ValueKey('rides-none-saved'),
+                    style: const TextStyle(
+                        color: Color(0xFF4A5568), fontSize: 13)),
+              );
+            }
+            i -= 1;
+          } else {
+            if (i < visible) return _SavedEntryTile(entries[i], widget.unit);
+            i -= visible;
+          }
+          if (more) {
+            if (i == 0) {
+              return TextButton(
+                key: const ValueKey('rides-show-more'),
+                onPressed: () => setState(() => _shown += _page),
+                child: Text(strings.text(AppText.ridesShowMore)),
+              );
+            }
+            i -= 1;
+          }
+          if (i == 0) {
+            return Padding(
+              padding: const EdgeInsets.only(top: 16, bottom: 12),
+              child: _SectionHeader(
+                  title: strings.text(AppText.ridesOlderSummaryOnly)),
+            );
+          }
+          return _PastSessionCard(json: legacy[i - 1], unit: widget.unit);
+        },
+      ),
+    );
+  }
+}
+
+class _SavedEntryTile extends ConsumerWidget {
+  const _SavedEntryTile(this.entry, this.unit);
+
+  final SavedFileEntry entry;
+  final SpeedUnit unit;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final strings = AppStrings.of(context);
+    final date = DateFormat('dd.MM.yyyy  HH:mm').format(entry.time);
+    final info = entry.info;
+    final (IconData icon, String title, String subtitle) = switch (entry.kind) {
+      SavedFileKind.rideRecord => (
+          Icons.two_wheeler,
+          date,
+          [
+            if (double.tryParse(info['distanceKm'] ?? '') case final km?)
+              unit.distance(km, digits: 2),
+            if (int.tryParse(info['durationSeconds'] ?? '') case final s?)
+              '${s ~/ 60}m ${s % 60}s',
+            if (double.tryParse(info['maxSpeedKph'] ?? '') case final v?)
+              '${strings.text(AppText.calloutTopSpeed)} ${unit.speed(v)}',
+          ].join('  •  ')
+        ),
+      SavedFileKind.calibration => (
+          Icons.speed,
+          strings.text(AppText.savedCalibrations),
+          date
+        ),
+      SavedFileKind.dashCheck => (
+          Icons.speed_outlined,
+          strings.text(AppText.savedDashChecks),
+          date
+        ),
+      _ => (Icons.route_outlined, strings.text(AppText.savedRides), date),
+    };
+    final ride = entry.kind == SavedFileKind.rideRecord;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Material(
+        color: const Color(0xFF0D1117),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+          side: const BorderSide(color: Color(0xFF1A2030)),
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: ListTile(
+          key: ValueKey('ride-entry-${entry.name}'),
+          dense: true,
+          leading: Icon(icon,
+              color: ride ? const Color(0xFF00E5FF) : const Color(0xFF8B949E)),
+          title: Text(title,
+              style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600)),
+          subtitle: Text(subtitle,
+              style: const TextStyle(color: Color(0xFF8B949E), fontSize: 12)),
+          trailing: const Icon(Icons.chevron_right, color: Color(0xFF4A5568)),
+          onTap: () => _open(context),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _open(BuildContext context) async {
+    final Widget page = switch (entry.kind) {
+      SavedFileKind.rideRecord =>
+        RideDetailScreen(file: entry.file, unit: unit),
+      SavedFileKind.calibration => SavedCalibrationScreen(file: entry.file),
+      _ => SavedTextFileScreen(
+          title: entry.name, text: await entry.file.readAsString()),
+    };
+    if (!context.mounted) return;
+    await Navigator.of(context)
+        .push(MaterialPageRoute<void>(builder: (_) => page));
   }
 }

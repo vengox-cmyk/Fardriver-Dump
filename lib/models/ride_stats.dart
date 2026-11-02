@@ -1,3 +1,5 @@
+import 'package:arcdash/models/drive_state.dart';
+
 /// A single ride session's statistics.
 class RideSession {
   final String id;
@@ -9,6 +11,9 @@ class RideSession {
   double totalWhUsed;
   final List<SpeedSample> speedHistory;
 
+  /// Peaks / sag / temps / gear time for the ride record and callouts.
+  final RideTelemetry telemetry;
+
   double _avgSpeedSum = 0.0;
   int _avgSpeedSamples = 0;
 
@@ -19,7 +24,9 @@ class RideSession {
     this.maxSpeedKph = 0.0,
     this.totalWhUsed = 0.0,
     List<SpeedSample>? speedHistory,
-  }) : speedHistory = speedHistory ?? [];
+    RideTelemetry? telemetry,
+  })  : speedHistory = speedHistory ?? [],
+        telemetry = telemetry ?? RideTelemetry();
 
   Duration get duration {
     final end = endTime ?? DateTime.now();
@@ -36,7 +43,25 @@ class RideSession {
     required double voltageV,
     required double currentA,
     required double deltaTimeSeconds,
+    double phaseACurrA = 0,
+    double phaseCCurrA = 0,
+    double motorTempC = 0,
+    double controllerTempC = 0,
+    GearStatus? gear,
+    DateTime? at,
   }) {
+    telemetry.add(
+      speedKph: speedKph,
+      voltageV: voltageV,
+      currentA: currentA,
+      phaseACurrA: phaseACurrA,
+      phaseCCurrA: phaseCCurrA,
+      motorTempC: motorTempC,
+      controllerTempC: controllerTempC,
+      gear: gear,
+      deltaTimeSeconds: deltaTimeSeconds,
+    );
+
     if (speedKph > maxSpeedKph) maxSpeedKph = speedKph;
 
     // Accumulate distance (speed in km/h * time in hours)
@@ -53,8 +78,9 @@ class RideSession {
     // Record speed history (max 500 samples)
     if (speedHistory.length < 500) {
       speedHistory.add(SpeedSample(
-        timestamp: DateTime.now(),
+        timestamp: at ?? DateTime.now(),
         speedKph: speedKph,
+        gear: gear,
       ));
     }
   }
@@ -74,11 +100,16 @@ class RideSession {
         'durationSeconds': duration.inSeconds,
       };
 
+  /// Per-sample export. `Gear` is N / R / D-LOW / D-MID / D-HIGH (blank when
+  /// unknown), `Boost` 1 while boost (D6 Global_state3 bit 2) was active.
+
   List<List<String>> toCsvRows() => [
-        ['Time', 'Speed (km/h)'],
+        ['Time', 'Speed (km/h)', 'Gear', 'Boost'],
         ...speedHistory.map((s) => [
               s.timestamp.toIso8601String(),
               s.speedKph.toStringAsFixed(1),
+              s.gearCode,
+              s.gear == null ? '' : (s.gear!.showsBoost ? '1' : '0'),
             ]),
       ];
 }
@@ -87,5 +118,115 @@ class SpeedSample {
   final DateTime timestamp;
   final double speedKph;
 
-  const SpeedSample({required this.timestamp, required this.speedKph});
+  /// Gear + boost at that second (null when unknown).
+  final GearStatus? gear;
+
+  const SpeedSample(
+      {required this.timestamp, required this.speedKph, this.gear});
+
+  /// `N`, `R`, `D-LOW`, `D-MID`, `D-HIGH` or blank (plain ASCII for CSV).
+  String get gearCode => gearBucket(gear) ?? '';
+}
+
+/// Time-in-gear bucket for a sample: `N`, `R`, `D-LOW`, `D-MID`, `D-HIGH`.
+/// Boost is tracked separately. Null when the gear is unknown.
+String? gearBucket(GearStatus? g) => switch (g?.direction) {
+      DriveDirection.neutral => 'N',
+      DriveDirection.reverse => 'R',
+      DriveDirection.drive => 'D-${g!.level.word}',
+      _ => null,
+    };
+
+/// Running peaks of one ride, kept small (no per-sample arrays) so the
+/// saved ride record stays a few hundred bytes.
+class RideTelemetry {
+  RideTelemetry();
+
+  /// Below this line current the pack counts as "resting" for sag.
+  static const restCurrentA = 3.0;
+
+  /// Above this line current the pack counts as "loaded" for sag.
+  static const loadCurrentA = 10.0;
+
+  int samples = 0;
+  double maxLineA = 0;
+  double maxPhaseA = 0;
+  double? minV;
+  double? maxV;
+  double? _restV;
+  double maxSagV = 0;
+  double maxMotorC = 0;
+  double maxControllerC = 0;
+  double _powerSumW = 0;
+  double _movingSeconds = 0;
+  double peakPowerW = 0;
+  double boostSeconds = 0;
+  final Map<String, double> gearSeconds = {};
+
+  /// Average battery power while moving (W), null without moving samples.
+  double? get avgPowerW =>
+      _movingSeconds <= 0 ? null : _powerSumW / _movingSeconds;
+
+  void add({
+    required double speedKph,
+    required double voltageV,
+    required double currentA,
+    double phaseACurrA = 0,
+    double phaseCCurrA = 0,
+    double motorTempC = 0,
+    double controllerTempC = 0,
+    GearStatus? gear,
+    double deltaTimeSeconds = 1,
+  }) {
+    samples++;
+    final dt = deltaTimeSeconds > 0 && deltaTimeSeconds < 10
+        ? deltaTimeSeconds
+        : 1.0; // first sample / long gaps count as one second
+    if (currentA > maxLineA) maxLineA = currentA;
+    final phase =
+        [phaseACurrA.abs(), phaseCCurrA.abs()].reduce((a, b) => a > b ? a : b);
+    if (phase > maxPhaseA) maxPhaseA = phase;
+    if (motorTempC > maxMotorC) maxMotorC = motorTempC;
+    if (controllerTempC > maxControllerC) maxControllerC = controllerTempC;
+    if (voltageV > 1) {
+      if (minV == null || voltageV < minV!) minV = voltageV;
+      if (maxV == null || voltageV > maxV!) maxV = voltageV;
+      if (currentA.abs() < restCurrentA) {
+        _restV = voltageV;
+      } else if (currentA > loadCurrentA && _restV != null) {
+        final sag = _restV! - voltageV;
+        if (sag > maxSagV) maxSagV = sag;
+      }
+      final power = voltageV * currentA;
+      if (power > peakPowerW) peakPowerW = power;
+      if (speedKph >= 1) {
+        _powerSumW += power * dt;
+        _movingSeconds += dt;
+      }
+    }
+    final bucket = gearBucket(gear);
+    if (bucket != null) {
+      gearSeconds[bucket] = (gearSeconds[bucket] ?? 0) + dt;
+    }
+    if (gear?.showsBoost ?? false) boostSeconds += dt;
+  }
+
+  Map<String, dynamic> toJson() => {
+        'samples': samples,
+        'maxLineA': _r(maxLineA),
+        'maxPhaseA': _r(maxPhaseA),
+        'minV': minV == null ? null : _r(minV!),
+        'maxV': maxV == null ? null : _r(maxV!),
+        'maxSagV': _r(maxSagV),
+        'maxMotorC': _r(maxMotorC),
+        'maxControllerC': _r(maxControllerC),
+        'avgPowerW': avgPowerW == null ? null : _r(avgPowerW!),
+        'peakPowerW': _r(peakPowerW),
+        'boostSeconds': _r(boostSeconds),
+        'gearSeconds': {
+          for (final e in gearSeconds.entries) e.key: _r(e.value)
+        },
+      };
+
+  static double _r(double v) => (v * 10).roundToDouble() / 10;
 }

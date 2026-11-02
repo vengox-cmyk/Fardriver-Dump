@@ -5,6 +5,11 @@ import 'package:arcdash/providers/bluetooth_provider.dart';
 import 'package:arcdash/services/bluetooth_service.dart'
     show DongleConnectionState;
 import 'package:arcdash/providers/controller_provider.dart';
+import 'package:arcdash/providers/saved_files_provider.dart';
+import 'package:arcdash/services/ride_archive.dart';
+
+/// Bumped after a ride record is written so the Rides tab reloads its list.
+final rideArchiveRevisionProvider = StateProvider<int>((ref) => 0);
 
 class StatsState {
   final RideSession? currentSession;
@@ -121,6 +126,12 @@ class StatsNotifier extends StateNotifier<StatsState> {
       voltageV: controller.voltageV,
       currentA: controller.currentA,
       deltaTimeSeconds: delta,
+      phaseACurrA: controller.phaseACurrA,
+      phaseCCurrA: controller.phaseCCurrA,
+      motorTempC: controller.motorTempC,
+      controllerTempC: controller.controllerTempC,
+      gear: controller.gearStatus(now),
+      at: now,
     );
 
     // Feed learned session metrics into RangePredictionNotifier
@@ -170,6 +181,12 @@ class StatsNotifier extends StateNotifier<StatsState> {
   Future<void> _saveSession(RideSession session) async {
     final storage = _ref.read(storageServiceProvider);
     await storage.saveRideSession(session);
+    // Permanent ride record + per-second CSV for the Rides tab (offline).
+    final record =
+        await RideArchive(_ref.read(savedFilesStoreProvider)).save(session);
+    if (record != null && mounted) {
+      _ref.read(rideArchiveRevisionProvider.notifier).state++;
+    }
   }
 
   void _loadPastSessions() {
