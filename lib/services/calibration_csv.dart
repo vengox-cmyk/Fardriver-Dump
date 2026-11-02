@@ -1,3 +1,4 @@
+import 'package:arcdash/models/drive_state.dart';
 import 'package:arcdash/models/gps_calibration.dart';
 import 'package:arcdash/models/speed_source.dart';
 import 'package:arcdash/models/speed_suggestions.dart';
@@ -215,6 +216,9 @@ class CalibrationCsv {
         'gps_mph',
         'controller_mph',
         'dash_kmh_est',
+        'direction',
+        'speed_level',
+        'boost',
       ],
       for (var i = 0; i < samples.length; i++)
         [
@@ -225,6 +229,7 @@ class CalibrationCsv {
                   ? null
                   : samples[i].rpm! * dashK,
               2),
+          ...gearCells(samples[i].gear),
         ],
     ]);
     return out.toString();
@@ -248,6 +253,27 @@ class CalibrationCsv {
       _opt(gps == null ? null : SpeedUnit.mph.fromKph(gps.speedKph), 2),
       _f(SpeedUnit.mph.fromKph(s.controllerKph), 2),
     ];
+  }
+
+  /// `direction` (N/D/R), `speed_level` (low/mid/high), `boost` (0/1);
+  /// blank when the gear was unknown.
+  static List<String> gearCells(GearStatus? gear) => gear == null
+      ? const ['', '', '']
+      : [
+          gear.direction.code,
+          gear.direction == DriveDirection.drive ? gear.level.code : '',
+          gear.boost ? '1' : '0',
+        ];
+
+  /// Reads [gearCells] back (null when blank / older files).
+  static GearStatus? parseGear(String direction, String level, String boost) {
+    final dir = DriveDirection.fromCode(direction);
+    if (dir == DriveDirection.unknown) return null;
+    return GearStatus(
+      direction: dir,
+      level: SpeedLevel.fromCode(level) ?? SpeedLevel.high,
+      boost: boost == '1',
+    );
   }
 
   static int _duration(
@@ -320,6 +346,8 @@ class CalibrationCsv {
             rpm: number(row, 'rpm'),
             controllerKph: number(row, 'controller_kmh') ?? 0,
             braking: cell(row, 'braking') == '1',
+            gear: parseGear(cell(row, 'direction'), cell(row, 'speed_level'),
+                cell(row, 'boost')),
           ));
       }
     }

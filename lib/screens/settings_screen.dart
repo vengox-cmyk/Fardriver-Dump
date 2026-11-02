@@ -81,7 +81,8 @@ class SettingsScreen extends ConsumerWidget {
                   return;
                 }
                 Navigator.of(context).push(MaterialPageRoute<void>(
-                    builder: (_) => ParameterDumpScreen(dump: dump)));
+                    builder: (_) => ParameterDumpScreen(
+                        dump: dump, unit: ref.read(speedUnitProvider))));
               },
             ),
             ListTile(
@@ -97,8 +98,10 @@ class SettingsScreen extends ConsumerWidget {
                       ref.read(savedFilesStoreProvider), dump);
                   if (!context.mounted) return;
                   Navigator.of(context).push(MaterialPageRoute<void>(
-                      builder: (_) =>
-                          ParameterDumpScreen(dump: dump, savedFile: saved)));
+                      builder: (_) => ParameterDumpScreen(
+                          dump: dump,
+                          savedFile: saved,
+                          unit: ref.read(speedUnitProvider))));
                 } catch (e) {
                   if (!context.mounted) return;
                   ScaffoldMessenger.of(context).showSnackBar(SnackBar(
@@ -112,7 +115,8 @@ class SettingsScreen extends ConsumerWidget {
               title: Text(strings.text(AppText.paramCompare)),
               subtitle: Text(strings.text(AppText.paramCompareHint)),
               onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(
-                  builder: (_) => const ParameterCompareScreen())),
+                  builder: (_) => ParameterCompareScreen(
+                      unit: ref.read(speedUnitProvider)))),
             ),
             ListTile(
               key: const ValueKey('speed-calibration-tile'),

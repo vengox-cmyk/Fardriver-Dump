@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 
+import 'package:arcdash/models/drive_state.dart';
 import 'package:arcdash/models/speed_source.dart';
 
 /// GPS speed calibration maths (issue #2, v1.2). Pure Dart, no I/O, so every
@@ -30,12 +31,16 @@ class CalibrationSample {
   final double controllerKph;
   final bool braking;
 
+  /// Gear + boost in that second (null when unknown / older files).
+  final GearStatus? gear;
+
   const CalibrationSample({
     required this.at,
     required this.gps,
     required this.rpm,
     this.controllerKph = 0,
     this.braking = false,
+    this.gear,
   });
 
   double? get gpsKph => gps?.speedKph;

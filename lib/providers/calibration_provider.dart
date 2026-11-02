@@ -27,7 +27,9 @@ final gpsCalibrationProvider =
     controller: () {
       final state = ref.read(controllerProvider);
       return ControllerReadout(
-          speedKph: state.speedKph, braking: state.isBraking);
+          speedKph: state.speedKph,
+          braking: state.isBraking,
+          gear: state.gearStatus(DateTime.now()));
     },
   );
 });
@@ -89,7 +91,9 @@ final dashCheckProvider =
     controller: () {
       final state = ref.read(controllerProvider);
       return ControllerReadout(
-          speedKph: state.speedKph, braking: state.isBraking);
+          speedKph: state.speedKph,
+          braking: state.isBraking,
+          gear: state.gearStatus(DateTime.now()));
     },
     saver: archive.save,
     newRecord: (startedAt) async {

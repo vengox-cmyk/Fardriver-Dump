@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:arcdash/widgets/gear_chip.dart';
 import 'package:arcdash/models/calibration_guidance.dart';
 import 'package:arcdash/models/gps_calibration.dart';
 import 'package:arcdash/models/speed_source.dart';
@@ -123,7 +124,9 @@ class _SpeedCalibrationScreenState extends ConsumerState<SpeedCalibrationScreen>
         }
       },
       child: Scaffold(
-        appBar: AppBar(title: const Text('GPS SPEED CALIBRATION')),
+        appBar: AppBar(
+            title: const Text('GPS SPEED CALIBRATION'),
+            actions: const [GearChip()]),
         body: SafeArea(
           child: switch (session.status) {
             CalibrationStatus.recording =>

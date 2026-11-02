@@ -1,4 +1,5 @@
 import 'dart:math' as math;
+import 'package:arcdash/models/drive_state.dart';
 import 'package:arcdash/utils/crc_calculator.dart';
 
 /// Memory address lookup table for rotating status packet IDs (0–54).
@@ -88,7 +89,16 @@ class TelemetryUpdate {
   final int? measureSpeed; // raw RPM ticks
   final bool? forward;
   final bool? reverse;
+
+  /// Speed level bits 2-3 of data byte 0: 0 = low, 1 = mid, 2 = high
+  /// (3 is shown as high, see [SpeedLevel.fromBits]).
   final int? gear;
+
+  /// Direction bits 0-1 of data byte 0 (N / D / R).
+  final DriveDirection? direction;
+
+  /// Bit 5 (0x20) of data byte 0: wheel turning.
+  final bool? wheelMoving;
   final bool? brake;
   final bool? motorHallError;
   final bool? throttleError;
@@ -109,6 +119,7 @@ class TelemetryUpdate {
 
   // From 0xD6 (AddrD6)
   final double? mosTempC; // MosTemp (controller temp, degrees C)
+  final bool? boost; // Global_state3 & 0x04
 
   // From 0xD0 (AddrD0) — wheel geometry for speed calculation
   final int? wheelRadius;
@@ -133,6 +144,8 @@ class TelemetryUpdate {
     this.forward,
     this.reverse,
     this.gear,
+    this.direction,
+    this.wheelMoving,
     this.brake,
     this.motorHallError,
     this.throttleError,
@@ -145,6 +158,7 @@ class TelemetryUpdate {
     this.motorTempC,
     this.battCapPercent,
     this.mosTempC,
+    this.boost,
     this.wheelRadius,
     this.wheelWidth,
     this.wheelRatio,
@@ -234,15 +248,17 @@ class PacketParser {
         final errByte2 = d[3];
         final measureSpeed = readUint16LE(
             d, 6); // bytes 8-9 relative to B0 = bytes 6-7 in rawData
-        // Shift gear by 1: (0 -> N, 1 -> 1, 2 -> 2, 3 -> 3)
-        final rawGear = (stateByte >> 2) & 0x03;
-        final mappedGear = rawGear == 0 ? 0 : rawGear;
+        // Byte 0: bits 0-1 direction (0 N, 1 D, 2 R), bits 2-3 speed level
+        // (0 low, 1 mid, 2 high; 3 shown as high), bit 5 wheel moving.
+        final gearStatus = GearStatus.fromE2Byte(stateByte);
         return TelemetryUpdate(
           capturedAt: capturedAt,
           measureSpeed: measureSpeed,
           forward: (stateByte & 0x01) != 0,
           reverse: (stateByte & 0x02) != 0,
-          gear: mappedGear,
+          gear: (stateByte >> 2) & 0x03,
+          direction: gearStatus.direction,
+          wheelMoving: gearStatus.wheelMoving,
           brake: (errByte2 & 0x80) != 0,
           motorHallError: (errByte1 & 0x01) != 0,
           throttleError: (errByte1 & 0x02) != 0,
@@ -284,6 +300,8 @@ class PacketParser {
         return TelemetryUpdate(
           capturedAt: capturedAt,
           mosTempC: mosTemp.toDouble(),
+          // Global_state3 (d[6] + d[7] * 256) bit 2: boost active.
+          boost: GearStatus.boostFromD6(d),
         );
 
       case 0xD0: // AddrD0 — wheel geometry

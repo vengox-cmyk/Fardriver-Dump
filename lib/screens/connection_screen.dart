@@ -21,13 +21,19 @@ class ConnectionScreen extends ConsumerStatefulWidget {
   const ConnectionScreen(
       {super.key,
       this.repository = const RememberedDeviceRepository(),
-      this.autoConnectDelay = const Duration(seconds: 3)});
+      this.autoConnectDelay = const Duration(seconds: 3),
+      this.scanOnOpen = true});
 
   final RememberedDeviceRepository repository;
 
   /// How long to listen before deciding that exactly one remembered
   /// controller is around (checked again when the scan ends).
   final Duration autoConnectDelay;
+
+  /// Start a BLE scan (with the Android permission prompts) when the screen
+  /// becomes visible. Widget tests turn it off and feed scan results through
+  /// the service instead.
+  final bool scanOnOpen;
 
   @override
   ConsumerState<ConnectionScreen> createState() => _ConnectionScreenState();
@@ -40,18 +46,63 @@ class _ConnectionScreenState extends ConsumerState<ConnectionScreen> {
   bool _autoTried = false;
   bool _autoCancelled = false;
   Timer? _autoTimer;
+  bool _opened = false;
+  bool _left = false;
+  ProviderSubscription<AsyncValue<DongleConnectionState>>? _connectionSub;
 
   @override
   void initState() {
     super.initState();
     unawaited(_loadRemembered());
-    _startScan();
-    _autoTimer = Timer(widget.autoConnectDelay, _maybeAutoConnect);
+    // Any connection that completes while this screen is on top (our own
+    // auto-connect, a manual tap, or the startup auto-connect that was
+    // already running) lands on the main screen, exactly like a tap.
+    _connectionSub = ref.listenManual<AsyncValue<DongleConnectionState>>(
+        connectionStateProvider, (previous, next) {
+      final was = previous?.valueOrNull;
+      if (next.valueOrNull == DongleConnectionState.connected &&
+          was != null &&
+          was != DongleConnectionState.connected) {
+        _leaveToMain();
+      }
+    });
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // `/dashboard` is the initial route, so Flutter also builds this screen
+    // as the hidden root route underneath it. Only scan / auto-connect once
+    // the screen is actually visible: the hidden copy used to race the
+    // startup auto-connect and, on success, popped the main screen itself
+    // (leaving the rider on this list).
+    if (!_opened && _isVisible) {
+      _opened = true;
+      if (widget.scanOnOpen) unawaited(Future.microtask(_startScan));
+      _autoTimer = Timer(widget.autoConnectDelay, _maybeAutoConnect);
+    }
+  }
+
+  bool get _isVisible => ModalRoute.of(context)?.isCurrent ?? true;
+
+  /// Same navigation as after a manual tap: back to the existing shell when
+  /// opened from it, otherwise replace this screen with the main screen.
+  void _leaveToMain() {
+    if (!mounted || _left || !_isVisible) return;
+    _left = true;
+    _autoTimer?.cancel();
+    final navigator = Navigator.of(context);
+    if (navigator.canPop()) {
+      navigator.pop();
+    } else {
+      navigator.pushReplacementNamed('/dashboard');
+    }
   }
 
   @override
   void dispose() {
     _autoTimer?.cancel();
+    _connectionSub?.close();
     super.dispose();
   }
 
@@ -69,7 +120,14 @@ class _ConnectionScreenState extends ConsumerState<ConnectionScreen> {
     if (!mounted || _autoTried || _autoCancelled || _connectingId != null) {
       return;
     }
+    if (!_isVisible) return;
     if (ref.read(isConnectedProvider) || _remembered.isEmpty) return;
+    // The startup auto-connect is already connecting; the connection
+    // listener takes us to the main screen when it succeeds.
+    if (ref.read(bluetoothServiceProvider).state ==
+        DongleConnectionState.connecting) {
+      return;
+    }
     final scan = ref.read(scanResultsProvider).valueOrNull ?? const [];
     final candidate =
         RememberedDeviceMatcher(_remembered).autoConnectCandidate(scan, _seen);
@@ -160,12 +218,7 @@ class _ConnectionScreenState extends ConsumerState<ConnectionScreen> {
       if (success) {
         // Opened from the cockpit/settings: return to the existing shell
         // instead of stacking a second one (which made back behave oddly).
-        final navigator = Navigator.of(context);
-        if (navigator.canPop()) {
-          navigator.pop();
-        } else {
-          navigator.pushReplacementNamed('/dashboard');
-        }
+        _leaveToMain();
       } else {
         _showError(AppStrings.of(context).text(AppText.connectionFailed));
       }

@@ -11,6 +11,7 @@ import 'package:arcdash/providers/controller_provider.dart';
 import 'package:arcdash/l10n/app_strings.dart';
 import 'package:arcdash/services/storage_service.dart';
 import 'package:arcdash/widgets/brand_version_label.dart';
+import 'package:arcdash/widgets/gear_chip.dart';
 import 'package:arcdash/providers/units_provider.dart';
 import 'package:arcdash/utils/speed_units.dart';
 
@@ -304,6 +305,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           ],
         ),
         actions: [
+          if (connected) const GearChip(),
           _ConnectionPill(
             connected: connected,
             onTap: () => Navigator.of(context).pushNamed('/'),
@@ -887,17 +889,7 @@ class _MetricView extends StatelessWidget {
           ? '${unit.fromKm(65).toStringAsFixed(0)} ± ${unit.fromKm(8).toStringAsFixed(0)} ${unit.distanceLabel}'
           : '${unit.fromKm(state.rangeKm).toStringAsFixed(0)} ± ${unit.fromKm(state.rangeUncertaintyKm).toStringAsFixed(0)} ${unit.distanceLabel}',
       DashboardMetric.profile => state.rideMode.displayName,
-      DashboardMetric.gear => !state.isForward
-          ? 'R'
-          : state.gear == 1
-              ? 'N'
-              : state.gear == 2
-                  ? 'D1'
-                  : state.gear == 3
-                      ? 'D2'
-                      : state.gear == 4
-                          ? 'D3'
-                          : 'N',
+      DashboardMetric.gear => state.gearStatus(DateTime.now())?.label ?? '—',
       DashboardMetric.motorTemperature =>
         '${state.motorTempC.toStringAsFixed(0)} °C',
       DashboardMetric.controllerTemperature =>

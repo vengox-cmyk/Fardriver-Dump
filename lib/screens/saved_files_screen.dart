@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:arcdash/providers/units_provider.dart';
 import 'package:arcdash/l10n/app_strings.dart';
 import 'package:arcdash/providers/saved_files_provider.dart';
 import 'package:arcdash/screens/parameter_dump_screen.dart';
@@ -184,7 +185,10 @@ class _SavedFilesScreenState extends ConsumerState<SavedFilesScreen> {
         case SavedFileKind.dump:
           final dump = ParameterDumpIo.parseFile(
               await entry.file.readAsBytes(), entry.name);
-          page = ParameterDumpScreen(dump: dump, savedFile: entry.file);
+          page = ParameterDumpScreen(
+              dump: dump,
+              savedFile: entry.file,
+              unit: ref.read(speedUnitProvider));
         case SavedFileKind.diagnosticLog:
         case SavedFileKind.rideCsv:
         case SavedFileKind.dashCheck:

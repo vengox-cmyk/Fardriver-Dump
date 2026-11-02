@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:arcdash/utils/speed_units.dart';
 import 'package:arcdash/services/saved_files.dart';
 
 import 'package:arcdash/l10n/app_strings.dart';
@@ -21,8 +22,15 @@ class ParameterDumpScreen extends StatefulWidget {
   /// Where shared dumps are kept (defaults to the app documents folder).
   final SavedFilesStore? store;
 
+  /// Settings > Display unit for km / km/h / Wh/km values (display only).
+  final SpeedUnit unit;
+
   const ParameterDumpScreen(
-      {super.key, required this.dump, this.savedFile, this.store});
+      {super.key,
+      required this.dump,
+      this.savedFile,
+      this.store,
+      this.unit = SpeedUnit.kmh});
 
   @override
   State<ParameterDumpScreen> createState() => _ParameterDumpScreenState();
@@ -176,7 +184,7 @@ class _ParameterDumpScreenState extends State<ParameterDumpScreen> {
                         ' · raw ${p.raw} · ${p.def.status}'),
                     trailing: ConstrainedBox(
                       constraints: const BoxConstraints(maxWidth: 160),
-                      child: Text(p.display,
+                      child: Text(p.displayIn(widget.unit),
                           textAlign: TextAlign.right,
                           overflow: TextOverflow.ellipsis),
                     ),

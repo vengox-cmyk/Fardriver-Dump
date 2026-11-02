@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:arcdash/models/drive_state.dart';
 import 'package:arcdash/models/gps_calibration.dart';
 import 'package:arcdash/models/speed_source.dart';
 import 'package:arcdash/models/speed_suggestions.dart';
@@ -124,7 +125,11 @@ class ControllerReadout {
   final double speedKph;
   final bool braking;
 
-  const ControllerReadout({required this.speedKph, required this.braking});
+  /// Gear + boost at that moment (null when no fresh 0xE2 frame).
+  final GearStatus? gear;
+
+  const ControllerReadout(
+      {required this.speedKph, required this.braking, this.gear});
 }
 
 /// Calibration ride: pairs GPS fixes with controller rpm at ~1 Hz and keeps
@@ -256,6 +261,7 @@ class GpsCalibrationNotifier extends StateNotifier<CalibrationSessionState> {
       rpm: _pairer.takeSecond(at),
       controllerKph: readout.speedKph,
       braking: readout.braking,
+      gear: readout.gear,
     );
     _lastSampleAt = at;
     final samples = [...state.samples, sample];

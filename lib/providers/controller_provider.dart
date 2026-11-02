@@ -261,11 +261,21 @@ class ControllerNotifier extends StateNotifier<ControllerState> {
       _rpmReadings.add(RpmReading(
           rpm: update.measureSpeed!.toDouble(), at: update.capturedAt));
     }
-    if (update.forward != null) next = next.copyWith(isForward: update.forward);
-    if (update.reverse != null && update.reverse!) {
-      next = next.copyWith(isForward: false);
+    // isForward means "not reversing" (N is not reverse).
+    if (update.reverse != null) {
+      next = next.copyWith(isForward: !update.reverse!);
     }
     if (update.gear != null) next = next.copyWith(gear: update.gear);
+    if (update.direction != null) {
+      next = next.copyWith(driveDirection: update.direction);
+    }
+    if (update.wheelMoving != null) {
+      next = next.copyWith(wheelMoving: update.wheelMoving);
+    }
+    if (update.boost != null) {
+      next =
+          next.copyWith(boostActive: update.boost, boostAt: update.capturedAt);
+    }
     if (update.brake != null) next = next.copyWith(isBraking: update.brake);
     if (update.motorHallError != null) {
       next = next.copyWith(motorHallError: update.motorHallError);

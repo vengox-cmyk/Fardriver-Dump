@@ -1,3 +1,4 @@
+import 'package:arcdash/models/drive_state.dart';
 import 'package:arcdash/utils/unit_converter.dart';
 import 'package:arcdash/models/telemetry_quality.dart';
 
@@ -62,9 +63,19 @@ class ControllerState {
   final double motorTempC;
   final double controllerTempC;
   final int battCapPercent;
+
+  /// Speed level bits from 0xE2: 0 = low, 1 = mid, 2 = high (3 = high).
   final int gear;
   final bool isForward;
   final bool isBraking;
+
+  /// N / D / R from 0xE2 (unknown until the first frame).
+  final DriveDirection driveDirection;
+  final bool wheelMoving;
+
+  /// Last 0xD6 boost bit, held between frames (~1.5 s cadence).
+  final bool boostActive;
+  final DateTime? boostAt;
 
   // Fault flags
   final bool motorHallError;
@@ -109,6 +120,10 @@ class ControllerState {
     this.gear = 0,
     this.isForward = true,
     this.isBraking = false,
+    this.driveDirection = DriveDirection.unknown,
+    this.wheelMoving = false,
+    this.boostActive = false,
+    this.boostAt,
     this.motorHallError = false,
     this.throttleError = false,
     this.motorTempProtect = false,
@@ -155,6 +170,10 @@ class ControllerState {
     int? gear,
     bool? isForward,
     bool? isBraking,
+    DriveDirection? driveDirection,
+    bool? wheelMoving,
+    bool? boostActive,
+    DateTime? boostAt,
     bool? motorHallError,
     bool? throttleError,
     bool? motorTempProtect,
@@ -189,6 +208,10 @@ class ControllerState {
       gear: gear ?? this.gear,
       isForward: isForward ?? this.isForward,
       isBraking: isBraking ?? this.isBraking,
+      driveDirection: driveDirection ?? this.driveDirection,
+      wheelMoving: wheelMoving ?? this.wheelMoving,
+      boostActive: boostActive ?? this.boostActive,
+      boostAt: boostAt ?? this.boostAt,
       motorHallError: motorHallError ?? this.motorHallError,
       throttleError: throttleError ?? this.throttleError,
       motorTempProtect: motorTempProtect ?? this.motorTempProtect,
@@ -215,6 +238,31 @@ class ControllerState {
 
   TelemetrySample? sample(ControllerTelemetry telemetry) =>
       telemetrySamples[telemetry];
+
+  /// Gear older than this is not shown (link lost / frames stopped).
+  static const gearMaxAge = Duration(seconds: 5);
+
+  /// Boost is held this long after the last 0xD6 frame (sent ~every 1.5 s).
+  static const boostMaxAge = Duration(seconds: 5);
+
+  /// Current gear + boost for the status chip, or null when no fresh 0xE2
+  /// frame has arrived.
+  GearStatus? gearStatus(DateTime now) {
+    final gearSample = sample(ControllerTelemetry.gear);
+    if (gearSample == null ||
+        driveDirection == DriveDirection.unknown ||
+        now.difference(gearSample.capturedAt) > gearMaxAge) {
+      return null;
+    }
+    final boostFresh =
+        boostAt != null && now.difference(boostAt!) <= boostMaxAge;
+    return GearStatus(
+      direction: driveDirection,
+      level: SpeedLevel.fromBits(gear),
+      wheelMoving: wheelMoving,
+      boost: boostFresh && boostActive,
+    );
+  }
 
   /// Returns a new state with speed recalculated from raw RPM.
   ControllerState withMeasureSpeed(int measureSpeed) {
