@@ -45,6 +45,20 @@ class CalibrationArchive {
   static String fileNameFor(DateTime startedAt) =>
       'calibration_${SavedFilesStore.stamp(startedAt)}.csv';
 
+  /// Called when a ride starts: remembers the controller settings active
+  /// now, so later snapshots (after a write) do not replace them.
+  Future<void> beginRide(DateTime startedAt) async {
+    _rideStart = startedAt;
+    _rideControllerId = '';
+    _rideAnchor = null;
+    _anchorLoaded = false;
+    try {
+      _rideSettings = await _settings();
+    } on Object {
+      _rideSettings = null;
+    }
+  }
+
   /// [CalibrationSaver] for [GpsCalibrationNotifier].
   Future<String?> save(CalibrationSessionState state) async {
     final startedAt = state.startedAt;
@@ -73,11 +87,20 @@ class CalibrationArchive {
     } on Object {
       settings = CalibrationSettings.none;
     }
+    // v1.4: the settings active at ride START are what produced the
+    // recorded controller speed, so they are kept for the whole ride (and
+    // the BLE error). A later snapshot (e.g. after RateRatio was written)
+    // is only noted separately. Until the controller's settings are known
+    // (offline start) the newest reading is used.
     final known = _rideSettings;
-    if (settings.ble == null && known != null && known.ble != null) {
+    CalibrationSettings? current;
+    if (known != null && known.ble != null) {
+      current = settings;
       settings = known;
-    } else {
+    } else if (settings.ble != null || known == null) {
       _rideSettings = settings;
+    } else {
+      settings = known;
     }
 
     final csv = CalibrationCsv.build(
@@ -86,6 +109,7 @@ class CalibrationArchive {
       fit: state.fit,
       dkdSnapshots: state.dkdSnapshots,
       settings: settings,
+      currentSettings: current,
       // A stationary dash check (calibrated) wins over in-ride DKD readings.
       dashAnchor: _rideAnchor ?? rideDashAnchor(state.dkdSnapshots, settings),
       appVersion: await _appVersion(),

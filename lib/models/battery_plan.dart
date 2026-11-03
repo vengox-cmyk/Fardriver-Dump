@@ -1,3 +1,5 @@
+import 'package:arcdash/services/write/write_allowlist.dart';
+
 /// Battery protect suggestions per chemistry (issue §4). Suggestions only:
 /// the rider reviews every value before anything is written.
 ///
@@ -51,14 +53,20 @@ class BatteryPlan {
       _round((chemistry.overSuggest - restoreGapPerCell) * cells);
   double get lowProtectV => _round(chemistry.lowSuggest * cells);
 
-  /// Raw (×0.1 V) values for the allowlisted fields.
-  Map<String, int> suggestedRaw({required bool includeOverVoltage}) => {
+  /// Raw (×0.1 V) values for the allowlisted fields. v1.4: over voltage
+  /// protect/restore are read-only on the controller, so they are never
+  /// included, whatever [includeOverVoltage] or the Experimental toggle say
+  /// (the flag is kept for callers/tests and only honoured if a future
+  /// allowlist makes the fields writable again).
+  Map<String, int> suggestedRaw({bool includeOverVoltage = false}) => {
         'LowVolProtect': (lowProtectV * 10).round(),
         'BattRatedCap': capacityAh,
-        if (includeOverVoltage) ...{
+        if (includeOverVoltage &&
+            !(WriteAllowlist.byKey('HighVolProtect')?.readOnly ?? true))
           'HighVolProtect': (overProtectV * 10).round(),
+        if (includeOverVoltage &&
+            !(WriteAllowlist.byKey('HighVolRestore')?.readOnly ?? true))
           'HighVolRestore': (overRestoreV * 10).round(),
-        },
       };
 
   /// The math shown under the suggestions.
@@ -70,9 +78,9 @@ class BatteryPlan {
             '${lowProtectV.toStringAsFixed(1)} V '
             '(restore is set by the controller at +2 V)',
         'Over voltage protect: ${chemistry.overSuggest} V × $cells = '
-            '${overProtectV.toStringAsFixed(1)} V',
+            '${overProtectV.toStringAsFixed(1)} V (reference only, not written)',
         'Over voltage restore: ${(chemistry.overSuggest - restoreGapPerCell).toStringAsFixed(2)} V × $cells = '
-            '${overRestoreV.toStringAsFixed(1)} V',
+            '${overRestoreV.toStringAsFixed(1)} V (reference only, not written)',
         'Capacity: $capacityAh Ah',
       ];
 

@@ -19,8 +19,17 @@ final bluetoothServiceProvider = Provider<DongleService>((ref) {
 // Connection state stream
 final connectionStateProvider = StreamProvider<DongleConnectionState>((ref) {
   final service = ref.watch(bluetoothServiceProvider);
-  return service.connectionStateStream;
+  return seededConnectionStates(service);
 });
+
+/// The service's broadcast stream does not replay, so a listener that
+/// subscribes after the link came up would see nothing (null = "not
+/// connected"). Yield the current state first, then follow the stream.
+Stream<DongleConnectionState> seededConnectionStates(
+    DongleService service) async* {
+  yield service.state;
+  yield* service.connectionStateStream;
+}
 
 // Scan results stream
 final scanResultsProvider = StreamProvider<List<DiscoveredDongle>>((ref) {

@@ -22,6 +22,7 @@ final gpsCalibrationProvider =
   final archive = ref.watch(calibrationArchiveProvider);
   return GpsCalibrationNotifier(
     saver: archive?.save,
+    onRideStart: archive?.beginRide,
     gps: ref.watch(gpsSourceProvider),
     rpm: controller.rpmReadings,
     controller: () {

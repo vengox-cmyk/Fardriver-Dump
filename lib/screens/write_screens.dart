@@ -9,6 +9,7 @@ import 'package:arcdash/services/write/write_service.dart';
 
 const _ok = Color(0xFF54E39E);
 const _bad = Color(0xFFFF6B6B);
+const _warn = Color(0xFFFFB45C);
 
 /// Plans [values] (allowlisted field key → raw value) and opens the review
 /// screen. Nothing is sent until the rider confirms there.
@@ -132,17 +133,44 @@ class WriteResultScreen extends ConsumerWidget {
   const WriteResultScreen({super.key, required this.result});
   final WriteResult result;
 
+  static String titleFor(WriteOutcome o) => switch (o) {
+        WriteOutcome.ok => 'Written and checked',
+        WriteOutcome.partial => 'Partly written',
+        WriteOutcome.failed => 'Write failed',
+      };
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final outcome = result.outcome;
+    final color = switch (outcome) {
+      WriteOutcome.ok => _ok,
+      WriteOutcome.partial => _warn,
+      WriteOutcome.failed => _bad,
+    };
     return Scaffold(
-      appBar: AppBar(
-          title: Text(result.success ? 'Written and checked' : 'Write problem')),
+      appBar: AppBar(title: Text(titleFor(outcome))),
       body: SafeArea(
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
-            Icon(result.success ? Icons.check_circle : Icons.error_outline,
-                color: result.success ? _ok : _bad, size: 48),
+            Icon(
+                switch (outcome) {
+                  WriteOutcome.ok => Icons.check_circle,
+                  WriteOutcome.partial => Icons.rule,
+                  WriteOutcome.failed => Icons.error_outline,
+                },
+                color: color,
+                size: 48),
+            const SizedBox(height: 8),
+            Text(result.message,
+                key: const ValueKey('write-result-message'),
+                style: const TextStyle(fontWeight: FontWeight.w700)),
+            if (outcome == WriteOutcome.partial)
+              const Padding(
+                padding: EdgeInsets.only(top: 6),
+                child: Text('The saved values are kept and verified. Rejected '
+                    'values stayed as they were on the controller.'),
+              ),
             if (result.error != null)
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 8),
@@ -153,9 +181,9 @@ class WriteResultScreen extends ConsumerWidget {
                 title: Text(f.change.field.label),
                 subtitle: Text('${f.change.oldText} → ${f.change.newText}'
                     '${f.readBackRaw != null && f.verify != VerifyResult.ok ? '\nRead back: ${f.change.field.format(f.readBackRaw!)}' : ''}'),
-                trailing: Text(f.verify.label,
+                trailing: Text(f.outcome.text,
                     style: TextStyle(
-                        color: f.verify == VerifyResult.ok ? _ok : _bad)),
+                        color: f.outcome.verified ? _ok : _bad)),
               ),
             const SizedBox(height: 8),
             Text('Backup: ${result.backup.uri.pathSegments.last}\n'
@@ -165,7 +193,7 @@ class WriteResultScreen extends ConsumerWidget {
               FilledButton.icon(
                 key: const ValueKey('restore-old'),
                 icon: const Icon(Icons.restore),
-                label: const Text('Restore the old values'),
+                label: const Text('Restore the unconfirmed values'),
                 onPressed: () {
                   final service = ref.read(controllerWriteServiceProvider);
                   try {
@@ -178,6 +206,36 @@ class WriteResultScreen extends ConsumerWidget {
                         builder: (_) => WriteReviewScreen(changeSet: set)));
                   } on WriteRefused catch (e) {
                     _snack(context, e.message);
+                  }
+                },
+              ),
+            ],
+            if (outcome != WriteOutcome.ok &&
+                result.fields.any((f) => f.outcome.verified)) ...[
+              const SizedBox(height: 8),
+              OutlinedButton.icon(
+                key: const ValueKey('result-undo-to-backup'),
+                icon: const Icon(Icons.undo),
+                label: const Text('Undo to backup'),
+                onPressed: () async {
+                  final service = ref.read(controllerWriteServiceProvider);
+                  try {
+                    final session = WriteLogSession.decode(
+                        await result.log.readAsString());
+                    final set = await service.planUndo(session);
+                    if (!context.mounted) return;
+                    if (set.changes.isEmpty) {
+                      _snack(context,
+                          'The controller already has the backup values.');
+                      return;
+                    }
+                    await Navigator.of(context).pushReplacement(
+                        MaterialPageRoute(
+                            builder: (_) => WriteReviewScreen(changeSet: set)));
+                  } on WriteRefused catch (e) {
+                    if (context.mounted) _snack(context, e.message);
+                  } on Object catch (e) {
+                    if (context.mounted) _snack(context, 'Undo failed: $e');
                   }
                 },
               ),
@@ -222,14 +280,15 @@ class WriteLogDetailScreen extends ConsumerWidget {
               children: [
                 Text(s.title, style: Theme.of(context).textTheme.titleMedium),
                 Text('${s.timeLabel} · ${s.controllerName} · '
-                    '${s.kind.name} · ${s.success ? 'ok' : 'failed'}'),
+                    '${s.kind.name} · ${s.outcome.label}'),
+                Text(s.message),
                 if (s.error != null) Text(s.error!),
                 const SizedBox(height: 8),
                 for (final r in s.rows)
                   ListTile(
                     title: Text(r.label),
                     subtitle: Text('${r.oldText} → ${r.newText}'),
-                    trailing: Text(r.verify.label),
+                    trailing: Text(r.outcome.text),
                   ),
                 Text('Backup: ${s.backupFile}'),
                 const SizedBox(height: 16),

@@ -15,8 +15,14 @@ class AppSettings {
 
   /// Allows writing settings whose protocol is not yet confirmed on a real
   /// controller (see docs/write_protocol.md). Off by default.
+  ///
+  /// v1.4: stored under [experimentalKey]. The v1.3 key
+  /// ('experimentalWrites') is ignored on purpose: once switched on in
+  /// v1.3 (the Battery screen pointed riders to it) it stayed on forever,
+  /// and nothing ever reset it. Every install starts off again.
   final bool experimentalWrites;
 
+  static const experimentalKey = 'experimentalWritesV14';
   static const defaultLanguageCode = 'en';
   static const supportedLanguageCodes = ['en', 'de'];
 
@@ -53,7 +59,7 @@ class AppSettings {
         'hapticFeedbackEnabled': hapticFeedbackEnabled,
         'languageChosen': languageChosen,
         'speedUnit': speedUnit.key,
-        'experimentalWrites': experimentalWrites,
+        experimentalKey: experimentalWrites,
       };
 
   factory AppSettings.fromJson(Map<String, dynamic> json) {
@@ -68,7 +74,7 @@ class AppSettings {
       autoReconnect: json['autoReconnect'] as bool? ?? true,
       hapticFeedbackEnabled: json['hapticFeedbackEnabled'] as bool? ?? true,
       speedUnit: SpeedUnit.fromKey(json['speedUnit']),
-      experimentalWrites: json['experimentalWrites'] == true,
+      experimentalWrites: json[experimentalKey] == true,
     );
   }
 }

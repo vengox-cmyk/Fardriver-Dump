@@ -8,6 +8,9 @@ import 'package:arcdash/services/saved_files.dart';
 import 'package:arcdash/services/write/fardriver_write_protocol.dart';
 import 'package:arcdash/services/write/write_allowlist.dart';
 import 'package:arcdash/services/write/write_log.dart';
+import 'package:arcdash/services/write/write_outcome.dart';
+
+export 'package:arcdash/services/write/write_outcome.dart';
 
 /// What the write service needs from the live connection. The app wires
 /// it to the BLE dongle + controller notifier; tests use a fake.
@@ -95,7 +98,24 @@ class FieldResult {
   final VerifyResult verify;
   final int? readBackRaw;
   const FieldResult(this.change, this.verify, this.readBackRaw);
+
+  FieldOutcome get outcome => fieldOutcome(
+      verify: verify, oldRaw: change.oldRaw, readBackRaw: readBackRaw);
 }
+
+/// Plain outcome of one field from its verify state.
+FieldOutcome fieldOutcome(
+        {required VerifyResult verify,
+        required int oldRaw,
+        required int? readBackRaw}) =>
+    switch (verify) {
+      VerifyResult.ok => FieldOutcome.saved,
+      VerifyResult.mismatch => readBackRaw == oldRaw
+          ? FieldOutcome.rejectedUnchanged
+          : FieldOutcome.rejectedOther,
+      VerifyResult.noReadback => FieldOutcome.notConfirmed,
+      VerifyResult.notSent => FieldOutcome.notSent,
+    };
 
 class WriteResult {
   final String writeId;
@@ -116,12 +136,28 @@ class WriteResult {
     this.error,
   });
 
-  bool get success =>
-      error == null && fields.every((f) => f.verify == VerifyResult.ok);
+  WriteOutcome get outcome => WriteSummary.outcomeOf(
+      fields.map((f) => f.outcome),
+      stoppedEarly: error != null);
 
-  /// Fields worth restoring (anything that was sent but not verified, or
-  /// everything when the write failed part way).
-  bool get needsRestore => !success;
+  bool get success => outcome == WriteOutcome.ok;
+
+  /// e.g. "Low voltage protect saved, Over voltage protect rejected
+  /// (unchanged)".
+  String get message => WriteSummary.message(
+      [for (final f in fields) (f.change.field.label, f.outcome)]);
+
+  /// Fields the controller may now hold at an unknown/unwanted value
+  /// (sent, not verified, and not simply kept unchanged). Verified fields
+  /// are kept on a partial write; Undo to backup reverts everything.
+  List<FieldResult> get uncertain => [
+        for (final f in fields)
+          if (f.outcome == FieldOutcome.rejectedOther ||
+              f.outcome == FieldOutcome.notConfirmed)
+            f
+      ];
+
+  bool get needsRestore => uncertain.isNotEmpty;
 }
 
 /// The only path that changes controller settings. Every write:
@@ -184,6 +220,9 @@ class ControllerWriteService {
       if (field == null || WriteAllowlist.isForbiddenName(e.key)) {
         throw WriteRefused('${e.key} is not a setting FarSure writes.');
       }
+      if (field.readOnly) {
+        throw WriteRefused('${field.label} is ${WritableField.readOnlyNote}.');
+      }
       if (field.experimental && !experimentalEnabled()) {
         throw WriteRefused('${field.label} is experimental. Turn on '
             '"Experimental writes" in Settings to change it.');
@@ -214,6 +253,10 @@ class ControllerWriteService {
     final reason = refusalReason();
     if (reason != null) throw WriteRefused(reason);
     for (final c in set.changes) {
+      if (c.field.readOnly) {
+        throw WriteRefused(
+            '${c.field.label} is ${WritableField.readOnlyNote}.');
+      }
       if (c.field.experimental && !experimentalEnabled()) {
         throw WriteRefused('${c.field.label} is experimental and the '
             'Experimental toggle is off.');
@@ -372,10 +415,9 @@ class ControllerWriteService {
   }
 
   /// Puts back the old values of a write that failed or did not verify.
+  /// v1.4: only the uncertain fields; verified ones are kept.
   ChangeSet planRestore(WriteResult result) => plan({
-        for (final f in result.fields)
-          if (f.verify != VerifyResult.notSent)
-            f.change.field.key: f.change.oldRaw
+        for (final f in result.uncertain) f.change.field.key: f.change.oldRaw
       },
           title: 'Restore old values',
           kind: ChangeSetKind.restore);
@@ -393,7 +435,8 @@ class ControllerWriteService {
     final values = <String, int>{};
     for (final row in session.rows) {
       final field = WriteAllowlist.byKey(row.field);
-      if (field == null) continue;
+      // Read-only fields (v1.4: over voltage) were never changed.
+      if (field == null || field.readOnly) continue;
       final block = dump.blocks[field.def.block];
       if (block == null) continue;
       values[field.key] = field.readRaw(block);

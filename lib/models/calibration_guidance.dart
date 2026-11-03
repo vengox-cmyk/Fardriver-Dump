@@ -1,6 +1,7 @@
 import 'package:arcdash/services/parameter_dump.dart';
 import 'package:arcdash/models/gps_calibration.dart';
 import 'package:arcdash/models/speed_suggestions.dart';
+import 'package:arcdash/utils/speed_units.dart';
 
 /// Plain-language explanations of a calibration ride (v1.2.3): why seconds
 /// were not used, what to do about it, and how far the ride is from a
@@ -42,14 +43,18 @@ VerdictAdvice adviceFor(SampleVerdict v) => switch (v) {
           SampleVerdict.noWindow,
           'first/last second of a stretch or a gap in the data',
           'Nothing to do; this always costs a second or two.'),
-      SampleVerdict.accelerating => VerdictAdvice(
+      SampleVerdict.accelerating => const VerdictAdvice(
           SampleVerdict.accelerating,
-          'speeding up or slowing down (more than ${(_config.maxAccelMps2 * 3.6 * 2).toStringAsFixed(1)} km/h over 2 s)',
-          'Hold the throttle still for 10 seconds or more at a time.'),
-      SampleVerdict.rpmUnsteady => VerdictAdvice(
+          'speeding up or slowing down hard (GPS lags the motor there)',
+          'Ordinary throttle changes are fine; just avoid full-throttle pulls and hard braking.'),
+      SampleVerdict.inconsistent => const VerdictAdvice(
+          SampleVerdict.inconsistent,
+          'GPS speed and motor speed did not change together (wheel slip, lag or a GPS glitch)',
+          'Nothing to do on a normal road; on loose ground some of these are expected.'),
+      SampleVerdict.rpmUnsteady => const VerdictAdvice(
           SampleVerdict.rpmUnsteady,
-          'motor RPM jumping by more than ${(_config.maxRpmVariation * 100).round()} %',
-          'Keep a steady throttle on a smooth road (no wheel spin or bumps).'),
+          'motor RPM jumping (older FarSure versions only)',
+          'Nothing to do; FarSure 1.4 no longer rejects for this.'),
       SampleVerdict.turning => VerdictAdvice(
           SampleVerdict.turning,
           'turning (more than ${_config.maxHeadingRateDegPerS.round()}° per second)',
@@ -60,8 +65,9 @@ VerdictAdvice adviceFor(SampleVerdict v) => switch (v) {
           'Nothing to do; a few of these are normal.'),
       SampleVerdict.shortSegment => VerdictAdvice(
           SampleVerdict.shortSegment,
-          'steady, but for less than ${_config.minSegmentSeconds} seconds in a row',
-          'Hold each steady speed a little longer (10 s or more).'),
+          'usable, but for less than ${_config.minSegmentSeconds} seconds in a row '
+              '(${_config.minFastSegmentSeconds} s above ${_config.fastSegmentKph.round()} km/h)',
+          'Keep riding a little longer without hard throttle or braking.'),
     };
 
 /// One line of the "why nothing / little was used" breakdown.
@@ -122,6 +128,25 @@ String fitSummary(CalibrationFit fit, {BleSpeedSettings? ble}) {
   return buf.toString();
 }
 
+/// Plain words for a low band that disagrees with the faster bands, e.g.
+/// "Low-speed data disagrees by 1.2 % — ride above 25 mph to finish".
+/// Null when the bands agree.
+String? bandDisagreementText(CalibrationFit? fit,
+    {SpeedUnit unit = SpeedUnit.kmh}) {
+  if (fit == null || fit.disagreements.isEmpty) return null;
+  final d = fit.disagreements.first;
+  final pct = (d.relative.abs() * 100).toStringAsFixed(1);
+  final above = unit.speed(_bandUpperKph(d.band));
+  return 'Low-speed data disagrees by $pct % — ride above $above to finish';
+}
+
+double _bandUpperKph(SpeedBand b) => switch (b) {
+      SpeedBand.kph20to40 => 40,
+      SpeedBand.kph40to60 => 60,
+      SpeedBand.kph60to80 => 80,
+      SpeedBand.kph80plus => 80,
+    };
+
 /// One requirement of the capture checklist.
 class CaptureRequirement {
   final String title;
@@ -157,8 +182,9 @@ class CaptureProgress {
 
   bool get allDone => requirements.every((r) => r.done);
 
-  factory CaptureProgress.of(
-      CalibrationAnalysis analysis, CalibrationFit? fit) {
+  factory CaptureProgress.of(CalibrationAnalysis analysis, CalibrationFit? fit,
+      {SpeedUnit unit = SpeedUnit.kmh}) {
+    final disagreement = bandDisagreementText(fit, unit: unit);
     final clean = analysis.cleanSeconds;
     final segments = analysis.segments.length;
     final bands = analysis.bands;
@@ -213,6 +239,8 @@ class CaptureProgress {
         done: ci != null && ci <= highCi,
         hint: ci == null
             ? 'Shown after 2 steady stretches.'
+            : disagreement != null && ci > highCi
+                ? '$disagreement.'
             : ci <= highCi
                 ? 'High precision reached.'
                 : ci <= mediumCi

@@ -9,18 +9,19 @@ import 'package:arcdash/providers/stats_provider.dart';
 import 'package:arcdash/screens/dashboard_screen.dart';
 import 'package:arcdash/screens/settings_screen.dart';
 import 'package:arcdash/screens/stats_screen.dart';
+import 'package:arcdash/screens/tune_screen.dart';
 import 'package:arcdash/services/bluetooth_service.dart'
     show DongleConnectionState;
 import 'package:arcdash/l10n/app_strings.dart';
-import 'package:arcdash/services/remembered_auto_connect.dart';
 
-/// The root of the app: Cockpit / Rides / Settings tabs.
+/// The root of the app: Tune / Cockpit / Rides / Settings tabs. v1.4: opens
+/// on Tune and never connects on its own (use the Connect chip).
 ///
 /// The tabs are not routes, so Android's back (gesture, nav bar or a
 /// hardware KEYCODE_BACK key such as on a Zebra TC72) would pop this root
 /// route and close the app. [PopScope] catches it instead:
-/// * Rides/Settings → back returns to the Cockpit tab.
-/// * Cockpit → first back shows a hint, a second back within
+/// * Cockpit/Rides/Settings → back returns to the Tune tab.
+/// * Tune → first back shows a hint, a second back within
 ///   [exitWindow] exits. While a controller is connected or a ride or
 ///   calibration is recording, a "Disconnect and exit?" dialog asks first.
 /// Screens pushed on top (Saved files, dumps, calibration, …) are their own
@@ -31,34 +32,29 @@ class AppShell extends ConsumerStatefulWidget {
   /// How long the "Press back again to exit" hint stays armed.
   static const exitWindow = Duration(seconds: 2);
 
+  /// Tab the app opens on: 0 = Tune (v1.4). Cockpit-only widget tests set
+  /// it to [cockpitTab].
+  @visibleForTesting
+  static int initialTab = 0;
+  static const tuneTab = 0;
+  static const cockpitTab = 1;
+
   @override
   ConsumerState<AppShell> createState() => _AppShellState();
 }
 
 class _AppShellState extends ConsumerState<AppShell> {
-  int _selectedIndex = 0;
+  int _selectedIndex = AppShell.initialTab;
   Timer? _exitArmedTimer;
   bool _confirmOpen = false;
   bool _exiting = false;
 
   static const _screens = [
+    TuneScreen(),
     DashboardScreen(),
     StatsScreen(),
     SettingsScreen(),
   ];
-
-  @override
-  void initState() {
-    super.initState();
-    // v1.2.3: reconnect on its own when exactly one previously connected
-    // controller is around. No-op when none is remembered.
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      unawaited(
-          RememberedAutoConnect(service: ref.read(bluetoothServiceProvider))
-              .run());
-    });
-  }
 
   @override
   void dispose() {
@@ -79,6 +75,10 @@ class _AppShellState extends ConsumerState<AppShell> {
   Widget _buildLayout(BuildContext context, BoxConstraints constraints) {
     final strings = AppStrings.of(context);
     final destinations = [
+      const NavigationDestination(
+          key: ValueKey('tab-tune'),
+          icon: Icon(Icons.tune),
+          label: 'Tune'),
       NavigationDestination(
           icon: const Icon(Icons.speed), label: strings.text(AppText.cockpit)),
       NavigationDestination(
@@ -207,18 +207,29 @@ class _AppShellState extends ConsumerState<AppShell> {
   /// Saves what is running, closes the BLE link, then leaves the app.
   Future<void> _disconnectAndExit() async {
     _exiting = true;
+    // Each step on its own: a slow save must never keep the link open.
     try {
       if (ref.exists(gpsCalibrationProvider) &&
           ref.read(gpsCalibrationProvider).isRecording) {
-        await ref.read(gpsCalibrationProvider.notifier).stop();
+        await ref
+            .read(gpsCalibrationProvider.notifier)
+            .stop()
+            .timeout(const Duration(seconds: 3));
       }
-      await ref.read(statsProvider.notifier).finishSession();
+    } catch (_) {}
+    try {
+      await ref
+          .read(statsProvider.notifier)
+          .finishSession()
+          .timeout(const Duration(seconds: 3));
+    } catch (_) {}
+    try {
       await ref
           .read(bluetoothServiceProvider)
           .disconnect()
           .timeout(const Duration(seconds: 3));
     } catch (_) {
-      // Leaving must not get stuck on a save or a BLE error.
+      // Leaving must not get stuck on a BLE error.
     }
     await _exitApp();
   }

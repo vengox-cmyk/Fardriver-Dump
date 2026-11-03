@@ -1,0 +1,12 @@
+# FarSure write log,farsure-write-log-v1
+# write_id,20261103_161446
+# time,2026-11-03T21:14:46.367356Z
+# controller,CONTROLDM309
+# kind,write
+# title,Battery NMC (Li-ion) 24S 45 Ah
+# backup,prewrite_backup_CONTROLDM309_20261103_161446.csv
+# result,failed
+time,controller,field,old,new,old_raw,new_raw,verify,readback_raw,key
+2026-11-03T21:14:46.367356Z,CONTROLDM309,Low voltage protect,63.0 V,72.0 V,630,720,verified,720,LowVolProtect
+2026-11-03T21:14:46.367356Z,CONTROLDM309,Over voltage protect,121.5 V,102.0 V,1215,1020,MISMATCH,1215,HighVolProtect
+2026-11-03T21:14:46.367356Z,CONTROLDM309,Over voltage restore,119.5 V,100.8 V,1195,1008,MISMATCH,1195,HighVolRestore

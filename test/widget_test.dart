@@ -20,6 +20,10 @@ import 'package:arcdash/services/app_settings_repository.dart';
 import 'package:arcdash/services/range_prediction_repository.dart';
 
 void main() {
+  // v1.4 opens on Tune; these tests are about the Cockpit tab.
+  setUp(() => AppShell.initialTab = AppShell.cockpitTab);
+  tearDown(() => AppShell.initialTab = AppShell.tuneTab);
+
   // The use-at-your-own-risk notice is covered in disclaimer_test.dart.
   setUp(() => SharedPreferences.setMockInitialValues({Disclaimer.prefKey: 1}));
 

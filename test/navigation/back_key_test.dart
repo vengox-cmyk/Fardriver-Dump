@@ -1,3 +1,4 @@
+import 'package:arcdash/providers/stats_provider.dart';
 import 'dart:async';
 
 import 'package:arcdash/app.dart';
@@ -20,6 +21,10 @@ import 'package:shared_preferences/shared_preferences.dart';
 /// Zebra TC72 key) reaches Flutter as a popRoute, which is what
 /// `handlePopRoute()` simulates.
 void main() {
+  // Back handling only; the v1.4 ride auto-start is covered in test/v14.
+  setUp(() => StatsNotifier.autoStartOnConnect = false);
+  tearDown(() => StatsNotifier.autoStartOnConnect = true);
+
   late List<String> platformCalls;
 
   setUp(() {
@@ -81,22 +86,29 @@ void main() {
     await tester.pump(const Duration(seconds: 3));
   }
 
-  testWidgets('back on Rides and Settings returns to Cockpit (phone)',
+  testWidgets('back on Cockpit, Rides and Settings returns to Tune (phone)',
       (tester) async {
     usePhoneSize(tester);
     await pumpApp(tester);
     expect(find.byType(NavigationBar), findsOneWidget);
+    expect(selectedTab(tester), 0); // v1.4 opens on Tune
+
+    await tester.tap(find.text('Cockpit'));
+    await tester.pumpAndSettle();
+    expect(selectedTab(tester), 1);
+    await back(tester);
+    expect(selectedTab(tester), 0);
 
     await tester.tap(find.text('Rides'));
     await tester.pumpAndSettle();
-    expect(selectedTab(tester), 1);
+    expect(selectedTab(tester), 2);
     await back(tester);
     expect(selectedTab(tester), 0);
     expect(find.byType(AppShell), findsOneWidget);
 
     await tester.tap(find.text('Settings'));
     await tester.pumpAndSettle();
-    expect(selectedTab(tester), 2);
+    expect(selectedTab(tester), 3);
     await back(tester);
     expect(selectedTab(tester), 0);
 
@@ -223,7 +235,7 @@ void main() {
     await back(tester);
     await tester.pumpAndSettle();
     expect(find.text('sub-screen'), findsNothing);
-    expect(selectedTab(tester), 2); // still on Settings
+    expect(selectedTab(tester), 3); // still on Settings
     expect(exits(), 0);
     await disposeApp(tester);
   });

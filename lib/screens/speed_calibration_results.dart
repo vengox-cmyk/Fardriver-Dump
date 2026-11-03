@@ -115,7 +115,10 @@ class SpeedCalibrationResults extends ConsumerWidget {
         Card(
           child: Padding(
             padding: const EdgeInsets.all(12),
-            child: CaptureChecklist(analysis: session.analysis, fit: fit),
+            child: CaptureChecklist(
+                analysis: session.analysis,
+                fit: fit,
+                unit: ref.watch(speedUnitProvider)),
           ),
         ),
         _GpsFitCard(session: session),

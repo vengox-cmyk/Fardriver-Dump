@@ -9,6 +9,11 @@ enum WriteConfidence {
   /// Address decoded and shown by the official app, but it never writes
   /// it. Only offered with the Experimental toggle on.
   experimental,
+
+  /// Known address, but the controller ignores writes to it (hardware
+  /// finding, see docs/write_protocol.md). Shown greyed as reference only;
+  /// never written, not even with Experimental on.
+  readOnly,
 }
 
 /// One setting FarSure may write. Everything else is refused.
@@ -38,6 +43,10 @@ class WritableField {
   });
 
   bool get experimental => confidence == WriteConfidence.experimental;
+  bool get readOnly => confidence == WriteConfidence.readOnly;
+
+  static const readOnlyNote =
+      'read-only on this controller; not written by FarSure';
 
   FardriverParamDef get def => FardriverParamCatalog.byName(key);
 
@@ -144,20 +153,20 @@ class WriteAllowlist {
     WritableField(
       key: 'HighVolProtect',
       label: 'Over voltage protect',
-      confidence: WriteConfidence.experimental,
+      confidence: WriteConfidence.readOnly,
       rawMin: 100,
       rawMax: 2000,
-      source: 'fardriver.hpp word 37 = V × 10; shown, never written by '
-          'the official app',
+      source: 'fardriver.hpp word 37 = V × 10. CONTROLDM309 kept 121.5 V '
+          'after two verified write attempts (2026-11-03): read-only',
     ),
     WritableField(
       key: 'HighVolRestore',
       label: 'Over voltage restore',
-      confidence: WriteConfidence.experimental,
+      confidence: WriteConfidence.readOnly,
       rawMin: 100,
       rawMax: 2000,
-      source: 'fardriver.hpp word 0x83 = V × 10; shown, never written by '
-          'the official app',
+      source: 'fardriver.hpp word 0x83 = V × 10. CONTROLDM309 kept 119.5 V '
+          'after two verified write attempts (2026-11-03): read-only',
     ),
   ];
 
@@ -176,12 +185,19 @@ class WriteAllowlist {
     return null;
   }
 
-  /// Fields usable now ([experimental] = the Settings toggle).
-  static List<WritableField> available({required bool experimental}) =>
-      [for (final f in fields) if (experimental || !f.experimental) f];
+  /// Fields usable now ([experimental] = the Settings toggle). Read-only
+  /// fields are never included.
+  static List<WritableField> available({required bool experimental}) => [
+        for (final f in fields)
+          if (!f.readOnly && (experimental || !f.experimental)) f
+      ];
+
+  /// True when something is still gated by the Experimental toggle (the
+  /// toggle is hidden otherwise).
+  static bool get hasExperimental => fields.any((f) => f.experimental);
 
   static bool isWritableWord(int word) =>
-      fields.any((f) => f.wordAddress == word);
+      fields.any((f) => !f.readOnly && f.wordAddress == word);
 
   static String gearRatioLabel(int rateRatio) =>
       'GearRatio ${(rateRatio / 1000).toStringAsFixed(3)} '

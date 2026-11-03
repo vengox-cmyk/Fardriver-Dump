@@ -120,7 +120,8 @@ class StatsState {
       );
 }
 
-/// Manual rides: a ride starts only on [startRide] and ends only on
+/// Rides: a ride starts on [startRide], which v1.4 also calls on its own
+/// when a controller connects ([autoStartOnConnect]), and ends only on
 /// [stopRide] (or [finishSession] when the rider confirms leaving the app).
 ///
 /// While it runs it samples once a second, independent of the screen: it
@@ -151,6 +152,10 @@ class StatsNotifier extends StateNotifier<StatsState> {
   @visibleForTesting
   static Duration telemetryEvery = const Duration(milliseconds: 100);
 
+  /// Start a ride automatically on connect (tests may switch it off).
+  @visibleForTesting
+  static bool autoStartOnConnect = true;
+
   StatsNotifier(this._ref) : super(const StatsState()) {
     _loadPastSessions();
   }
@@ -171,7 +176,10 @@ class StatsNotifier extends StateNotifier<StatsState> {
         isTracking: true,
         waitingForController: _ref.read(liveRideSampleProvider)(now) == null);
     final recorder = _recorder =
-        RideRecorder(RideArchive(_ref.read(savedFilesStoreProvider)), session);
+        RideRecorder(
+        RideArchive(_ref.read(savedFilesStoreProvider),
+            controllerName: () => _ref.read(connectedDeviceNameProvider)),
+        session);
     _sampleTimer =
         Timer.periodic(sampleEvery, (_) => sampleNow());
     _checkpointTimer = Timer.periodic(
@@ -340,5 +348,19 @@ class StatsNotifier extends StateNotifier<StatsState> {
 }
 
 final statsProvider = StateNotifierProvider<StatsNotifier, StatsState>((ref) {
-  return StatsNotifier(ref);
+  final notifier = StatsNotifier(ref);
+  // v1.4: no taps while riding: a ride starts recording on its own as soon
+  // as a controller connects (it still ends with Stop, or keeps going
+  // across drop-outs as before).
+  ref.listen<AsyncValue<DongleConnectionState>>(connectionStateProvider,
+      (prev, next) {
+    if (!StatsNotifier.autoStartOnConnect) return;
+    if (next.valueOrNull == DongleConnectionState.connected &&
+        prev?.valueOrNull != DongleConnectionState.connected) {
+      scheduleMicrotask(() {
+        if (notifier.mounted) unawaited(notifier.startRide());
+      });
+    }
+  }, fireImmediately: true);
+  return notifier;
 });

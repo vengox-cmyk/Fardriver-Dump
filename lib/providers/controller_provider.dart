@@ -465,28 +465,6 @@ class ControllerNotifier extends StateNotifier<ControllerState> {
     _storage.saveStockBackup(backup);
   }
 
-  Future<void> setRideMode(RideMode mode) async {
-    if (state.speedKph > 2.0) {
-      _diagnostics.add(DiagnosticEventType.safety, details: {
-        'outcome': 'blocked',
-        'reason': 'vehicle_moving',
-      });
-      return;
-    }
-    final packet =
-        ProtocolService.setThrottleResponsePacket(mode.throttleResponseValue);
-    final written = await _bluetooth.write(packet);
-    _diagnostics.add(DiagnosticEventType.command, details: {
-      'outcome': written ? 'transport_success' : 'transport_failure',
-      'command': 'set_ride_mode',
-    });
-    if (!written) return;
-    state = state.copyWith(
-      rideMode: mode,
-      lastUpdate: DateTime.now(),
-    );
-  }
-
   @override
   void dispose() {
     _dataSub?.cancel();

@@ -52,6 +52,7 @@ RideRecord testRide({
   double? avgPowerW = 1000,
   double boostSeconds = 0,
   String? settingsDump,
+  String controllerId = '',
 }) =>
     RideRecord(
       id: start.millisecondsSinceEpoch.toString(),
@@ -72,6 +73,7 @@ RideRecord testRide({
       peakPowerW: 9000,
       boostSeconds: boostSeconds,
       settingsDump: settingsDump,
+      controllerId: controllerId,
     );
 
 FardriverParamDef def(String name) => FardriverParamCatalog.byName(name);

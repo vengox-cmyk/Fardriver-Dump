@@ -78,7 +78,7 @@ void main() {
 
   testWidgets(
       'not connected: nothing blocks, banner + dash check + saved rides '
-      'visible, start asks to connect', (tester) async {
+      'visible, start records GPS without asking (v1.4)', (tester) async {
     tester.view.physicalSize = const Size(1080, 2400);
     tester.view.devicePixelRatio = 2.5;
     addTearDown(tester.view.reset);
@@ -96,11 +96,17 @@ void main() {
     expect(button.onPressed, isNotNull);
     await tester.tap(find.byKey(const ValueKey('calibration-start')));
     await tester.pumpAndSettle();
-    expect(find.byKey(const ValueKey('connect-needed-dialog')), findsOneWidget);
-    await tester.tap(find.text('Not now'));
-    await tester.pumpAndSettle();
     expect(find.byKey(const ValueKey('connect-needed-dialog')), findsNothing);
-    expect(find.text('GPS SPEED'), findsNothing); // did not start
+    await tester
+        .tap(find.byKey(const ValueKey('calibration-disclaimer-accept')));
+    await tester.pumpAndSettle();
+    // Recording GPS; controller values wait for a connection.
+    expect(find.text('GPS SPEED'), findsOneWidget);
+    expect(find.byKey(const ValueKey('calibration-connect-banner')),
+        findsOneWidget);
+    expect(find.text('waiting for controller'), findsWidgets);
+    await tester.tap(find.byKey(const ValueKey('calibration-stop')));
+    await tester.pumpAndSettle();
   });
 
   testWidgets(

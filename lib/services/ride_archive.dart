@@ -18,10 +18,16 @@ import 'package:arcdash/services/saved_files.dart';
 /// archiver already saves each distinct configuration once), so nothing is
 /// duplicated. Every ride the rider starts is saved, however short.
 class RideArchive {
-  RideArchive(this.store, {Future<String> Function()? appVersion})
+  RideArchive(this.store,
+      {Future<String> Function()? appVersion, this.controllerName})
       : _appVersion = appVersion ?? ParameterDumpIo.appVersion;
 
   final SavedFilesStore store;
+
+  /// Name of the connected controller (BLE name, e.g. CONTROLDM309); used
+  /// as the ride's controller id ahead of the snapshot's id, which may be
+  /// a MAC in older dumps.
+  final String? Function()? controllerName;
   final Future<String> Function() _appVersion;
 
   static String recordFileName(DateTime start) =>
@@ -80,7 +86,8 @@ class RideArchive {
     final record = RideRecord.fromSession(session,
         settingsDump: snapshot.name,
         csvFile: csvName,
-        controllerId: snapshot.controllerId,
+        controllerId: controllerNameOf(controllerName?.call() ?? '') ??
+            snapshot.controllerId,
         appVersion: await _appVersion(),
         finished: finished);
     await store.write(SavedFileKind.rideRecord,
@@ -95,18 +102,53 @@ class RideArchive {
   static Future<RideRecord> load(File file) async =>
       RideRecord.decode(await file.readAsString());
 
-  /// The saved ride directly before [ride] (by start time), or null.
+  /// The saved ride before [ride] from the same controller, or null.
+  ///
+  /// v1.4: matched by controller NAME (e.g. CONTROLDM309), because BLE MAC
+  /// addresses change. Older files only have a MAC (or nothing); those are
+  /// used as a fallback when no ride with the same name exists, but a ride
+  /// with a different name is never used. See [pickPrevious].
   Future<RideRecord?> previousOf(RideRecord ride) async {
     final entries = await listRecords();
+    final older = <RideRecord>[];
     for (final e in entries) {
-      // newest first: the first one older than this ride
       if (!e.time.isBefore(ride.start)) continue;
       try {
         final r = await load(e.file);
-        if (r.id != ride.id) return r;
+        if (r.id != ride.id) older.add(r);
       } on Object {
         continue;
       }
+    }
+    return pickPrevious(ride, older);
+  }
+
+  /// MAC-looking ids (AA:BB:CC:DD:EE:FF) are not stable names.
+  static final _mac = RegExp(r'^([0-9A-Fa-f]{2}[:-]){5}[0-9A-Fa-f]{2}$');
+
+  /// The controller name in [id], or null for a MAC / empty id.
+  static String? controllerNameOf(String id) {
+    final t = id.trim();
+    if (t.isEmpty || _mac.hasMatch(t)) return null;
+    return t.toUpperCase();
+  }
+
+  /// Newest ride in [older] (any order) for the same controller as [ride]:
+  /// 1. same name; 2. else the newest one without a name (MAC-only/old
+  /// file). A ride whose name differs is never picked. When [ride] itself
+  /// has no name, the newest older ride is used (old behaviour).
+  static RideRecord? pickPrevious(RideRecord ride, List<RideRecord> older) {
+    final sorted = [
+      for (final r in older)
+        if (r.start.isBefore(ride.start) && r.id != ride.id) r
+    ]..sort((a, b) => b.start.compareTo(a.start));
+    final name = controllerNameOf(ride.controllerId);
+    if (name == null) return sorted.isEmpty ? null : sorted.first;
+    for (final r in sorted) {
+      if (controllerNameOf(r.controllerId) == name) return r;
+    }
+    for (final r in sorted) {
+      if (controllerNameOf(r.controllerId) == null) return r;
     }
     return null;
   }
