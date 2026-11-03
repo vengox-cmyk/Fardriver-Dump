@@ -30,6 +30,12 @@ class RideArchive {
   static String csvFileName(DateTime start) =>
       'arcdash_ride_${start.millisecondsSinceEpoch}.csv';
 
+  /// The ~10 Hz companion of [csvFileName].
+  static String telemetryFileName(DateTime start) =>
+      'arcdash_ride_${start.millisecondsSinceEpoch}_telemetry.csv';
+
+  static bool isTelemetryFile(String name) => name.endsWith('_telemetry.csv');
+
   /// Writes the whole CSV (from the samples in memory) and a finished
   /// record in one go. Returns the record, or null when the write failed
   /// (never throws). Live rides use [RideRecorder], which streams instead.
@@ -147,6 +153,36 @@ class RideRecorder {
 
   String get csvName => RideArchive.csvFileName(session.startTime);
 
+  /// ~10 Hz telemetry next to the 1 Hz ride CSV.
+  String get telemetryName => RideArchive.telemetryFileName(session.startTime);
+
+  final StringBuffer _telemetry = StringBuffer();
+  int _telemetryLines = 0;
+  File? _telemetryCsv;
+
+  /// Telemetry rows dropped because the buffer was full (disk failing).
+  int telemetryDropped = 0;
+
+  /// Most rows held in memory between flushes (5 s at 10 Hz is ~50; the cap
+  /// only matters when writing keeps failing), so memory stays bounded.
+  static const telemetryBufferCap = 3000;
+
+  static const telemetryHeader = [
+    'Time', 'ms', 'Speed (km/h)', 'RPM', 'Voltage (V)', 'Line current (A)',
+    'Phase A (A)', 'Phase C (A)', 'Motor (°C)', 'Controller (°C)',
+    'Throttle depth', 'Modulation', 'Field weakening', 'Gear', 'Boost',
+  ];
+
+  /// Adds one telemetry row (strings, [telemetryHeader] order).
+  void addTelemetry(List<String> row) {
+    if (_telemetryLines >= telemetryBufferCap) {
+      telemetryDropped++;
+      return;
+    }
+    _telemetry.write(_line(row));
+    _telemetryLines++;
+  }
+
   /// CSV rows on disk so far (header excluded).
   int get rowsWritten => _rowsWritten;
 
@@ -164,6 +200,9 @@ class RideRecorder {
         final file = File('${dir.path}/$csvName');
         await file.writeAsString(_line(RideSession.csvHeader), flush: true);
         _csv = file;
+        final tFile = File('${dir.path}/$telemetryName');
+        await tFile.writeAsString(_line(telemetryHeader), flush: true);
+        _telemetryCsv = tFile;
         await _refreshSnapshot();
         await _writeRecord(finished: false);
       });
@@ -190,11 +229,45 @@ class RideRecorder {
       await _flushRows();
       await _refreshSnapshot();
       record = await _writeRecord(finished: true);
+      // Public Documents/FarSure/rides copies (best effort).
+      for (final f in [_csv, _telemetryCsv]) {
+        if (f == null) continue;
+        try {
+          final hook = SavedFilesStore.onWritten;
+          if (hook != null) {
+            await hook(SavedFileKind.rideCsv, f);
+          }
+        } catch (e) {
+          debugPrint('Ride CSV mirror skipped: $e');
+        }
+      }
     });
     return record;
   }
 
+  Future<void> _flushTelemetry() async {
+    final file = _telemetryCsv;
+    if (file == null || _telemetry.isEmpty) return;
+    final text = _telemetry.toString();
+    _telemetry.clear();
+    final lines = _telemetryLines;
+    _telemetryLines = 0;
+    try {
+      await file.writeAsString(text, mode: FileMode.append, flush: true);
+    } catch (e) {
+      // Keep (bounded) for the next checkpoint.
+      final later = _telemetry.toString();
+      _telemetry
+        ..clear()
+        ..write(text)
+        ..write(later);
+      _telemetryLines += lines;
+      debugPrint('Telemetry flush failed: $e');
+    }
+  }
+
   Future<void> _flushRows() async {
+    await _flushTelemetry();
     final file = _csv;
     if (file == null || _pending.isEmpty) return;
     final text = _pending.toString();

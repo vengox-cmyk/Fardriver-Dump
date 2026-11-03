@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
@@ -13,7 +14,17 @@ enum SavedFileKind {
   dashCheck('dash_checks'),
 
   /// Ride summaries (`farsure-ride-v1` JSON) for the Rides tab.
-  rideRecord('ride_records');
+  rideRecord('ride_records'),
+
+  /// One CSV per controller write (time, controller, field, old, new,
+  /// verify result).
+  writeLog('write_log'),
+
+  /// Full parameter dumps saved automatically before every write.
+  backup('backups'),
+
+  /// Tire rack exports (`farsure-tires-v1` JSON).
+  tires('tires');
 
   const SavedFileKind(this.folder);
   final String folder;
@@ -78,8 +89,19 @@ class SavedFilesStore {
   Future<File> write(
       SavedFileKind kind, String fileName, String contents) async {
     final dir = await directoryFor(kind);
-    return writeAtomically(File('${dir.path}/${safeName(fileName)}'), contents);
+    final file = await writeAtomically(
+        File('${dir.path}/${safeName(fileName)}'), contents);
+    final hook = onWritten;
+    if (hook != null) {
+      // Public Documents mirror; never lets a mirror failure lose the save.
+      unawaited(hook(kind, file).catchError((Object _) {}));
+    }
+    return file;
   }
+
+  /// Called after every [write] (set once at start-up to mirror into
+  /// public Documents/FarSure). Null in tests.
+  static Future<void> Function(SavedFileKind kind, File file)? onWritten;
 
   /// Replaces [target] via a temp file + rename (never half-written).
   static Future<File> writeAtomically(File target, String contents) async {
@@ -131,7 +153,8 @@ class SavedFilesStore {
       final head = await _readHead(file);
       final info = switch (kind) {
         SavedFileKind.calibration => calibrationInfo(head),
-        SavedFileKind.dump => dumpInfo(head),
+        SavedFileKind.dump || SavedFileKind.backup => dumpInfo(head),
+        SavedFileKind.writeLog => writeLogInfo(head),
         SavedFileKind.dashCheck => dashCheckInfo(head),
         SavedFileKind.rideRecord => rideRecordInfo(head),
         _ => const <String, String>{},
@@ -264,6 +287,27 @@ class SavedFilesStore {
           info['controller_id'] = value;
         case 'source':
           info['source'] = value;
+      }
+    }
+    return info;
+  }
+
+  /// Header facts of a write log: time, controller, result, title.
+  static Map<String, String> writeLogInfo(String head) {
+    final info = <String, String>{};
+    for (final row in FlatCsv.decode(_completeLines(head))) {
+      if (row.isEmpty || !row.first.startsWith('#')) continue;
+      final key = row.first.substring(1).trim();
+      final value = row.length > 1 ? row[1] : '';
+      switch (key) {
+        case 'time':
+          info['time'] = value;
+        case 'controller':
+          info['controller'] = value;
+        case 'result':
+          info['status'] = value;
+        case 'title':
+          info['title'] = value;
       }
     }
     return info;

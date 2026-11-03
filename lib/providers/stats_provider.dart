@@ -135,6 +135,7 @@ class StatsNotifier extends StateNotifier<StatsState> {
   final Ref _ref;
   Timer? _sampleTimer;
   Timer? _checkpointTimer;
+  Timer? _telemetryTimer;
   DateTime? _lastSampleTime;
   RideRecorder? _recorder;
   Future<void>? _stopping;
@@ -145,6 +146,10 @@ class StatsNotifier extends StateNotifier<StatsState> {
   /// record).
   @visibleForTesting
   static Duration sampleEvery = const Duration(seconds: 1);
+
+  /// Telemetry period (~10 Hz). Tests raise it.
+  @visibleForTesting
+  static Duration telemetryEvery = const Duration(milliseconds: 100);
 
   StatsNotifier(this._ref) : super(const StatsState()) {
     _loadPastSessions();
@@ -171,9 +176,41 @@ class StatsNotifier extends StateNotifier<StatsState> {
         Timer.periodic(sampleEvery, (_) => sampleNow());
     _checkpointTimer = Timer.periodic(
         checkpointEvery, (_) => unawaited(recorder.checkpoint()));
+    _telemetryTimer = Timer.periodic(telemetryEvery, (_) => telemetryNow());
     unawaited(_ref.read(rideKeepAliveProvider).start());
     await recorder.begin();
     if (mounted) _ref.read(rideArchiveRevisionProvider.notifier).state++;
+  }
+
+  /// One ~10 Hz telemetry row (skipped while disconnected).
+  @visibleForTesting
+  void telemetryNow([DateTime? at]) {
+    final recorder = _recorder;
+    final session = state.currentSession;
+    if (recorder == null || session == null) return;
+    final cs = _ref.read(connectionStateProvider).valueOrNull;
+    if (cs != DongleConnectionState.connected) return;
+    final now = at ?? DateTime.now();
+    final c = _ref.read(controllerProvider);
+    final gear = c.gearStatus(now);
+    String f(double v, int d) => v.toStringAsFixed(d);
+    recorder.addTelemetry([
+      now.toIso8601String(),
+      '${now.difference(session.startTime).inMilliseconds}',
+      f(c.speedKph, 1),
+      '${c.motorRpm}',
+      f(c.voltageV, 1),
+      f(c.currentA, 1),
+      f(c.phaseACurrA, 1),
+      f(c.phaseCCurrA, 1),
+      f(c.motorTempC, 0),
+      f(c.controllerTempC, 0),
+      '${c.throttleDepth}',
+      f(c.modulation, 2),
+      c.fieldWeakening ? '1' : '0',
+      gearBucket(gear) ?? '',
+      gear == null ? '' : (gear.showsBoost ? '1' : '0'),
+    ]);
   }
 
   /// Takes one sample (the 1 s timer calls this).
@@ -245,6 +282,8 @@ class StatsNotifier extends StateNotifier<StatsState> {
     _sampleTimer = null;
     _checkpointTimer?.cancel();
     _checkpointTimer = null;
+    _telemetryTimer?.cancel();
+    _telemetryTimer = null;
     _lastSampleTime = null;
 
     final session = state.currentSession;
@@ -293,6 +332,7 @@ class StatsNotifier extends StateNotifier<StatsState> {
   void dispose() {
     _sampleTimer?.cancel();
     _checkpointTimer?.cancel();
+    _telemetryTimer?.cancel();
     // Best effort: flush what we have; the record stays unfinished.
     unawaited(_recorder?.checkpoint());
     super.dispose();

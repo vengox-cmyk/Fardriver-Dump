@@ -36,7 +36,10 @@ class RidesListing {
     final entries = all
         .where((e) =>
             kinds.contains(e.kind) &&
-            !(e.kind == SavedFileKind.rideCsv && linkedCsv.contains(e.name)))
+            !(e.kind == SavedFileKind.rideCsv &&
+                (linkedCsv.contains(e.name) ||
+                    // ~10 Hz companion; opened from the ride detail.
+                    e.name.endsWith('_telemetry.csv'))))
         .toList()
       ..sort((a, b) => b.time.compareTo(a.time));
     return RidesListing(entries, {

@@ -49,8 +49,8 @@ void main() {
     test('fit summary names RateRatio, error and clean seconds', () {
       final s = fitSummary(fit, ble: ble);
       final suggested = RateRatioSuggestion.compute(ble, fit.kGps).suggested;
-      expect(s, contains('RateRatio: $suggested'));
-      expect(s, contains('(now 4000)'));
+      expect(s, contains('(RateRatio $suggested)'));
+      expect(s, contains('now GearRatio 4.000 (RateRatio 4000)'));
       expect(s, contains('${fit.cleanSeconds} clean seconds'));
       expect(s, contains('% high'));
     });

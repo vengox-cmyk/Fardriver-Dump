@@ -55,6 +55,9 @@ class LiveDumpArchiver {
     ('DistanceMSB', 0x7C),
     ('AVGPower', 0xD0),
     ('AVGSpeed', 0xD0),
+    // Live readings that change every frame, not settings.
+    ('ThrottleVoltage', 0x82),
+    ('unkB9', 0xB8),
   ];
 
   /// True for the controller clock, save counter and riding counters,

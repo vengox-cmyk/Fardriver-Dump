@@ -7,6 +7,8 @@ import 'package:arcdash/providers/saved_files_provider.dart';
 import 'package:arcdash/screens/ride_detail_screen.dart';
 import 'package:arcdash/screens/parameter_dump_screen.dart';
 import 'package:arcdash/screens/saved_calibration_screen.dart';
+import 'package:arcdash/screens/write_screens.dart';
+import 'package:arcdash/services/public_files.dart';
 import 'package:arcdash/services/parameter_dump_io.dart';
 import 'package:arcdash/services/saved_files.dart';
 import 'package:arcdash/services/saved_files_dedupe.dart';
@@ -113,6 +115,9 @@ class _SavedFilesScreenState extends ConsumerState<SavedFilesScreen> {
         SavedFileKind.rideCsv => AppText.savedRides,
         SavedFileKind.dashCheck => AppText.savedDashChecks,
         SavedFileKind.rideRecord => AppText.savedRideRecords,
+        SavedFileKind.writeLog => AppText.savedWriteLog,
+        SavedFileKind.backup => AppText.savedBackups,
+        SavedFileKind.tires => AppText.savedTires,
       });
 
   IconData _icon(SavedFileKind kind) => switch (kind) {
@@ -122,6 +127,9 @@ class _SavedFilesScreenState extends ConsumerState<SavedFilesScreen> {
         SavedFileKind.rideCsv => Icons.route_outlined,
         SavedFileKind.dashCheck => Icons.speed_outlined,
         SavedFileKind.rideRecord => Icons.two_wheeler,
+        SavedFileKind.writeLog => Icons.edit_note,
+        SavedFileKind.backup => Icons.restore,
+        SavedFileKind.tires => Icons.tire_repair,
       };
 
   Future<bool> _confirm(String title, String body) async {
@@ -185,7 +193,10 @@ class _SavedFilesScreenState extends ConsumerState<SavedFilesScreen> {
       switch (entry.kind) {
         case SavedFileKind.calibration:
           page = SavedCalibrationScreen(file: entry.file);
+        case SavedFileKind.writeLog:
+          page = WriteLogDetailScreen(file: entry.file);
         case SavedFileKind.dump:
+        case SavedFileKind.backup:
           final dump = ParameterDumpIo.parseFile(
               await entry.file.readAsBytes(), entry.name);
           page = ParameterDumpScreen(
@@ -198,6 +209,7 @@ class _SavedFilesScreenState extends ConsumerState<SavedFilesScreen> {
         case SavedFileKind.diagnosticLog:
         case SavedFileKind.rideCsv:
         case SavedFileKind.dashCheck:
+        case SavedFileKind.tires:
           page = SavedTextFileScreen(
               title: entry.name, text: await entry.file.readAsString());
       }
@@ -210,6 +222,26 @@ class _SavedFilesScreenState extends ConsumerState<SavedFilesScreen> {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
           content: Text('${strings.text(AppText.savedOpenFailed)}: $e')));
     }
+  }
+
+  Future<void> _import() async {
+    final messenger = ScaffoldMessenger.of(context);
+    final message = await PublicFiles.importWithPicker(
+        ref.read(savedFilesStoreProvider));
+    if (!mounted || message == null) return;
+    messenger.showSnackBar(SnackBar(content: Text(message)));
+    _reload();
+  }
+
+  Future<void> _mirrorAll() async {
+    final messenger = ScaffoldMessenger.of(context);
+    final n = await PublicFiles.mirrorAll(ref.read(savedFilesStoreProvider),
+        force: true);
+    if (!mounted) return;
+    messenger.showSnackBar(SnackBar(
+        content: Text(n < 0
+            ? 'Copying to Documents is not available on this phone.'
+            : 'Copied $n files to ${PublicFiles.displayPath}')));
   }
 
   String _subtitle(AppStrings strings, SavedFileEntry e) {
@@ -230,7 +262,14 @@ class _SavedFilesScreenState extends ConsumerState<SavedFilesScreen> {
         if (info['status'] == 'recording') {
           parts.add(strings.text(AppText.savedInterrupted));
         }
+      case SavedFileKind.writeLog:
+        final title = info['title'];
+        if (title != null && title.isNotEmpty) parts.add(title);
+        final c = info['controller'];
+        if (c != null && c.isNotEmpty) parts.add(c);
+        parts.add(info['status'] == 'ok' ? 'verified' : 'FAILED');
       case SavedFileKind.dump:
+      case SavedFileKind.backup:
         final id = info['controller_id'];
         parts.add('${strings.text(AppText.savedController)} '
             '${id == null || id.isEmpty ? '—' : id}');
@@ -250,6 +289,7 @@ class _SavedFilesScreenState extends ConsumerState<SavedFilesScreen> {
         if (km != null) parts.add(ref.read(speedUnitProvider).distance(km));
       case SavedFileKind.diagnosticLog:
       case SavedFileKind.rideCsv:
+      case SavedFileKind.tires:
         break;
     }
     parts.add(_formatSize(e.sizeBytes));
@@ -356,6 +396,33 @@ class _SavedFilesScreenState extends ConsumerState<SavedFilesScreen> {
                                   fontSize: 11, color: Colors.white54),
                             ),
                           ),
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(4, 8, 4, 0),
+                          child: Text(
+                            '${strings.text(AppText.savedPublicFolder)} '
+                            '${PublicFiles.displayPath}',
+                            key: const ValueKey('saved-public-folder'),
+                            style: const TextStyle(
+                                fontSize: 11, color: Colors.white54),
+                          ),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(4, 8, 4, 0),
+                          child: Wrap(spacing: 8, children: [
+                            OutlinedButton.icon(
+                              key: const ValueKey('saved-import'),
+                              onPressed: _import,
+                              icon: const Icon(Icons.file_open_outlined),
+                              label: const Text('Import dump / tire rack'),
+                            ),
+                            OutlinedButton.icon(
+                              key: const ValueKey('saved-mirror-now'),
+                              onPressed: _mirrorAll,
+                              icon: const Icon(Icons.folder_copy_outlined),
+                              label: const Text('Copy all to Documents'),
+                            ),
+                          ]),
+                        ),
                       ],
                     ),
                   ),

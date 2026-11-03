@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:arcdash/screens/write_screens.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -258,14 +259,14 @@ class _Big extends StatelessWidget {
       ]);
 }
 
-class _ResultCard extends StatelessWidget {
+class _ResultCard extends ConsumerWidget {
   const _ResultCard({required this.record, required this.result});
 
   final DashCheckRecord? record;
   final DashCheckResult? result;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final r = result;
     final rec = record;
     final lines = <Widget>[];
@@ -293,8 +294,22 @@ class _ResultCard extends StatelessWidget {
         ));
         lines.add(const Text(
           'A higher SpdPulseNum makes the dash read higher (fine steps); Speed Pulses is the coarse step. '
-          'Apply in the FarDriver app, then repeat this check to confirm.',
+          'Apply (review screen, nothing written until you confirm), then repeat this check to confirm.',
           style: TextStyle(fontSize: 12, color: Colors.white70),
+        ));
+        lines.add(Align(
+          alignment: Alignment.centerLeft,
+          child: FilledButton.icon(
+            key: const ValueKey('dash-check-apply'),
+            icon: const Icon(Icons.save_alt),
+            label: const Text('Apply to the controller'),
+            onPressed: () => startControllerWrite(context, ref,
+                values: {
+                  if (s.changesSpeedPulses) 'SpeedPulse': s.suggestedSpeedPulses,
+                  'SpdPulseNum': s.suggestedSpdPulseNum,
+                },
+                title: 'DKD speed from dash speed check'),
+          ),
         ));
       } else if (rec != null) {
         lines.add(const Text(

@@ -176,8 +176,8 @@ class RideAnalysis {
 
     final power = c(CalloutKind.avgPower);
     if (power != null && power.notable && (power.delta ?? 0) > 0) {
-      out.add('Average power was ${power.describe(unit)} compared with the '
-          'previous ride; range per charge will drop accordingly.');
+      out.add('${power.describe(unit)} compared with the previous ride; '
+          'range per charge will drop accordingly.');
     }
 
     if (ride.boostSeconds >= 1 && ride.duration.inSeconds > 0) {
@@ -310,6 +310,8 @@ class RideAnalysis {
 
   static const _plainNames = {
     'MaxLineCurr': 'Max line (battery) current',
+    'ThrottleLow': 'Throttle Low voltage',
+    'ThrottleHigh': 'Throttle High voltage',
     'MaxPhaseCurr': 'Max phase current',
     'CustomMaxLineCurr': 'Boost line current',
     'CustomMaxPhaseCurr': 'Boost phase current',

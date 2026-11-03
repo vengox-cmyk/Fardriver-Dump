@@ -105,9 +105,15 @@ class TelemetryUpdate {
   final bool? motorTempProtect;
   final bool? controllerTempProtect;
 
+  /// E2 d[4] / 128 (official GraphPage "Modulation", 0..~1.15).
+  final double? modulation;
+
   // From 0xE8 (AddrE8)
   final double? voltageV; // deci_volts / 10.0
   final double? currentA; // lineCurrent / 4.0
+
+  /// E8 d[10..11] LE: throttle depth (official GraphPage ThrottleDepth).
+  final int? throttleDepth;
 
   // From 0xEE (AddrEE)
   final double? phaseACurrA; // 1.953125 * sqrt(raw)
@@ -120,6 +126,9 @@ class TelemetryUpdate {
   // From 0xD6 (AddrD6)
   final double? mosTempC; // MosTemp (controller temp, degrees C)
   final bool? boost; // Global_state3 & 0x04
+
+  /// Global_state2 (D6 d[4..5] LE) & 0x08: field weakening active.
+  final bool? fieldWeakening;
 
   // From 0xD0 (AddrD0) — wheel geometry for speed calculation
   final int? wheelRadius;
@@ -151,14 +160,17 @@ class TelemetryUpdate {
     this.throttleError,
     this.motorTempProtect,
     this.controllerTempProtect,
+    this.modulation,
     this.voltageV,
     this.currentA,
+    this.throttleDepth,
     this.phaseACurrA,
     this.phaseCCurrA,
     this.motorTempC,
     this.battCapPercent,
     this.mosTempC,
     this.boost,
+    this.fieldWeakening,
     this.wheelRadius,
     this.wheelWidth,
     this.wheelRatio,
@@ -264,6 +276,7 @@ class PacketParser {
           throttleError: (errByte1 & 0x02) != 0,
           motorTempProtect: (errByte1 & 0x40) != 0,
           controllerTempProtect: (errByte1 & 0x80) != 0,
+          modulation: d[4] / 128.0,
         );
 
       case 0xE8: // AddrE8 — voltage, line current
@@ -273,6 +286,7 @@ class PacketParser {
           capturedAt: capturedAt,
           voltageV: deciVolts / 10.0,
           currentA: lineCurrent / 4.0,
+          throttleDepth: readUint16LE(d, 10),
         );
 
       case 0xEE: // AddrEE — phase currents
@@ -302,6 +316,7 @@ class PacketParser {
           mosTempC: mosTemp.toDouble(),
           // Global_state3 (d[6] + d[7] * 256) bit 2: boost active.
           boost: GearStatus.boostFromD6(d),
+          fieldWeakening: (readUint16LE(d, 4) & 0x08) != 0,
         );
 
       case 0xD0: // AddrD0 — wheel geometry

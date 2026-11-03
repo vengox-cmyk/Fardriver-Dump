@@ -1,5 +1,7 @@
 import 'dart:io';
 
+import 'package:arcdash/screens/write_screens.dart';
+import 'package:arcdash/services/write/write_allowlist.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -376,14 +378,14 @@ class _GpsFitCard extends StatelessWidget {
   }
 }
 
-class _BleCard extends StatelessWidget {
+class _BleCard extends ConsumerWidget {
   const _BleCard({required this.fit, required this.settings});
 
   final CalibrationFit? fit;
   final CalibrationSettings settings;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final ble = settings.ble;
     final f = fit;
     if (ble == null || f == null) {
@@ -401,12 +403,10 @@ class _BleCard extends StatelessWidget {
       title: 'FarSure / BLE speed (RateRatio)',
       badge: ConfidenceBadge(f.confidence),
       children: [
-        _Row('Current RateRatio',
-            '${ble.rateRatio}  (GearRatio ${ble.gearRatio.toStringAsFixed(3)})'),
+        _Row('Current', WriteAllowlist.gearRatioLabel(ble.rateRatio)),
         _Row('Error vs GPS', _pct(s.error)),
-        _Row('Suggested RateRatio', '${s.suggested}',
+        _Row('Suggested', WriteAllowlist.gearRatioLabel(s.suggested),
             emphasize: true, valueKey: const ValueKey('suggested-rate-ratio')),
-        _Row('Suggested GearRatio', s.suggestedGearRatio.toStringAsFixed(3)),
         if (s.isSuspicious)
           Padding(
             padding: const EdgeInsets.only(top: 6),
@@ -418,9 +418,28 @@ class _BleCard extends StatelessWidget {
             ),
           ),
         const SizedBox(height: 6),
+        if (s.isChange)
+          Align(
+            alignment: Alignment.centerLeft,
+            child: FilledButton.icon(
+              key: const ValueKey('apply-rate-ratio'),
+              icon: const Icon(Icons.save_alt),
+              label: Text('Apply GearRatio '
+                  '${s.suggestedGearRatio.toStringAsFixed(3)}'),
+              onPressed: () => startControllerWrite(context, ref,
+                  values: {'RateRatio': s.suggested},
+                  title: 'GearRatio from GPS calibration',
+                  notes: [
+                    'Error vs GPS ${_pct(s.error)}.',
+                    if (s.isSuspicious)
+                      'Large change: check tire size, pulley ratio and the '
+                          'GPS mount first.',
+                  ]),
+            ),
+          ),
         const Text(
-          'Apply in the official FarDriver app: set RateRatio (the motor-to-wheel pulley ratio, shown there as '
-          'GearRatio = RateRatio / 1000). FarSure never writes to the controller.',
+          'Apply opens a review screen; nothing is written until you '
+          'confirm (stopped bike, backup first, read back and checked).',
           style: TextStyle(fontSize: 12, color: Colors.white70),
         ),
         const SizedBox(height: 4),
@@ -510,10 +529,24 @@ class _DkdCard extends ConsumerWidget {
             style: TextStyle(fontSize: 12, color: Colors.white70),
           ),
           const SizedBox(height: 4),
-          const Text(
-            'Apply in the official FarDriver app (Speed Pulses, SpdPulseNum).',
-            style: TextStyle(fontSize: 12, color: Colors.white70),
-          ),
+          if (s.suggestedSpdPulseNum != spn ||
+              (s.changesSpeedPulses && s.suggestedSpeedPulses != sp))
+            Align(
+              alignment: Alignment.centerLeft,
+              child: FilledButton.icon(
+                key: const ValueKey('apply-dkd'),
+                icon: const Icon(Icons.save_alt),
+                label: const Text('Apply to the controller'),
+                onPressed: () => startControllerWrite(context, ref,
+                    values: {
+                      if (s.changesSpeedPulses)
+                        'SpeedPulse': s.suggestedSpeedPulses,
+                      'SpdPulseNum': s.suggestedSpdPulseNum,
+                    },
+                    title: 'DKD speed from GPS calibration',
+                    notes: ['DKD error vs GPS ${_pct(error)}.']),
+              ),
+            ),
         ]);
       } else {
         children.add(const Text(

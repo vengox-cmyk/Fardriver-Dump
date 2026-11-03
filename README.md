@@ -10,12 +10,13 @@ A Flutter app for read-only monitoring of FarDriver motor controllers on electri
 
 - **Live Telemetry Dashboard** — speed, voltage, current, power, temperatures, battery %
 - **Ride Stats** — session log with distance, time, avg/top speed, Wh used
-- **Saved Rides** (1.2.4) — each ride kept offline with its settings snapshot, changes vs the previous ride and rule-based notes; "Copy for AI" only copies text, FarSure never writes controller settings
+- **Saved Rides** (1.2.4) — each ride kept offline with its settings snapshot, changes vs the previous ride and rule-based notes; "Copy for AI" only copies text and nothing from AI is ever written
+- **Controller writes** (1.3.0) — apply GearRatio (RateRatio), DKD SpeedPulse/SpdPulseNum, tire size (tire rack) and battery protect/capacity from a short allowlist: only at standstill, automatic backup first, one review/confirm, read-back verify, restore and "Undo to backup", permanent write log (see `docs/write_protocol.md`); public `Documents/FarSure` copies of everything saved; ~10 Hz ride telemetry
 - **Raw Debug Screen** — live hex packet dump with CRC verification
 - **Local Dashboard Layouts** — separate portrait and landscape cockpit layouts
 - **Android-first** — Android is the supported Version-1 target
 
-## Parameter Dump & Compare (read-only)
+## Parameter Dump & Compare
 
 ArcDash can save and compare FarDriver controller configurations without
 writing anything to the controller. The only command sent is the existing

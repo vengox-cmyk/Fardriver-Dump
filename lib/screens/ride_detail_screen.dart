@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
+import 'package:arcdash/models/telemetry_summary.dart';
 import 'package:arcdash/l10n/app_strings.dart';
 import 'package:arcdash/models/ride_record.dart';
 import 'package:arcdash/providers/saved_files_provider.dart';
@@ -37,8 +38,10 @@ class RideDetailData {
   final ConfigDiff? diff;
   final List<String> suggestions;
   final String aiText;
+  final TelemetrySummary? bySpeed;
 
   const RideDetailData({
+    this.bySpeed,
     required this.ride,
     this.previous,
     this.settings,
@@ -65,7 +68,24 @@ class RideDetailData {
     }
     final suggestions = RideAnalysis.suggestions(ride,
         previous: previous, diff: diff, settings: settings, unit: unit);
+    TelemetrySummary? bySpeed;
+    final csv = ride.csvFile;
+    if (csv != null) {
+      try {
+        final t = File('${file.parent.path}/'
+            '${csv.replaceFirst(RegExp(r'\.csv$'), '_telemetry.csv')}');
+        final dir = await store.directoryFor(SavedFileKind.rideCsv);
+        final f = await t.exists()
+            ? t
+            : File('${dir.path}/'
+                '${csv.replaceFirst(RegExp(r'\.csv$'), '_telemetry.csv')}');
+        if (await f.exists()) {
+          bySpeed = TelemetrySummary.fromCsv(await f.readAsString(), unit);
+        }
+      } catch (_) {}
+    }
     return RideDetailData(
+      bySpeed: bySpeed,
       ride: ride,
       previous: previous,
       settings: settings,
@@ -173,6 +193,22 @@ class _RideDetailScreenState extends ConsumerState<RideDetailScreen> {
         _changesCard(strings, d),
         _header(strings.text(AppText.rideTelemetry)),
         _calloutsCard(strings, d),
+        if (d.bySpeed != null && d.bySpeed!.bands.isNotEmpty) ...[
+          _header('By speed (10 Hz telemetry)'),
+          _box(Column(
+            key: const ValueKey('ride-by-speed'),
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              for (final l in d.bySpeed!.lines(unit))
+                Text(l,
+                    style: const TextStyle(color: Colors.white, fontSize: 12)),
+              Text(
+                  'Sag vs resting ${d.bySpeed!.restV.toStringAsFixed(1)} V; '
+                  '${d.bySpeed!.samples} samples.',
+                  style: const TextStyle(color: _muted, fontSize: 11)),
+            ],
+          )),
+        ],
         _header(strings.text(AppText.rideSummary)),
         _box(Column(
           crossAxisAlignment: CrossAxisAlignment.start,

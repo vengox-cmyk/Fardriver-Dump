@@ -34,8 +34,18 @@ class DecodedParameter {
   /// [display] in the rider's Settings > Display unit. Only distance (km),
   /// speed (km/h) and energy per distance (Wh/km) follow the mph switch;
   /// rpm and everything else is shown as stored. Exports stay metric.
-  String displayIn(SpeedUnit unit) =>
-      label.isEmpty ? formatValue(def.unit, value, unit) : display;
+  String displayIn(SpeedUnit unit) {
+    if (def.name == 'RateRatio' || def.name == 'GearRatio') {
+      final r = int.tryParse(raw);
+      if (r != null) return gearRatioText(r);
+    }
+    return label.isEmpty ? formatValue(def.unit, value, unit) : display;
+  }
+
+  /// "GearRatio 4.106 (RateRatio 4106)": how FarSure shows the speed ratio
+  /// everywhere (the official app shows GearRatio, the protocol RateRatio).
+  static String gearRatioText(int rateRatio) =>
+      'GearRatio ${(rateRatio / 1000).toStringAsFixed(3)} (RateRatio $rateRatio)';
 
   /// "15.9 mi (25.6 km)" in mph mode; the plain metric value otherwise.
   static String formatValue(String metricUnit, String value, SpeedUnit unit) {

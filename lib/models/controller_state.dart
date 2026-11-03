@@ -77,6 +77,11 @@ class ControllerState {
   final bool boostActive;
   final DateTime? boostAt;
 
+  /// Live extras for the ride telemetry CSV (official GraphPage fields).
+  final int throttleDepth;
+  final bool fieldWeakening;
+  final double modulation;
+
   // Fault flags
   final bool motorHallError;
   final bool throttleError;
@@ -124,6 +129,9 @@ class ControllerState {
     this.wheelMoving = false,
     this.boostActive = false,
     this.boostAt,
+    this.throttleDepth = 0,
+    this.fieldWeakening = false,
+    this.modulation = 0,
     this.motorHallError = false,
     this.throttleError = false,
     this.motorTempProtect = false,
@@ -174,6 +182,9 @@ class ControllerState {
     bool? wheelMoving,
     bool? boostActive,
     DateTime? boostAt,
+    int? throttleDepth,
+    bool? fieldWeakening,
+    double? modulation,
     bool? motorHallError,
     bool? throttleError,
     bool? motorTempProtect,
@@ -212,6 +223,9 @@ class ControllerState {
       wheelMoving: wheelMoving ?? this.wheelMoving,
       boostActive: boostActive ?? this.boostActive,
       boostAt: boostAt ?? this.boostAt,
+      throttleDepth: throttleDepth ?? this.throttleDepth,
+      fieldWeakening: fieldWeakening ?? this.fieldWeakening,
+      modulation: modulation ?? this.modulation,
       motorHallError: motorHallError ?? this.motorHallError,
       throttleError: throttleError ?? this.throttleError,
       motorTempProtect: motorTempProtect ?? this.motorTempProtect,
