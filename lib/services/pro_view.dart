@@ -440,7 +440,12 @@ class _Builder {
       n('WheelWidth', 'WheelWidth'),
       n('WheelRatio', 'WheelRatio'),
       n('WheelR', 'WheelRadius'),
-      n('GearRatio', 'GearRatio', uncertain: true, note: 'RateRatio / 1000.'),
+      cell(
+          'GearRatio',
+          raw('RateRatio') == null
+              ? null
+              : DecodedParameter.gearRatioText(raw('RateRatio')!),
+          note: 'RateRatio / 1000.'),
     ]);
   }
 

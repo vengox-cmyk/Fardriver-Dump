@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:arcdash/providers/write_provider.dart';
+import 'package:arcdash/screens/battery_screen.dart';
+import 'package:arcdash/screens/tire_rack_screen.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:arcdash/providers/saved_files_provider.dart';
 import 'package:package_info_plus/package_info_plus.dart';
@@ -126,6 +129,27 @@ class SettingsScreen extends ConsumerWidget {
               onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(
                   builder: (_) => const SpeedCalibrationScreen())),
             ),
+            const SizedBox(height: 20),
+            const _SectionTitle('Controller settings'),
+            ListTile(
+              key: const ValueKey('open-tire-rack'),
+              leading: const Icon(Icons.tire_repair),
+              title: const Text('Tire rack'),
+              subtitle: const Text('Pick a tire size and write it'),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => Navigator.of(context).push(MaterialPageRoute(
+                  builder: (_) => const TireRackScreen())),
+            ),
+            ListTile(
+              key: const ValueKey('open-battery'),
+              leading: const Icon(Icons.battery_charging_full),
+              title: const Text('Battery'),
+              subtitle: const Text('Protect voltages and capacity'),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => Navigator.of(context).push(MaterialPageRoute(
+                  builder: (_) => const BatteryScreen())),
+            ),
+            const ExperimentalWritesTile(),
             const SizedBox(height: 20),
             _SectionTitle(strings.text(AppText.dataManagement)),
             ListTile(

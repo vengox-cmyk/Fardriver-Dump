@@ -13,6 +13,10 @@ class AppSettings {
   /// Display unit for speed/distance (data and exports stay metric).
   final SpeedUnit speedUnit;
 
+  /// Allows writing settings whose protocol is not yet confirmed on a real
+  /// controller (see docs/write_protocol.md). Off by default.
+  final bool experimentalWrites;
+
   static const defaultLanguageCode = 'en';
   static const supportedLanguageCodes = ['en', 'de'];
 
@@ -22,6 +26,7 @@ class AppSettings {
     this.hapticFeedbackEnabled = true,
     this.languageChosen = false,
     this.speedUnit = SpeedUnit.kmh,
+    this.experimentalWrites = false,
   });
 
   AppSettings copyWith({
@@ -30,6 +35,7 @@ class AppSettings {
     bool? hapticFeedbackEnabled,
     bool? languageChosen,
     SpeedUnit? speedUnit,
+    bool? experimentalWrites,
   }) =>
       AppSettings(
         languageCode: languageCode ?? this.languageCode,
@@ -38,6 +44,7 @@ class AppSettings {
             hapticFeedbackEnabled ?? this.hapticFeedbackEnabled,
         languageChosen: languageChosen ?? this.languageChosen,
         speedUnit: speedUnit ?? this.speedUnit,
+        experimentalWrites: experimentalWrites ?? this.experimentalWrites,
       );
 
   Map<String, dynamic> toJson() => {
@@ -46,6 +53,7 @@ class AppSettings {
         'hapticFeedbackEnabled': hapticFeedbackEnabled,
         'languageChosen': languageChosen,
         'speedUnit': speedUnit.key,
+        'experimentalWrites': experimentalWrites,
       };
 
   factory AppSettings.fromJson(Map<String, dynamic> json) {
@@ -60,6 +68,7 @@ class AppSettings {
       autoReconnect: json['autoReconnect'] as bool? ?? true,
       hapticFeedbackEnabled: json['hapticFeedbackEnabled'] as bool? ?? true,
       speedUnit: SpeedUnit.fromKey(json['speedUnit']),
+      experimentalWrites: json['experimentalWrites'] == true,
     );
   }
 }

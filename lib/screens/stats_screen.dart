@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:arcdash/services/trip_export.dart';
 import 'package:arcdash/models/ride_stats.dart';
 import 'package:arcdash/providers/stats_provider.dart';
 import 'package:arcdash/providers/rides_provider.dart';
@@ -430,7 +431,8 @@ class _PastSessionCard extends StatelessWidget {
 
   void _exportJson(
       BuildContext context, Map<String, dynamic> sessionJson, String dateStr) {
-    final formatted = const JsonEncoder.withIndent('  ').convert(sessionJson);
+    final formatted = const JsonEncoder.withIndent('  ')
+        .convert(readableTripJson(sessionJson, unit));
     Clipboard.setData(ClipboardData(text: formatted));
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(

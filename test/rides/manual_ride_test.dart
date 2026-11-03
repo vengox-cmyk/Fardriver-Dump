@@ -36,7 +36,10 @@ void main() {
   late _FakeKeepAlive keepAlive;
   LiveRideSample? live;
 
-  setUpAll(() => StatsNotifier.sampleEvery = const Duration(hours: 1));
+  setUpAll(() {
+    StatsNotifier.sampleEvery = const Duration(hours: 1);
+    StatsNotifier.telemetryEvery = const Duration(hours: 1);
+  });
 
   setUp(() async {
     SharedPreferences.setMockInitialValues({});
@@ -61,7 +64,11 @@ void main() {
 
   Future<List<String>> csvLines() async {
     final dir = await store.directoryFor(SavedFileKind.rideCsv);
-    final files = dir.listSync().whereType<File>().toList();
+    final all = dir.listSync().whereType<File>().toList();
+    // The ~10 Hz telemetry companion sits next to the 1 Hz ride CSV.
+    expect(all.where((f) => f.path.endsWith('_telemetry.csv')), hasLength(1));
+    final files =
+        all.where((f) => !f.path.endsWith('_telemetry.csv')).toList();
     expect(files, hasLength(1));
     return (await files.single.readAsString())
         .split('\r\n')

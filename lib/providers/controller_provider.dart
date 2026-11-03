@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:arcdash/models/controller_state.dart';
+import 'package:arcdash/models/fardriver_param_catalog.dart';
 import 'package:arcdash/models/gps_calibration.dart';
 import 'package:arcdash/models/telemetry_quality.dart' as quality;
 import 'package:arcdash/providers/bluetooth_provider.dart';
@@ -127,6 +128,42 @@ class ControllerNotifier extends StateNotifier<ControllerState> {
   /// averages these into 1 s bins).
   Stream<RpmReading> get rpmReadings => _rpmReadings.stream;
 
+  // --- Write support (v1.3) -------------------------------------------
+  static final Set<int> _configBlocks = {
+    ...FardriverParamCatalog.mandatoryBlocks,
+    ...FardriverParamCatalog.optionalBlocks,
+  };
+  final Map<int, List<int>> _latestBlocks = {};
+  final StreamController<int> _blockArrivals =
+      StreamController<int>.broadcast();
+  DateTime? _connectedAt;
+  DateTime? _lastFrameAt;
+
+  /// Newest bytes of each configuration block on this connection.
+  Map<int, List<int>> get latestBlocks => Map.unmodifiable(_latestBlocks);
+  Stream<int> get blockArrivals => _blockArrivals.stream;
+  bool get linkConnected =>
+      _connectedAt != null &&
+      _bluetooth.state == DongleConnectionState.connected;
+  Duration get connectedFor => _connectedAt == null
+      ? Duration.zero
+      : DateTime.now().difference(_connectedAt!);
+  Duration get sinceLastFrame => _lastFrameAt == null
+      ? const Duration(days: 1)
+      : DateTime.now().difference(_lastFrameAt!);
+
+  /// Sends a raw frame (only the write service calls this, after its own
+  /// allowlist + gating checks). Throws when the transport refused it.
+  Future<void> sendFrame(List<int> frame) async {
+    final ok = await _bluetooth.write(frame);
+    _diagnostics.add(DiagnosticEventType.command, details: {
+      'command': 'settings_write',
+      'outcome': ok ? 'transport_success' : 'transport_failure',
+      'hex': PacketParser.toHexString(frame),
+    });
+    if (!ok) throw StateError('Bluetooth write failed');
+  }
+
   List<String> get debugPackets => List.unmodifiable(_debugPackets);
   double get packetRate => _packetRate;
   DiagnosticLog get diagnostics => _diagnostics;
@@ -164,10 +201,14 @@ class ControllerNotifier extends StateNotifier<ControllerState> {
       _dataSub = null;
       _framer.reset();
       _parameterCapture?.reset();
+      _connectedAt = null;
+      _latestBlocks.clear();
     }
   }
 
   Future<void> _onConnected() async {
+    _connectedAt = DateTime.now();
+    _latestBlocks.clear();
     // Subscribe to incoming data
     _dataSub = _bluetooth.rawDataStream.listen(_onRawData);
 
@@ -216,6 +257,12 @@ class ControllerNotifier extends StateNotifier<ControllerState> {
 
     // Passive parameter capture (listen only, never writes to the controller)
     _parameterCapture?.addBlock(parsed.address, parsed.rawData);
+    _lastFrameAt = DateTime.now();
+    if (_configBlocks.contains(parsed.address) &&
+        parsed.rawData.length == FardriverParamCatalog.blockLength) {
+      _latestBlocks[parsed.address] = List<int>.of(parsed.rawData);
+      _blockArrivals.add(parsed.address);
+    }
 
     // Packet rate calculation
     _packetCount++;
@@ -277,6 +324,15 @@ class ControllerNotifier extends StateNotifier<ControllerState> {
           next.copyWith(boostActive: update.boost, boostAt: update.capturedAt);
     }
     if (update.brake != null) next = next.copyWith(isBraking: update.brake);
+    if (update.throttleDepth != null) {
+      next = next.copyWith(throttleDepth: update.throttleDepth);
+    }
+    if (update.fieldWeakening != null) {
+      next = next.copyWith(fieldWeakening: update.fieldWeakening);
+    }
+    if (update.modulation != null) {
+      next = next.copyWith(modulation: update.modulation);
+    }
     if (update.motorHallError != null) {
       next = next.copyWith(motorHallError: update.motorHallError);
     }
@@ -436,6 +492,7 @@ class ControllerNotifier extends StateNotifier<ControllerState> {
     _dataSub?.cancel();
     _connSub?.cancel();
     _rpmReadings.close();
+    _blockArrivals.close();
     super.dispose();
   }
 }

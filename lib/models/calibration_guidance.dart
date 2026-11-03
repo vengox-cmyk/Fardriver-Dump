@@ -1,3 +1,4 @@
+import 'package:arcdash/services/parameter_dump.dart';
 import 'package:arcdash/models/gps_calibration.dart';
 import 'package:arcdash/models/speed_suggestions.dart';
 
@@ -104,10 +105,11 @@ String fitSummary(CalibrationFit fit, {BleSpeedSettings? ble}) {
     final dir = s.error >= 0 ? 'high' : 'low';
     if (s.isChange) {
       buf.write('FarSure\'s speed reads $pct % $dir compared with GPS. '
-          'Suggested RateRatio: ${s.suggested} (now ${ble.rateRatio}). ');
+          'Suggested ${DecodedParameter.gearRatioText(s.suggested)}, '
+          'now ${DecodedParameter.gearRatioText(ble.rateRatio)}. ');
     } else {
       buf.write('FarSure\'s speed matches GPS within $pct %; '
-          'keep RateRatio ${ble.rateRatio}. ');
+          'keep ${DecodedParameter.gearRatioText(ble.rateRatio)}. ');
     }
   }
   buf.write('Based on ${fit.cleanSeconds} clean seconds in ${fit.segments} '
