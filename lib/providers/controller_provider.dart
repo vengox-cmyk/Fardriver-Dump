@@ -214,7 +214,11 @@ class ControllerNotifier extends StateNotifier<ControllerState> {
 
     // Send start-status-stream command periodically until packets arrive
     _streamInitTimer?.cancel();
-    _streamInitTimer = Timer.periodic(const Duration(seconds: 2), (_) async {
+    _streamInitTimer = Timer.periodic(const Duration(seconds: 2), (t) async {
+      if (!mounted) {
+        t.cancel();
+        return;
+      }
       if (state.telemetrySamples.isEmpty) {
         await _bluetooth.write(ProtocolService.startStatusStreamPacket());
         _diagnostics.add(DiagnosticEventType.command, details: {
@@ -227,6 +231,7 @@ class ControllerNotifier extends StateNotifier<ControllerState> {
     });
 
     await Future.delayed(const Duration(milliseconds: 300));
+    if (!mounted) return;
     await _bluetooth.write(ProtocolService.startStatusStreamPacket());
   }
 
@@ -467,6 +472,7 @@ class ControllerNotifier extends StateNotifier<ControllerState> {
 
   @override
   void dispose() {
+    _streamInitTimer?.cancel();
     _dataSub?.cancel();
     _connSub?.cancel();
     _rpmReadings.close();

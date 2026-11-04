@@ -1,4 +1,3 @@
-import 'package:arcdash/providers/stats_provider.dart';
 import 'dart:async';
 
 import 'package:arcdash/app.dart';
@@ -22,8 +21,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 /// `handlePopRoute()` simulates.
 void main() {
   // Back handling only; the v1.4 ride auto-start is covered in test/v14.
-  setUp(() => StatsNotifier.autoStartOnConnect = false);
-  tearDown(() => StatsNotifier.autoStartOnConnect = true);
 
   late List<String> platformCalls;
 

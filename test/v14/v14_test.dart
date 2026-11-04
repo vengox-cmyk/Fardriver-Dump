@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:arcdash/models/app_settings.dart';
 import 'package:arcdash/models/gps_calibration.dart';
 import 'package:arcdash/models/ride_record.dart';
+import 'package:arcdash/models/speed_source.dart';
 import 'package:arcdash/models/speed_suggestions.dart';
 import 'package:arcdash/services/calibration_csv.dart';
 import 'package:arcdash/services/calibration_settings.dart';
@@ -23,18 +24,57 @@ void main() {
       const c = CalibrationFilterConfig();
       expect(c.maxLagError, 0.04);
       expect(c.maxRatioJump, 0.06);
+      expect(c.maxTrailError, 0.05);
+      expect(c.trailSeconds, 2);
     });
-    for (final (f, minClean, maxCi) in [
-      ('blu_view2_ride', 80, 0.007),
-      ('ride_20261102_green', 140, 0.004),
-      ('ride_20261103_calibG', 220, 0.007),
+    for (final (f, minClean, maxCi, lo, hi) in [
+      ('blu_view2_ride', 55, 0.008, 4106, 4121),
+      ('ride_20261102_green', 115, 0.005, 4106, 4121),
+      ('ride_20261103_calibG', 200, 0.007, 4100, 4121),
     ]) {
       test(f, () {
         final s = _fixture(f).toSessionState();
         expect(s.analysis.cleanSeconds, greaterThanOrEqualTo(minClean));
         expect(s.fit!.ciRelative!, lessThan(maxCi));
+        final saved = _fixture(f);
+        final sug =
+            RateRatioSuggestion.compute(saved.settings.ble!, s.fit!.kGps);
+        expect(sug.suggested, inInclusiveRange(lo, hi));
       });
     }
+  });
+
+  group('item 6b: GPS trailing rpm', () {
+    final t0 = DateTime.utc(2026, 11, 3, 12);
+    CalibrationSample sec(int i, double v, double rpm) => CalibrationSample(
+          at: t0.add(Duration(seconds: i)),
+          gps: GpsSpeedSample(
+              speedKph: v,
+              accuracyMeters: 3,
+              speedAccuracyMps: 0.5,
+              capturedAt: t0.add(Duration(seconds: i))),
+          rpm: rpm,
+          controllerKph: v,
+        );
+    test('rpm steps, GPS follows a second later → gpsLag', () {
+      final samples = [
+        for (var i = 0; i < 20; i++)
+          sec(i, i <= 10 ? 50 : 53.5, i < 10 ? 2300 : 2300 * 1.07),
+      ];
+      final a = const CalibrationAnalyzer().analyze(samples);
+      expect(a.verdicts[10], SampleVerdict.gpsLag);
+      expect(a.verdicts[11], SampleVerdict.gpsLag);
+      expect(a.verdicts[5], SampleVerdict.kept);
+      expect(a.verdicts[16], SampleVerdict.kept);
+    });
+    test('hill / throttle wobble moving both together is kept', () {
+      final samples = [
+        for (var i = 0; i < 20; i++)
+          sec(i, 50 * (1 + 0.01 * (i % 3)), 2300 * (1 + 0.01 * (i % 3))),
+      ];
+      final a = const CalibrationAnalyzer().analyze(samples);
+      expect(a.verdicts.sublist(1, 19), everyElement(SampleVerdict.kept));
+    });
   });
 
   group('item 7: CSV keeps both ride-start and current settings', () {

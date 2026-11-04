@@ -90,7 +90,9 @@ void main() {
       expect(
           a.verdicts.sublist(1, 9),
           everyElement(anyOf(
-              SampleVerdict.inconsistent, SampleVerdict.accelerating)));
+              SampleVerdict.inconsistent,
+              SampleVerdict.accelerating,
+              SampleVerdict.gpsLag)));
     });
 
     test('heading change of 5 °/s or more is rejected', () {
@@ -138,8 +140,10 @@ void main() {
         const Leg.brake(1, 50),
       ]));
       final slip = a.verdicts.sublist(66, 74);
+      // The first slipping seconds may already go as gpsLag (rpm jumped).
       expect(slip.where((v) => v == SampleVerdict.outlier).length,
-          greaterThanOrEqualTo(6));
+          greaterThanOrEqualTo(5));
+      expect(slip.where((v) => v == SampleVerdict.kept), isEmpty);
       expect(a.segments, hasLength(6));
     });
   });

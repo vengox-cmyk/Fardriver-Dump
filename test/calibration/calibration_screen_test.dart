@@ -18,15 +18,21 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'calibration_session_test.dart' show FakeGps, fix;
 
 class _FakeDongleService extends DongleService {
+  _FakeDongleService({this.current = DongleConnectionState.idle});
+
+  /// Already-connected link whose broadcast stream has nothing to replay.
+  final DongleConnectionState current;
   @override
   Stream<DongleConnectionState> get connectionStateStream =>
-      Stream.value(DongleConnectionState.idle);
+      current == DongleConnectionState.idle
+          ? Stream.value(DongleConnectionState.idle)
+          : const Stream.empty();
   @override
   Stream<List<int>> get rawDataStream => const Stream.empty();
   @override
   Stream<List<DiscoveredDongle>> get scanResultsStream => const Stream.empty();
   @override
-  DongleConnectionState get state => DongleConnectionState.idle;
+  DongleConnectionState get state => current;
   @override
   Future<bool> isBluetoothOn() async => false;
   @override
@@ -75,6 +81,62 @@ void main() {
           home: home ?? const SpeedCalibrationScreen(),
         ),
       );
+
+  testWidgets(
+      'item 5: connect first, then open calibration → shows connected, '
+      'no popup (connection state is replayed)', (tester) async {
+    tester.view.physicalSize = const Size(1080, 2400);
+    tester.view.devicePixelRatio = 2.5;
+    addTearDown(tester.view.reset);
+    final gps = FakeGps();
+    await tester.pumpWidget(ProviderScope(
+      overrides: [
+        // Real isConnectedProvider / connectionStateProvider: the service
+        // is already connected and its stream will never emit again.
+        bluetoothServiceProvider.overrideWithValue(
+            _FakeDongleService(current: DongleConnectionState.connected)),
+        storageServiceProvider.overrideWithValue(StorageService()),
+        gpsSourceProvider.overrideWithValue(gps),
+        calibrationArchiveProvider.overrideWithValue(null),
+        calibrationSettingsProvider
+            .overrideWith((ref) async => CalibrationSettings.none),
+      ],
+      child: const MaterialApp(
+        locale: Locale('en'),
+        supportedLocales: AppStrings.supportedLocales,
+        localizationsDelegates: [
+          AppStrings.delegate,
+          ...GlobalMaterialLocalizations.delegates,
+        ],
+        home: SpeedCalibrationScreen(),
+      ),
+    ));
+    await tester.pump();
+    await tester.pump();
+    final container = ProviderScope.containerOf(
+        tester.element(find.byType(SpeedCalibrationScreen)));
+    expect(container.read(isConnectedProvider), isTrue);
+    expect(find.byKey(const ValueKey('calibration-connect-banner')),
+        findsNothing);
+    expect(find.byType(AlertDialog), findsNothing);
+    await tester.scrollUntilVisible(
+        find.byKey(const ValueKey('calibration-start')), 200);
+    await tester.tap(find.byKey(const ValueKey('calibration-start')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('connect-needed-dialog')), findsNothing);
+    await tester
+        .tap(find.byKey(const ValueKey('calibration-disclaimer-accept')));
+    await tester.pumpAndSettle();
+    expect(find.text('GPS SPEED'), findsOneWidget);
+    expect(find.byKey(const ValueKey('calibration-connect-banner')),
+        findsNothing);
+    expect(find.text('waiting for controller'), findsNothing);
+    await tester.tap(find.byKey(const ValueKey('calibration-stop')));
+    await tester.pumpAndSettle();
+    // Let the connected link's polling timers run out.
+    await tester.pumpWidget(const SizedBox());
+    await tester.pump(const Duration(minutes: 1));
+  });
 
   testWidgets(
       'not connected: nothing blocks, banner + dash check + saved rides '

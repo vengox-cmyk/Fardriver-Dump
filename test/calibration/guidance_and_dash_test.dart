@@ -63,9 +63,9 @@ void main() {
     test('capture checklist reflects the real fit requirements', () {
       final p = CaptureProgress.of(analysis, fit);
       expect(p.requirements, hasLength(4));
-      // v1.4 filter: 83 clean s of 90 → not done yet, with a hint.
+      // v1.4 filter: 62 clean s of 90 → not done yet, with a hint.
       expect(p.requirements[0].done, isFalse);
-      expect(p.requirements[0].progress, closeTo(83 / 90, 0.02));
+      expect(p.requirements[0].progress, closeTo(62 / 90, 0.02));
       expect(p.requirements[0].hint, contains('more steady seconds'));
       for (final r in p.requirements) {
         expect(r.progress, inInclusiveRange(0, 1));

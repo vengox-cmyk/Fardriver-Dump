@@ -68,6 +68,7 @@ enum SampleVerdict {
   /// [inconsistent].
   accelerating('accelerating', 'Accelerating or braking hard'),
   inconsistent('inconsistent', 'GPS and motor speed disagree'),
+  gpsLag('gps_lag', 'GPS trailing the motor'),
   /// Legacy (v1.2/v1.3 files only; no longer produced).
   rpmUnsteady('rpm_unsteady', 'RPM not steady'),
   turning('turning', 'Turning'),
@@ -139,6 +140,16 @@ class CalibrationFilterConfig {
   /// exceeds [maxLagError] are rejected as [SampleVerdict.accelerating].
   final double gpsLagSeconds;
   final double maxLagError;
+
+  /// v1.4 trailing gate: a phone's GPS speed reflects the motor of the
+  /// seconds before it. If rpm moved by more than this fraction over the
+  /// [trailSeconds] before a second, GPS has not caught up yet and that
+  /// second is rejected as [SampleVerdict.gpsLag]. Hills, bumps and small
+  /// throttle wobble stay well under 5 % and pass.
+  final double maxTrailError;
+
+  /// How many seconds before a sample the trailing gate looks back.
+  final int trailSeconds;
   final double maxHeadingRateDegPerS;
 
   /// Outlier gate: |ratio - median| > [outlierMads] x MAD (scaled to sigma).
@@ -175,6 +186,8 @@ class CalibrationFilterConfig {
     this.maxRatioJump = 0.06,
     this.gpsLagSeconds = 1.0,
     this.maxLagError = 0.04,
+    this.maxTrailError = 0.05,
+    this.trailSeconds = 2,
     this.maxHeadingRateDegPerS = 5,
     this.outlierMads = 3,
     this.minRelativeMad = 0.003,
@@ -356,6 +369,7 @@ class CalibrationAnalyzer {
     final lagError =
         (next.rpm! - prev.rpm!).abs() / span / cur.rpm! * config.gpsLagSeconds;
     if (lagError > config.maxLagError) return SampleVerdict.accelerating;
+    if (_gpsTrails(samples, i)) return SampleVerdict.gpsLag;
     if ((dGps - dRpmKph).abs() / 3.6 / span >= config.maxDisagreementMps2) {
       return SampleVerdict.inconsistent;
     }
@@ -378,6 +392,24 @@ class CalibrationAnalyzer {
       if (rate >= config.maxHeadingRateDegPerS) return SampleVerdict.turning;
     }
     return SampleVerdict.kept;
+  }
+
+  /// GPS trails the motor: the GPS speed of second [i] still reflects the
+  /// rpm of the seconds before it. If rpm moved over the
+  /// [trailSeconds] before [i] by more than [CalibrationFilterConfig.maxTrailError]
+  /// (relative), GPS has not caught up yet and v/rpm is biased.
+  bool _gpsTrails(List<CalibrationSample> samples, int i) {
+    final cur = samples[i];
+    final r1 = cur.rpm!;
+    if (r1 <= 0) return false;
+    var lo = r1, hi = r1;
+    for (var j = i - 1; j >= 0 && j >= i - config.trailSeconds; j--) {
+      final s = samples[j];
+      if (!_usable(s) || _dt(s, cur) > config.maxGapSeconds * (i - j)) break;
+      lo = math.min(lo, s.rpm!);
+      hi = math.max(hi, s.rpm!);
+    }
+    return (hi - lo) / r1 > config.maxTrailError;
   }
 
   void _rejectOutliers(

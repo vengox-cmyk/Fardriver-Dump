@@ -120,8 +120,8 @@ class StatsState {
       );
 }
 
-/// Rides: a ride starts on [startRide], which v1.4 also calls on its own
-/// when a controller connects ([autoStartOnConnect]), and ends only on
+/// Rides: a ride starts only on [startRide] (the rider's Start in the Rides
+/// tab, never on connect), and ends only on
 /// [stopRide] (or [finishSession] when the rider confirms leaving the app).
 ///
 /// While it runs it samples once a second, independent of the screen: it
@@ -151,10 +151,6 @@ class StatsNotifier extends StateNotifier<StatsState> {
   /// Telemetry period (~10 Hz). Tests raise it.
   @visibleForTesting
   static Duration telemetryEvery = const Duration(milliseconds: 100);
-
-  /// Start a ride automatically on connect (tests may switch it off).
-  @visibleForTesting
-  static bool autoStartOnConnect = true;
 
   StatsNotifier(this._ref) : super(const StatsState()) {
     _loadPastSessions();
@@ -349,18 +345,7 @@ class StatsNotifier extends StateNotifier<StatsState> {
 
 final statsProvider = StateNotifierProvider<StatsNotifier, StatsState>((ref) {
   final notifier = StatsNotifier(ref);
-  // v1.4: no taps while riding: a ride starts recording on its own as soon
-  // as a controller connects (it still ends with Stop, or keeps going
-  // across drop-outs as before).
-  ref.listen<AsyncValue<DongleConnectionState>>(connectionStateProvider,
-      (prev, next) {
-    if (!StatsNotifier.autoStartOnConnect) return;
-    if (next.valueOrNull == DongleConnectionState.connected &&
-        prev?.valueOrNull != DongleConnectionState.connected) {
-      scheduleMicrotask(() {
-        if (notifier.mounted) unawaited(notifier.startRide());
-      });
-    }
-  }, fireImmediately: true);
+  // Rides are only ever started and stopped by the rider from the Rides
+  // tab; connecting a controller never starts one.
   return notifier;
 });

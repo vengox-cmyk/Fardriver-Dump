@@ -47,6 +47,10 @@ VerdictAdvice adviceFor(SampleVerdict v) => switch (v) {
           SampleVerdict.accelerating,
           'speeding up or slowing down hard (GPS lags the motor there)',
           'Ordinary throttle changes are fine; just avoid full-throttle pulls and hard braking.'),
+      SampleVerdict.gpsLag => const VerdictAdvice(
+          SampleVerdict.gpsLag,
+          'GPS still catching up with a speed change of the motor',
+          'Hold the throttle steady for a few seconds; small wobbles are fine.'),
       SampleVerdict.inconsistent => const VerdictAdvice(
           SampleVerdict.inconsistent,
           'GPS speed and motor speed did not change together (wheel slip, lag or a GPS glitch)',
