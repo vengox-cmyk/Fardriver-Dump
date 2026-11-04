@@ -172,12 +172,21 @@ void main() {
       expect(() => service().plan({'MaxLineCurr': 100}, title: 't'),
           throwsA(isA<WriteRefused>()));
     });
-    test('experimental fields need the toggle', () {
-      expect(() => service().plan({'HighVolProtect': 1010}, title: 't'),
-          throwsA(isA<WriteRefused>()));
-      experimental = true;
-      expect(service().plan({'HighVolProtect': 1010}, title: 't').changes,
-          hasLength(1));
+    test('v1.4: over voltage fields are read-only, even with the toggle', () {
+      for (final on in [false, true]) {
+        experimental = on;
+        for (final k in ['HighVolProtect', 'HighVolRestore']) {
+          expect(
+              () => service().plan({k: 1010}, title: 't'),
+              throwsA(isA<WriteRefused>().having((e) => e.toString(),
+                  'message', contains('read-only on this controller'))));
+          expect(WriteAllowlist.byKey(k)!.readOnly, isTrue);
+          expect(WriteAllowlist.isWritableWord(
+                  WriteAllowlist.byKey(k)!.wordAddress),
+              isFalse);
+        }
+      }
+      expect(WriteAllowlist.hasExperimental, isFalse);
     });
     test('range check and unchanged values dropped', () {
       expect(() => service().plan({'RateRatio': 10}, title: 't'),
@@ -231,21 +240,27 @@ void main() {
       expect(logs.single.$2.controllerName, 'FarDriver-Test');
     });
 
-    test('mismatch offers restore of old values', () async {
+    test('one field rejected → partial; Undo returns the saved one',
+        () async {
       final s = service();
       link.dropWord = WriteAllowlist.byKey('SpdPulseNum')!.wordAddress;
       final r = await s
           .apply(s.plan({'SpdPulseNum': 110, 'RateRatio': 4200}, title: 'x'));
       expect(r.success, isFalse);
-      expect(
-          r.fields
-              .firstWhere((f) => f.change.field.key == 'SpdPulseNum')
-              .verify,
-          VerifyResult.mismatch);
-      final restore = s.planRestore(r);
-      expect(restore.kind, ChangeSetKind.restore);
-      expect(restore.changes.single.field.key, 'RateRatio');
-      expect(restore.changes.single.newRaw, 4000);
+      expect(r.outcome, WriteOutcome.partial);
+      final spn =
+          r.fields.firstWhere((f) => f.change.field.key == 'SpdPulseNum');
+      expect(spn.verify, VerifyResult.mismatch);
+      // Read back the old value: nothing uncertain to restore.
+      expect(spn.outcome, FieldOutcome.rejectedUnchanged);
+      expect(r.needsRestore, isFalse);
+      expect(r.message, contains('rejected (unchanged)'));
+      // Undo to backup puts the saved field back.
+      final logs = await WriteLogStore(store).list();
+      expect(logs.single.$2.outcome, WriteOutcome.partial);
+      final undo = await s.planUndo(logs.single.$2);
+      expect(undo.changes.single.field.key, 'RateRatio');
+      expect(undo.changes.single.newRaw, 4000);
     });
 
     test('undo restores only the fields the write touched', () async {

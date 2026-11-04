@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:arcdash/providers/bluetooth_provider.dart';
 import 'package:arcdash/providers/controller_provider.dart';
 import 'package:arcdash/providers/saved_files_provider.dart';
+import 'package:arcdash/services/write/write_allowlist.dart';
 import 'package:arcdash/services/write/write_service.dart';
 
 /// Experimental-writes toggle (Settings › Controller writes). Persisted in
@@ -13,14 +14,19 @@ final experimentalWritesProvider =
         ExperimentalWritesController.new);
 
 class ExperimentalWritesController extends Notifier<bool> {
+  /// Always false while nothing is gated (v1.4: the toggle is hidden), so a
+  /// stale stored "on" can never unlock anything.
   @override
-  bool build() => ref
-      .read(storageServiceProvider)
-      .appSettings
-      .loadSettings()
-      .experimentalWrites;
+  bool build() =>
+      WriteAllowlist.hasExperimental &&
+      ref
+          .read(storageServiceProvider)
+          .appSettings
+          .loadSettings()
+          .experimentalWrites;
 
   void set(bool on) {
+    if (!WriteAllowlist.hasExperimental) on = false;
     final repo = ref.read(storageServiceProvider).appSettings;
     repo.saveSettings(repo.loadSettings().copyWith(experimentalWrites: on));
     state = on;
@@ -73,6 +79,8 @@ class ExperimentalWritesTile extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // v1.4: hidden when no field is experimental any more.
+    if (!WriteAllowlist.hasExperimental) return const SizedBox.shrink();
     final on = ref.watch(experimentalWritesProvider);
     return SwitchListTile(
       key: const ValueKey('experimental-writes'),
@@ -80,7 +88,7 @@ class ExperimentalWritesTile extends ConsumerWidget {
       title: const Text('Experimental controller writes'),
       subtitle: const Text(
           'Also allow settings whose write is not yet confirmed on a real '
-          'controller (battery over-voltage protect / restore). Every write '
+          'controller. Every write '
           'still needs your review, makes a backup and is verified.'),
       value: on,
       onChanged: (v) => ref.read(experimentalWritesProvider.notifier).set(v),

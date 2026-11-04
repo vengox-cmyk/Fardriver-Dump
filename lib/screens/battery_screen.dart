@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:arcdash/models/battery_plan.dart';
 import 'package:arcdash/providers/controller_provider.dart';
-import 'package:arcdash/providers/write_provider.dart';
 import 'package:arcdash/screens/write_screens.dart';
 import 'package:arcdash/services/write/write_allowlist.dart';
 
@@ -29,10 +28,9 @@ class _BatteryScreenState extends ConsumerState<BatteryScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final experimental = ref.watch(experimentalWritesProvider);
     ref.watch(controllerProvider); // refresh current values
     final plan = BatteryPlan(_chem, _cells, _ah);
-    final raw = plan.suggestedRaw(includeOverVoltage: experimental);
+    final raw = plan.suggestedRaw();
     final refusal = plan.refusal(raw);
     return Scaffold(
       appBar: AppBar(title: const Text('Battery')),
@@ -89,13 +87,8 @@ class _BatteryScreenState extends ConsumerState<BatteryScreen> {
               'HighVolRestore',
               'BattRatedCap'
             ])
-              Text('${WriteAllowlist.byKey(k)?.label ?? k}: ${_current(k)}'),
-            if (!experimental)
-              const Padding(
-                padding: EdgeInsets.only(top: 8),
-                child: Text('Over voltage values are only shown. Writing '
-                    'them needs Settings › Experimental controller writes.'),
-              ),
+              _CurrentRow(
+                  field: WriteAllowlist.byKey(k), label: k, value: _current(k)),
             if (refusal != null)
               Padding(
                 padding: const EdgeInsets.only(top: 8),
@@ -115,6 +108,32 @@ class _BatteryScreenState extends ConsumerState<BatteryScreen> {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// One "on the controller now" line; read-only fields are greyed with a
+/// note (v1.4: over voltage protect/restore).
+class _CurrentRow extends StatelessWidget {
+  const _CurrentRow(
+      {required this.field, required this.label, required this.value});
+
+  final WritableField? field;
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    final f = field;
+    final readOnly = f?.readOnly ?? false;
+    return Padding(
+      key: ValueKey('battery-current-$label'),
+      padding: const EdgeInsets.only(top: 2),
+      child: Text(
+        '${f?.label ?? label}: $value'
+        '${readOnly ? '\n   ${WritableField.readOnlyNote}' : ''}',
+        style: readOnly ? const TextStyle(color: Colors.white38) : null,
       ),
     );
   }

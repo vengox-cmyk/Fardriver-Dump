@@ -65,8 +65,8 @@ If anything other than "verified" comes back, the result screen offers **Restore
 | WheelRadius | 0xD2 (210) high byte | RMW, inch | 4–24 | High | always |
 | LowVolProtect | 0x1F (31) | u16 = V × 10 | 10–200 V | High | always |
 | BattRatedCap | 0x1C (28) | u16 Ah | 20–250 | High | always |
-| HighVolProtect | 0x25 (37) | u16 = V × 10 | 10–200 V | Medium | **Experimental** toggle (off by default) |
-| HighVolRestore | 0x83 (131) | u16 = V × 10 | 10–200 V | Medium | **Experimental** toggle (off by default) |
+| HighVolProtect | 0x25 (37) | u16 = V × 10 | 10–200 V | — | **Read-only** (v1.4): shown for reference, never written |
+| HighVolRestore | 0x83 (131) | u16 = V × 10 | 10–200 V | — | **Read-only** (v1.4): shown for reference, never written |
 
 The word numbers come from the MotorNet6 ParaPage and the generated parameter
 catalog (`fardriver_param_catalog.g.dart`, from fardriver.hpp).
@@ -118,7 +118,7 @@ The log is exportable from Saved files.
 
 ## 8. Uncertainties
 
-- **HighVolProtect / HighVolRestore:** the address and scale are shown by the official app, but it never writes them. They stay behind the Experimental toggle. The current 121.5/119.5 V on the 88 V (24S) pack is about 5.06 V/cell, far above any lithium charge limit, so it looks like a controller default rather than a tuned value. The battery picker refuses it as a *new* value.
+- **HighVolProtect / HighVolRestore:** the address and scale are shown by the official app, but it never writes them. **v1.4: read-only.** On 2026-11-03 two verified write attempts to CONTROLDM309 (write logs 16:14 and 16:15) were sent and acknowledged on the wire, but the read-back kept 121.5 V / 119.5 V both times, while LowVolProtect in the same batch verified. The controller does not accept these words over BLE, so FarSure no longer offers them: the battery screen shows them greyed with "read-only on this controller; not written by FarSure", `plan()`/`apply()` refuse them, and Undo skips them. With nothing left experimental the Experimental toggle is hidden. The current 121.5/119.5 V on the 88 V (24S) pack is about 5.06 V/cell, far above any lithium charge limit, so it looks like a controller default rather than a tuned value. The battery picker refuses it as a *new* value.
 - **Read-back timing:** the controller streams all blocks in roughly 1–3 s, and FarSure waits up to 12 s. A weak BLE link can show "not read back" even though the write landed. Reconnect and check the parameter list.
 - **Legacy code:** `ControllerNotifier.setRideMode` (written before 1.3) can write ThrottleResponse to word 0x1A without read-modify-write, so it would also zero SpeedPulse. It has **no callers** in the UI. It is not part of the allowlisted path and should be removed or ported in a later release.
 - **Controller variants:** this was tested against the frame vectors and a fake link only. Confirm on the real controller using the phone checklist in the PR.

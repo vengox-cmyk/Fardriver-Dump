@@ -171,7 +171,7 @@ class _IntroView extends ConsumerWidget {
             style: TextStyle(fontWeight: FontWeight.w800)),
         const SizedBox(height: 6),
         for (final (i, step) in const [
-          'Take a parameter snapshot first (Settings → Live parameters) so the current RateRatio, Speed Pulses and SpdPulseNum are known.',
+          'Take a parameter snapshot first (Tune → Live parameters) so the current RateRatio, Speed Pulses and SpdPulseNum are known.',
           'Mount the phone with a clear view of the sky. Start here while standing still.',
           'Ride a flat, straight road. Hold steady speeds for 10+ seconds at a time, above 20 km/h, in at least two bands (20–40, 40–60, 60–80, 80+ km/h). No braking, no hard throttle, no turns.',
           'Nothing to tap while riding. The checklist shows what is still missing; glance at it only when it is safe.',
@@ -194,14 +194,9 @@ class _IntroView extends ConsumerWidget {
         ],
         FilledButton.icon(
           key: const ValueKey('calibration-start'),
-          onPressed: () async {
-            if (ref.read(isConnectedProvider)) {
-              onStart();
-            } else {
-              await showConnectNeeded(context,
-                  'Recording a calibration ride needs live motor RPM from the controller.');
-            }
-          },
+          // v1.4: never gated. GPS records right away; controller RPM is
+          // added as soon as a controller is connected.
+          onPressed: onStart,
           icon: const Icon(Icons.play_arrow),
           label: const Text('Start calibration ride'),
         ),
@@ -311,7 +306,7 @@ class ConnectBanner extends StatelessWidget {
             const SizedBox(width: 8),
             Expanded(
               child: Text(message ??
-                  'Not connected. Saved results work offline; connect only to record.'),
+                  'Not connected. Saved results work offline; connect to add live controller data.'),
             ),
             TextButton(
               key: const ValueKey('calibration-connect'),
@@ -365,8 +360,10 @@ class CalibrationLivePanel extends ConsumerWidget {
         gps != null &&
         DateTime.now().difference(gps.capturedAt) < const Duration(seconds: 3);
     final gpsKph = gpsFresh ? gps.speedKph : null;
+    final connected = ref.watch(isConnectedProvider);
     final controllerKph = controller.speedKph;
-    final diff = gpsKph != null && gpsKph >= 10
+    const waiting = 'waiting for controller';
+    final diff = connected && gpsKph != null && gpsKph >= 10
         ? (controllerKph / gpsKph - 1) * 100
         : null;
     final lastVerdict = session.analysis.verdicts.isEmpty
@@ -403,13 +400,17 @@ class CalibrationLivePanel extends ConsumerWidget {
               child: Column(children: [
                 _Metric(
                   label: SpeedSource.controller.label,
-                  value: unit.speed(controllerKph, digits: 1),
+                  value: connected
+                      ? unit.speed(controllerKph, digits: 1)
+                      : waiting,
                   valueKey: const ValueKey('calibration-controller-speed'),
                 ),
                 const SizedBox(height: 6),
                 _Metric(
                   label: 'Controller vs GPS',
-                  value: diff == null
+                  value: !connected
+                      ? waiting
+                      : diff == null
                       ? '--'
                       : '${diff >= 0 ? '+' : ''}${diff.toStringAsFixed(1)} %',
                   color: diff == null
@@ -423,7 +424,7 @@ class CalibrationLivePanel extends ConsumerWidget {
                 const SizedBox(height: 6),
                 _Metric(
                   label: 'Motor RPM',
-                  value: '${controller.motorRpm}',
+                  value: connected ? '${controller.motorRpm}' : waiting,
                 ),
               ]),
             ),
@@ -432,7 +433,10 @@ class CalibrationLivePanel extends ConsumerWidget {
         const SizedBox(height: 10),
         if (showChecklist)
           CaptureChecklist(
-              analysis: session.analysis, fit: session.fit, dense: true),
+              analysis: session.analysis,
+              fit: session.fit,
+              dense: true,
+              unit: unit),
         Text(
           lastVerdict == null
               ? (session.isRecording ? 'Waiting for GPS…' : '')
@@ -461,6 +465,10 @@ class _LiveView extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          if (!ref.watch(isConnectedProvider))
+            const ConnectBanner(
+                message: 'Recording GPS. Connect the controller to add motor '
+                    'RPM; it is picked up on its own once connected.'),
           Expanded(
             child: SingleChildScrollView(
               child: CalibrationLivePanel(session: session),

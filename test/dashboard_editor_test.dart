@@ -1,3 +1,4 @@
+import 'package:arcdash/screens/app_shell.dart';
 import 'package:arcdash/services/disclaimer.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:arcdash/app.dart';
@@ -11,6 +12,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
+  // v1.4 opens on Tune; these tests are about the Cockpit tab.
+  setUp(() => AppShell.initialTab = AppShell.cockpitTab);
+  tearDown(() => AppShell.initialTab = AppShell.tuneTab);
+
   // The use-at-your-own-risk notice is covered in disclaimer_test.dart.
   setUp(() => SharedPreferences.setMockInitialValues({Disclaimer.prefKey: 1}));
 

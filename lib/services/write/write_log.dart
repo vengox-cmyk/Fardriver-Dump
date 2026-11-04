@@ -24,6 +24,9 @@ class WriteLogRow {
     required this.verify,
     this.readBackRaw,
   });
+
+  FieldOutcome get outcome =>
+      fieldOutcome(verify: verify, oldRaw: oldRaw, readBackRaw: readBackRaw);
 }
 
 /// One write (one confirmation) as saved in `farsure/write_log/`.
@@ -48,8 +51,16 @@ class WriteLogSession {
     this.error,
   });
 
-  bool get success =>
-      error == null && rows.every((r) => r.verify == VerifyResult.ok);
+  /// Derived from the rows (also for v1 logs, which only said
+  /// ok/failed: a v1 "failed" with a verified row decodes as partial).
+  WriteOutcome get outcome => WriteSummary.outcomeOf(
+      rows.map((r) => r.outcome),
+      stoppedEarly: error != null);
+
+  bool get success => outcome == WriteOutcome.ok;
+
+  String get message =>
+      WriteSummary.message([for (final r in rows) (r.label, r.outcome)]);
 
   String get timeLabel {
     final l = time.toLocal();
@@ -58,7 +69,9 @@ class WriteLogSession {
         '${two(l.hour)}:${two(l.minute)}';
   }
 
-  static const format = 'farsure-write-log-v1';
+  /// v2 (v1.4): result is ok/partial/failed, a plain summary line and a
+  /// per-field outcome column. v1 files still decode.
+  static const format = 'farsure-write-log-v2';
   static const header = [
     'time',
     'controller',
@@ -70,6 +83,7 @@ class WriteLogSession {
     'verify',
     'readback_raw',
     'key',
+    'outcome',
   ];
 
   String encode() {
@@ -81,7 +95,8 @@ class WriteLogSession {
       ['# kind', kind.name],
       ['# title', title],
       ['# backup', backupFile],
-      ['# result', success ? 'ok' : 'failed'],
+      ['# result', outcome.label],
+      ['# summary', message],
       if (error != null) ['# error', error!],
       header,
       for (final r in rows)
@@ -96,6 +111,7 @@ class WriteLogSession {
           r.verify.label,
           r.readBackRaw?.toString() ?? '',
           r.field, // catalog key keeps undo exact even if labels change
+          r.outcome.text,
         ],
     ];
     return FlatCsv.encode(out);

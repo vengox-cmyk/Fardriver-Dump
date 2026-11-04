@@ -63,9 +63,9 @@ void main() {
       expect(a.verdicts.sublist(6, 9), everyElement(SampleVerdict.noRpm));
     });
 
-    test('acceleration of 0.35 m/s² or more is rejected', () {
-      // +1.5 km/h per second ≈ 0.42 m/s² (measured next vs previous second).
-      final legs = [for (var i = 0; i < 10; i++) Leg(1, 40 + 1.5 * i)];
+    test('v1.4 lag gate: fast rpm change (> 4 % lag error) is rejected', () {
+      // +2.5 km/h per second at 40 km/h ≈ 6 %/s change, above the lag gate.
+      final legs = [for (var i = 0; i < 10; i++) Leg(1, 40 + 2.5 * i)];
       final a = analyzer.analyze(ride(legs, noiseKph: 0));
       expect(
           a.verdicts.sublist(1, 9), everyElement(SampleVerdict.accelerating));
@@ -78,7 +78,8 @@ void main() {
       expect(a.verdicts.sublist(1, 9), everyElement(SampleVerdict.kept));
     });
 
-    test('rpm jitter (CV ≥ 3 %) with steady GPS is rejected', () {
+    test('rpm jitter with steady GPS is rejected (v1.4: GPS and rpm disagree)',
+        () {
       // An alternating 7 % rpm wobble has no net acceleration across the
       // window but its coefficient of variation is ~3.1 %.
       final legs = [
@@ -86,7 +87,12 @@ void main() {
           Leg(1, 22, ratioScale: i.isEven ? 1.0 : 1 / 1.07),
       ];
       final a = analyzer.analyze(ride(legs, noiseKph: 0));
-      expect(a.verdicts.sublist(1, 9), everyElement(SampleVerdict.rpmUnsteady));
+      expect(
+          a.verdicts.sublist(1, 9),
+          everyElement(anyOf(
+              SampleVerdict.inconsistent,
+              SampleVerdict.accelerating,
+              SampleVerdict.gpsLag)));
     });
 
     test('heading change of 5 °/s or more is rejected', () {
@@ -134,8 +140,10 @@ void main() {
         const Leg.brake(1, 50),
       ]));
       final slip = a.verdicts.sublist(66, 74);
+      // The first slipping seconds may already go as gpsLag (rpm jumped).
       expect(slip.where((v) => v == SampleVerdict.outlier).length,
-          greaterThanOrEqualTo(6));
+          greaterThanOrEqualTo(5));
+      expect(slip.where((v) => v == SampleVerdict.kept), isEmpty);
       expect(a.segments, hasLength(6));
     });
   });

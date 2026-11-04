@@ -32,6 +32,7 @@ class CalibrationCsv {
     required List<DkdSnapshot> dkdSnapshots,
     required CalibrationSettings settings,
     required String appVersion,
+    CalibrationSettings? currentSettings,
     required DateTime exportedAt,
     DashAnchor? dashAnchor,
     DateTime? startedAt,
@@ -92,7 +93,24 @@ class CalibrationCsv {
       ['settings', 'k_ble_kmh_per_rpm', ble == null ? '' : _f(ble.kBle, 6)],
       ['settings', 'SpeedPulse', _int(settings.speedPulses)],
       ['settings', 'SpdPulseNum', _int(settings.spdPulseNum)],
+      ['settings', 'taken', 'ride start'],
     ]);
+    // v1.4: values read later than the ride start (e.g. after a RateRatio
+    // write), for reference only. The BLE error below always uses the
+    // ride-start values above, because those produced the recorded speed.
+    final now = currentSettings;
+    if (now != null && !_sameSettings(now, settings)) {
+      section([
+        ['section', 'key', 'value'],
+        ['settings_now', 'source', now.source],
+        ['settings_now', 'WheelRadius', _int(now.ble?.wheelRadius)],
+        ['settings_now', 'WheelWidth', _int(now.ble?.wheelWidth)],
+        ['settings_now', 'WheelRatio', _int(now.ble?.wheelRatio)],
+        ['settings_now', 'RateRatio', _int(now.ble?.rateRatio)],
+        ['settings_now', 'SpeedPulse', _int(now.speedPulses)],
+        ['settings_now', 'SpdPulseNum', _int(now.spdPulseNum)],
+      ]);
+    }
 
     final fitRows = <List<String>>[
       ['section', 'key', 'value'],
@@ -113,6 +131,12 @@ class CalibrationCsv {
         ],
         for (final e in fit.kByBand.entries)
           ['fit', 'k_gps_${e.key.name}', _f(e.value, 6)],
+        for (final d in fit.disagreements)
+          [
+            'fit',
+            'excluded_${d.band.name}_pct',
+            _f(d.relative * 100, 2)
+          ],
       ]);
       if (ble != null) {
         final s = RateRatioSuggestion.compute(ble, fit.kGps);
@@ -382,6 +406,14 @@ class CalibrationCsv {
       appVersion: kv['summary.app'] ?? '',
     );
   }
+
+  static bool _sameSettings(CalibrationSettings a, CalibrationSettings b) =>
+      a.ble?.wheelRadius == b.ble?.wheelRadius &&
+      a.ble?.wheelWidth == b.ble?.wheelWidth &&
+      a.ble?.wheelRatio == b.ble?.wheelRatio &&
+      a.ble?.rateRatio == b.ble?.rateRatio &&
+      a.speedPulses == b.speedPulses &&
+      a.spdPulseNum == b.spdPulseNum;
 
   static String _int(int? v) => v == null ? '' : '$v';
   static String _f(double v, int digits) => v.toStringAsFixed(digits);

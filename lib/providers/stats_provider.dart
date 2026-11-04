@@ -120,7 +120,8 @@ class StatsState {
       );
 }
 
-/// Manual rides: a ride starts only on [startRide] and ends only on
+/// Rides: a ride starts only on [startRide] (the rider's Start in the Rides
+/// tab, never on connect), and ends only on
 /// [stopRide] (or [finishSession] when the rider confirms leaving the app).
 ///
 /// While it runs it samples once a second, independent of the screen: it
@@ -171,7 +172,10 @@ class StatsNotifier extends StateNotifier<StatsState> {
         isTracking: true,
         waitingForController: _ref.read(liveRideSampleProvider)(now) == null);
     final recorder = _recorder =
-        RideRecorder(RideArchive(_ref.read(savedFilesStoreProvider)), session);
+        RideRecorder(
+        RideArchive(_ref.read(savedFilesStoreProvider),
+            controllerName: () => _ref.read(connectedDeviceNameProvider)),
+        session);
     _sampleTimer =
         Timer.periodic(sampleEvery, (_) => sampleNow());
     _checkpointTimer = Timer.periodic(
@@ -340,5 +344,8 @@ class StatsNotifier extends StateNotifier<StatsState> {
 }
 
 final statsProvider = StateNotifierProvider<StatsNotifier, StatsState>((ref) {
-  return StatsNotifier(ref);
+  final notifier = StatsNotifier(ref);
+  // Rides are only ever started and stopped by the rider from the Rides
+  // tab; connecting a controller never starts one.
+  return notifier;
 });

@@ -149,6 +149,10 @@ class GpsCalibrationNotifier extends StateNotifier<CalibrationSessionState> {
 
   final CalibrationSaver? _saver;
 
+  /// v1.4: lets the archive capture the controller settings active at
+  /// ride start (the ones that produced the recorded speed).
+  final Future<void> Function(DateTime startedAt)? _onRideStart;
+
   /// Incremental save while recording, so a crash or a killed app loses at
   /// most this much of the ride.
   final Duration autoSaveInterval;
@@ -167,8 +171,10 @@ class GpsCalibrationNotifier extends StateNotifier<CalibrationSessionState> {
     DateTime Function()? clock,
     CalibrationAnalyzer analyzer = const CalibrationAnalyzer(),
     CalibrationSaver? saver,
+    Future<void> Function(DateTime startedAt)? onRideStart,
     this.autoSaveInterval = const Duration(seconds: 12),
   })  : _saver = saver,
+        _onRideStart = onRideStart,
         _gps = gps,
         _rpm = rpm,
         _controller = controller,
@@ -195,8 +201,20 @@ class GpsCalibrationNotifier extends StateNotifier<CalibrationSessionState> {
     }
     _pairer.reset();
     _lastSampleAt = null;
+    final startedAt = _clock();
     state = CalibrationSessionState(
-        status: CalibrationStatus.recording, startedAt: _clock());
+        status: CalibrationStatus.recording, startedAt: startedAt);
+    final onRideStart = _onRideStart;
+    if (onRideStart != null) {
+      _saving = _saving.then<String?>((_) async {
+        try {
+          await onRideStart(startedAt);
+        } on Object {
+          // A failed settings read must not stop the ride.
+        }
+        return null;
+      });
+    }
     _rpmSub = _rpm.listen(_pairer.addRpm);
     _gpsSub = _gps.fixes().listen(onFix, onError: (_) {});
     _watchdog = Timer.periodic(const Duration(seconds: 1), (_) => onTick());

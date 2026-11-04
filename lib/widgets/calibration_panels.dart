@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:arcdash/models/calibration_guidance.dart';
 import 'package:arcdash/models/gps_calibration.dart';
 import 'package:arcdash/models/speed_suggestions.dart';
+import 'package:arcdash/utils/speed_units.dart';
 
 const _green = Color(0xFF54E39E);
 const _amber = Color(0xFFFFB45C);
@@ -15,15 +16,19 @@ class CaptureChecklist extends StatelessWidget {
       {super.key,
       required this.analysis,
       required this.fit,
-      this.dense = false});
+      this.dense = false,
+      this.unit = SpeedUnit.kmh});
 
   final CalibrationAnalysis analysis;
   final CalibrationFit? fit;
   final bool dense;
 
+  /// Speed unit for the plain-language hints (follows the mph switch).
+  final SpeedUnit unit;
+
   @override
   Widget build(BuildContext context) {
-    final progress = CaptureProgress.of(analysis, fit);
+    final progress = CaptureProgress.of(analysis, fit, unit: unit);
     return Column(
       key: const ValueKey('capture-checklist'),
       crossAxisAlignment: CrossAxisAlignment.stretch,

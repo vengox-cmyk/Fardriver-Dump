@@ -1,0 +1,10 @@
+# FarSure write log,farsure-write-log-v1
+# write_id,20261103_162818
+# time,2026-11-03T21:28:18.098403Z
+# controller,CONTROLDM309
+# kind,write
+# title,GearRatio from GPS calibration
+# backup,prewrite_backup_CONTROLDM309_20261103_162818.csv
+# result,ok
+time,controller,field,old,new,old_raw,new_raw,verify,readback_raw,key
+2026-11-03T21:28:18.098403Z,CONTROLDM309,GearRatio (RateRatio),GearRatio 4.106 (RateRatio 4106),GearRatio 4.121 (RateRatio 4121),4106,4121,verified,4121,RateRatio

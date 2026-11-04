@@ -63,7 +63,13 @@ enum SampleVerdict {
   tooSlow('too_slow', 'Below minimum speed'),
   poorAccuracy('gps_accuracy', 'GPS accuracy too low'),
   noWindow('no_window', 'Not enough neighbouring seconds'),
-  accelerating('accelerating', 'Accelerating or braking'),
+  /// Legacy (v1.2/v1.3 files). Since v1.4 only very hard acceleration is
+  /// rejected this way; ordinary throttle changes are judged by
+  /// [inconsistent].
+  accelerating('accelerating', 'Accelerating or braking hard'),
+  inconsistent('inconsistent', 'GPS and motor speed disagree'),
+  gpsLag('gps_lag', 'GPS trailing the motor'),
+  /// Legacy (v1.2/v1.3 files only; no longer produced).
   rpmUnsteady('rpm_unsteady', 'RPM not steady'),
   turning('turning', 'Turning'),
   outlier('outlier', 'Outlier (v/rpm far from median)'),
@@ -113,12 +119,37 @@ class CalibrationFilterConfig {
   final double maxRelativeSpeedAccuracy;
   final double maxHorizontalAccuracyM;
 
-  /// |accel| limit for GPS speed and for rpm-derived speed (m/s²), measured
-  /// across the 3 s window (next second vs previous second).
+  /// v1.4: hard limit on |GPS accel| across the 3 s window (m/s²). Only
+  /// really hard throttle/brake is rejected outright, because the phone's
+  /// GPS speed lags the motor there. Ordinary speed changes (hills, bumps,
+  /// wind, throttle wobble) are fine as long as GPS and rpm agree.
   final double maxAccelMps2;
 
-  /// Max coefficient of variation of rpm over the 3 s window.
-  final double maxRpmVariation;
+  /// v1.4 consistency gate: across the 3 s window, the change of GPS speed
+  /// and the change of rpm-derived speed may differ by at most this much
+  /// (m/s²). A disagreement means wheel slip, lag or a GPS glitch.
+  final double maxDisagreementMps2;
+
+  /// v1.4 consistency gate: this second's v/rpm may differ from the mean of
+  /// its two neighbours by at most this fraction (one-second GPS glitch).
+  final double maxRatioJump;
+
+  /// v1.4 lag gate: a phone's GPS speed trails the motor by about
+  /// [gpsLagSeconds]. While rpm changes, that lag alone makes v/rpm wrong by
+  /// (rpm change per second / rpm) × lag; seconds where this estimated error
+  /// exceeds [maxLagError] are rejected as [SampleVerdict.accelerating].
+  final double gpsLagSeconds;
+  final double maxLagError;
+
+  /// v1.4 trailing gate: a phone's GPS speed reflects the motor of the
+  /// seconds before it. If rpm moved by more than this fraction over the
+  /// [trailSeconds] before a second, GPS has not caught up yet and that
+  /// second is rejected as [SampleVerdict.gpsLag]. Hills, bumps and small
+  /// throttle wobble stay well under 5 % and pass.
+  final double maxTrailError;
+
+  /// How many seconds before a sample the trailing gate looks back.
+  final int trailSeconds;
   final double maxHeadingRateDegPerS;
 
   /// Outlier gate: |ratio - median| > [outlierMads] x MAD (scaled to sigma).
@@ -130,7 +161,17 @@ class CalibrationFilterConfig {
 
   /// Outlier gate is only applied once this many candidate seconds exist.
   final int minOutlierPopulation;
+
+  /// Floor of the stretch-level outlier gate, relative to the median k.
+  final double minSegmentOutlier;
+  /// Minimum steady stretch at low speed (s).
   final int minSegmentSeconds;
+
+  /// Minimum steady stretch when its mean speed is at or above
+  /// [fastSegmentKph] (s). Fast stretches on back roads are short, and at
+  /// speed one second carries more signal.
+  final int minFastSegmentSeconds;
+  final double fastSegmentKph;
 
   /// Two samples farther apart than this are not neighbours (s).
   final double maxGapSeconds;
@@ -140,15 +181,27 @@ class CalibrationFilterConfig {
     this.maxSpeedAccuracyMps = 2.5,
     this.maxRelativeSpeedAccuracy = 0.08,
     this.maxHorizontalAccuracyM = 10,
-    this.maxAccelMps2 = 0.35,
-    this.maxRpmVariation = 0.03,
+    this.maxAccelMps2 = 2.0,
+    this.maxDisagreementMps2 = 0.5,
+    this.maxRatioJump = 0.06,
+    this.gpsLagSeconds = 1.0,
+    this.maxLagError = 0.04,
+    this.maxTrailError = 0.05,
+    this.trailSeconds = 2,
     this.maxHeadingRateDegPerS = 5,
     this.outlierMads = 3,
     this.minRelativeMad = 0.003,
     this.minOutlierPopulation = 5,
+    this.minSegmentOutlier = 0.025,
     this.minSegmentSeconds = 5,
+    this.minFastSegmentSeconds = 3,
+    this.fastSegmentKph = 64,
     this.maxGapSeconds = 1.5,
   });
+
+  /// Minimum stretch length for a stretch averaging [meanKph].
+  int minSegmentSecondsAt(double meanKph) =>
+      meanKph >= fastSegmentKph ? minFastSegmentSeconds : minSegmentSeconds;
 
   /// Speed-accuracy limit (m/s) at [speedKph].
   double speedAccuracyLimitMps(double speedKph) =>
@@ -186,6 +239,19 @@ class CalibrationSegment {
       0, (sum, s) => sum + _weight(s) * s.gpsKph! * s.rpm!);
   double get sumRR =>
       samples.fold<double>(0, (sum, s) => sum + _weight(s) * s.rpm! * s.rpm!);
+
+  /// Splits this stretch into consecutive blocks of about [seconds] each
+  /// (the remainder joins the last block) for the block bootstrap.
+  List<CalibrationSegment> blocks(
+      [int seconds = CalibrationFit.bootstrapBlockSeconds]) {
+    final n = samples.length ~/ seconds;
+    if (n <= 1) return [this];
+    return [
+      for (var i = 0; i < n; i++)
+        CalibrationSegment(samples.sublist(
+            i * seconds, i == n - 1 ? samples.length : (i + 1) * seconds)),
+    ];
+  }
 
   /// This segment's own through-zero k.
   double get k => sumVR / sumRR;
@@ -247,7 +313,8 @@ class CalibrationAnalyzer {
       verdicts[i] = _windowVerdict(samples, i);
     }
     _rejectOutliers(samples, verdicts);
-    final segments = _buildSegments(samples, verdicts);
+    final segments = _rejectOutlierSegments(
+        _buildSegments(samples, verdicts), samples, verdicts);
     return CalibrationAnalysis(
         samples: samples, verdicts: verdicts, segments: segments);
   }
@@ -287,22 +354,31 @@ class CalibrationAnalyzer {
       return SampleVerdict.noWindow;
     }
 
-    // Acceleration over the whole 3 s window (central difference: next vs
-    // previous second). One-second differences of a ±1.3 m/s phone GPS are
-    // mostly noise; the two-second span halves that noise while still
-    // catching real throttle/brake changes.
+    // v1.4: consistency instead of steadiness. Across the 3 s window
+    // (next vs previous second) the GPS speed change and the rpm-derived
+    // speed change must agree. Both ride up a hill or over a bump
+    // together; slip, GPS lag under hard throttle and GPS glitches make
+    // them disagree.
     final span = dt1 + dt2;
-    final gpsAccel = (next.gpsKph! - prev.gpsKph!).abs() / 3.6 / span;
-    // RPM acceleration expressed as speed using this second's own v/rpm.
+    final dGps = next.gpsKph! - prev.gpsKph!;
     final kLocal = cur.ratio!;
-    final rpmAccel = (next.rpm! - prev.rpm!).abs() * kLocal / 3.6 / span;
-    if (gpsAccel >= config.maxAccelMps2 || rpmAccel >= config.maxAccelMps2) {
+    final dRpmKph = (next.rpm! - prev.rpm!) * kLocal;
+    if (dGps.abs() / 3.6 / span >= config.maxAccelMps2) {
       return SampleVerdict.accelerating;
     }
-
-    final rpms = [prev.rpm!, cur.rpm!, next.rpm!];
-    if (coefficientOfVariation(rpms) >= config.maxRpmVariation) {
-      return SampleVerdict.rpmUnsteady;
+    final lagError =
+        (next.rpm! - prev.rpm!).abs() / span / cur.rpm! * config.gpsLagSeconds;
+    if (lagError > config.maxLagError) return SampleVerdict.accelerating;
+    if (_gpsTrails(samples, i)) return SampleVerdict.gpsLag;
+    if ((dGps - dRpmKph).abs() / 3.6 / span >= config.maxDisagreementMps2) {
+      return SampleVerdict.inconsistent;
+    }
+    final rp = prev.ratio, rn = next.ratio;
+    if (rp != null && rn != null) {
+      final ref = (rp + rn) / 2;
+      if (ref > 0 && (kLocal - ref).abs() / ref > config.maxRatioJump) {
+        return SampleVerdict.inconsistent;
+      }
     }
 
     final h0 = prev.gps!.headingDeg;
@@ -316,6 +392,24 @@ class CalibrationAnalyzer {
       if (rate >= config.maxHeadingRateDegPerS) return SampleVerdict.turning;
     }
     return SampleVerdict.kept;
+  }
+
+  /// GPS trails the motor: the GPS speed of second [i] still reflects the
+  /// rpm of the seconds before it. If rpm moved over the
+  /// [trailSeconds] before [i] by more than [CalibrationFilterConfig.maxTrailError]
+  /// (relative), GPS has not caught up yet and v/rpm is biased.
+  bool _gpsTrails(List<CalibrationSample> samples, int i) {
+    final cur = samples[i];
+    final r1 = cur.rpm!;
+    if (r1 <= 0) return false;
+    var lo = r1, hi = r1;
+    for (var j = i - 1; j >= 0 && j >= i - config.trailSeconds; j--) {
+      final s = samples[j];
+      if (!_usable(s) || _dt(s, cur) > config.maxGapSeconds * (i - j)) break;
+      lo = math.min(lo, s.rpm!);
+      hi = math.max(hi, s.rpm!);
+    }
+    return (hi - lo) / r1 > config.maxTrailError;
   }
 
   void _rejectOutliers(
@@ -338,14 +432,42 @@ class CalibrationAnalyzer {
     }
   }
 
+  /// v1.4: a whole stretch whose own k is far from the other stretches
+  /// (GPS still settling, a gust of slip) is dropped as [SampleVerdict.outlier].
+  List<CalibrationSegment> _rejectOutlierSegments(
+      List<CalibrationSegment> segments,
+      List<CalibrationSample> samples,
+      List<SampleVerdict> verdicts) {
+    if (segments.length < config.minOutlierPopulation) return segments;
+    final ks = [for (final s in segments) s.k];
+    final med = median(ks);
+    final mad = median([for (final k in ks) (k - med).abs()]);
+    final limit = math.max(
+        config.outlierMads * 1.4826 * mad, config.minSegmentOutlier * med);
+    final kept = <CalibrationSegment>[];
+    for (final seg in segments) {
+      if ((seg.k - med).abs() <= limit) {
+        kept.add(seg);
+        continue;
+      }
+      for (var i = 0; i < samples.length; i++) {
+        if (seg.samples.contains(samples[i])) {
+          verdicts[i] = SampleVerdict.outlier;
+        }
+      }
+    }
+    return kept;
+  }
+
   List<CalibrationSegment> _buildSegments(
       List<CalibrationSample> samples, List<SampleVerdict> verdicts) {
     final segments = <CalibrationSegment>[];
     var run = <int>[];
     void close() {
       if (run.isEmpty) return;
-      if (run.length >= config.minSegmentSeconds) {
-        segments.add(CalibrationSegment([for (final i in run) samples[i]]));
+      final seg = CalibrationSegment([for (final i in run) samples[i]]);
+      if (run.length >= config.minSegmentSecondsAt(seg.meanKph)) {
+        segments.add(seg);
       } else {
         for (final i in run) {
           verdicts[i] = SampleVerdict.shortSegment;
@@ -398,6 +520,15 @@ CalibrationConfidence rateConfidence({
   return CalibrationConfidence.red;
 }
 
+/// A speed band whose own k differs from the bands above it.
+class BandDisagreement {
+  final SpeedBand band;
+
+  /// k_band / k_above − 1 (−0.012 = this band reads 1.2 % lower).
+  final double relative;
+  const BandDisagreement(this.band, this.relative);
+}
+
 /// Through-zero fit of GPS km/h on controller rpm: k_gps.
 class CalibrationFit {
   /// True km/h per controller rpm.
@@ -414,8 +545,12 @@ class CalibrationFit {
   /// ≈ 0; a large intercept hints at lag or slip.
   final double? interceptKph;
 
-  /// Per-band k, to spot tyre growth / slip.
+  /// Per-band k, to spot tyre growth / slip (all bands, used or not).
   final Map<SpeedBand, double> kByBand;
+
+  /// Lower bands left out of [kGps] because they disagree with the bands
+  /// above them by more than the CI.
+  final List<BandDisagreement> disagreements;
 
   const CalibrationFit({
     required this.kGps,
@@ -425,55 +560,152 @@ class CalibrationFit {
     required this.bands,
     required this.interceptKph,
     required this.kByBand,
+    this.disagreements = const [],
   });
 
   CalibrationConfidence get confidence => rateConfidence(
       ciRelative: ciRelative, segments: segments, bands: bands.length);
 
   static const int bootstrapRounds = 1000;
+  static const int bootstrapBlockSeconds = 5;
+
+  /// v1.4: how much each speed band counts in the combined k. At higher
+  /// speed GPS noise is a smaller share of the speed and the fit is less
+  /// sensitive to lag, so higher bands count more.
+  static double bandWeight(SpeedBand b) => switch (b) {
+        SpeedBand.kph20to40 => 1,
+        SpeedBand.kph40to60 => 2,
+        SpeedBand.kph60to80 => 3,
+        SpeedBand.kph80plus => 3,
+      };
+
+  /// A lower band is left out of the combined k when it disagrees with the
+  /// bands above it by more than this (relative) or the CI, whichever is
+  /// larger, and the bands above have at least [minSegmentsAbove] stretches.
+  static const double disagreementFloor = 0.005;
+  static const int minSegmentsAbove = 3;
 
   /// Null when there is no clean segment yet.
+  ///
+  /// v1.4: fit per speed band, combine the bands (higher bands weigh more)
+  /// and bootstrap within each band, so differences *between* bands do not
+  /// inflate the CI. A low band that systematically disagrees with the
+  /// bands above it is reported in [disagreements] and left out of [kGps].
   static CalibrationFit? fromAnalysis(CalibrationAnalysis analysis,
       {int seed = 2026}) {
     final segments = analysis.segments;
     if (segments.isEmpty) return null;
-    final k = throughZero(segments);
-
-    double? ci;
-    if (segments.length >= 2) {
-      final random = math.Random(seed);
-      final ks = <double>[];
-      for (var b = 0; b < bootstrapRounds; b++) {
-        var vr = 0.0, rr = 0.0;
-        for (var j = 0; j < segments.length; j++) {
-          final s = segments[random.nextInt(segments.length)];
-          vr += s.sumVR;
-          rr += s.sumRR;
-        }
-        ks.add(vr / rr);
-      }
-      ks.sort();
-      final lo = _percentile(ks, 0.025);
-      final hi = _percentile(ks, 0.975);
-      ci = (hi - lo) / 2 / k;
-    }
 
     final byBand = <SpeedBand, List<CalibrationSegment>>{};
     for (final s in segments) {
       byBand.putIfAbsent(s.band, () => []).add(s);
     }
+    final kByBand = {
+      for (final e in byBand.entries) e.key: throughZero(e.value),
+    };
+
+    final random = math.Random(seed);
+    final ordered = byBand.keys.toList()..sort((a, b) => a.index - b.index);
+    var included = ordered.toList();
+    final disagreements = <BandDisagreement>[];
+    // Only the low band (below 40 km/h) can be left out: that is where
+    // slip, lag and GPS noise are largest relative to the speed. Higher
+    // bands always count (they are weighted up instead).
+    for (final band in ordered.where((b) => b == SpeedBand.kph20to40)) {
+      final above = included.where((b) => b.index > band.index).toList();
+      final aboveSegments =
+          above.fold<int>(0, (n, b) => n + byBand[b]!.length);
+      if (above.isEmpty || aboveSegments < minSegmentsAbove) break;
+      final kAbove = _combine({for (final b in above) b: byBand[b]!});
+      final ciAbove = _bootstrapCi(
+          {for (final b in above) b: byBand[b]!}, kAbove, random);
+      final diff = kByBand[band]! / kAbove - 1;
+      final limit = math.max(disagreementFloor, ciAbove ?? 0);
+      if (diff.abs() > limit) {
+        disagreements.add(BandDisagreement(band, diff));
+        included = included.where((b) => b != band).toList();
+      } else {
+        break;
+      }
+    }
+
+    final used = {for (final b in included) b: byBand[b]!};
+    final k = _combine(used);
+    final usedSegments = used.values.fold<int>(0, (n, l) => n + l.length);
+    final ci = usedSegments >= 2 ? _bootstrapCi(used, k, random) : null;
+    final usedList = [for (final l in used.values) ...l];
 
     return CalibrationFit(
       kGps: k,
       ciRelative: ci,
-      segments: segments.length,
-      cleanSeconds: analysis.cleanSeconds,
-      bands: byBand.keys.toSet(),
-      interceptKph: _intercept(segments),
-      kByBand: {
-        for (final e in byBand.entries) e.key: throughZero(e.value),
-      },
+      segments: usedSegments,
+      cleanSeconds: usedList.fold(0, (n, s) => n + s.seconds),
+      bands: used.keys.toSet(),
+      interceptKph: _intercept(usedList),
+      kByBand: kByBand,
+      disagreements: disagreements,
     );
+  }
+
+  static double _combine(Map<SpeedBand, List<CalibrationSegment>> bands) {
+    var num = 0.0, den = 0.0;
+    for (final e in bands.entries) {
+      final rr = e.value.fold<double>(0, (sum, s) => sum + s.sumRR);
+      final vr = e.value.fold<double>(0, (sum, s) => sum + s.sumVR);
+      final w = rr * bandWeight(e.key);
+      num += w * (vr / rr);
+      den += w;
+    }
+    return num / den;
+  }
+
+  /// 95 % CI half-width relative to [k], resampling stretches within each
+  /// band. Null when there are fewer than 2 stretches in total.
+  static double? _bootstrapCi(Map<SpeedBand, List<CalibrationSegment>> bands,
+      double k, math.Random random) {
+    final total = bands.values.fold<int>(0, (n, l) => n + l.length);
+    if (total < 2) return null;
+    // A band with a single stretch has no spread of its own; pool those
+    // with the nearest band so their uncertainty is not ignored.
+    final strata = <SpeedBand, List<CalibrationSegment>>{};
+    final keys = bands.keys.toList()..sort((a, b) => a.index - b.index);
+    for (final b in keys) {
+      final list = bands[b]!;
+      if (list.length >= 2 || keys.length == 1) {
+        strata.putIfAbsent(b, () => []).addAll(list);
+      } else {
+        final near = keys.where((x) => x != b && bands[x]!.length >= 2).toList()
+          ..sort((x, y) =>
+              (x.index - b.index).abs().compareTo((y.index - b.index).abs()));
+        final into = near.isEmpty ? b : near.first;
+        strata.putIfAbsent(into, () => []).addAll(list);
+      }
+    }
+    // Resample blocks of about [bootstrapBlockSeconds] rather than whole
+    // stretches (a block bootstrap): GPS errors are correlated over a few
+    // seconds, not over a whole 30 s stretch, so one long stretch is
+    // several independent pieces of evidence.
+    for (final key in strata.keys.toList()) {
+      strata[key] = [for (final seg in strata[key]!) ...seg.blocks()];
+    }
+    final ks = <double>[];
+    for (var r = 0; r < bootstrapRounds; r++) {
+      var num = 0.0, den = 0.0;
+      for (final e in strata.entries) {
+        final l = e.value;
+        for (var j = 0; j < l.length; j++) {
+          final s = l[random.nextInt(l.length)];
+          final w = bandWeight(s.band);
+          num += w * s.sumVR;
+          den += w * s.sumRR;
+        }
+      }
+      ks.add(num / den);
+    }
+    ks.sort();
+    final lo = _percentile(ks, 0.025);
+    final hi = _percentile(ks, 0.975);
+    return (hi - lo) / 2 / k;
   }
 
   /// k = Σ(w·v·rpm) / Σ(w·rpm²).
